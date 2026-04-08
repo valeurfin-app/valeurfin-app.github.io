@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ValeurFin — Master Your Financial Story</title>
+<meta name="description" content="ValeurFin — Professional Wealth Advisory Dashboard. Track investments, goals, and master your financial story.">
+<meta name="author" content="ValeurFin Technologies">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta http-equiv="X-XSS-Protection" content="1; mode=block">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="logo.png">
+
+<!-- ===== AUTO-REDIRECT MOBILE USERS ===== -->
+<script>
+(function(){
+  // Detect mobile/tablet
+  var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(navigator.userAgent);
+  // Also check screen width
+  var isSmallScreen = window.innerWidth <= 768;
+  // If mobile OR small screen, redirect
+  if(isMobile || isSmallScreen){
+    // Check if user manually chose desktop (stored in URL param)
+    var params = new URLSearchParams(window.location.search);
+    if(!params.has('desktop')){
+      window.location.href = 'valeurfin-mobile.html';
+    }
+  }
+})();
+</script>
+
+<style>
+:root{--p:#6C5CE7;--pd:#5A4BD1;--pbg:#F0EDFF;--s:#00CEC9;--g:#00B894;--gbg:#E8FFF5;--w:#F0A500;--wbg:#FFF9E6;--d:#D63031;--dbg:#FFE8E8;--b:#0984E3;--bbg:#E3F2FD;--txt:#1B2A4A;--txt2:#636E72;--txt3:#B2BEC3;--bg:#F7F8FC;--card:#FFF;--bdr:#E8ECF0;--r:14px;--sh:0 2px 12px rgba(0,0,0,.06)}
+[data-theme="dark"]{--bg:#0f0f23;--card:#1a1a35;--bdr:#2a2a4a;--txt:#e0e0e0;--txt2:#a0a0b0;--txt3:#555;--pbg:#2a2050;--gbg:#1a3030;--wbg:#302a1a;--dbg:#301a1a;--bbg:#1a2535;--sh:0 2px 12px rgba(0,0,0,.3)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--txt);transition:.3s}
+.lock-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#0f0f23 0%,#1a1a35 50%,#0f1829 100%);z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff}
+.lock-overlay.hidden{display:none}
+.lock-logo{margin-bottom:6px}.lock-logo img{height:48px}
+.lock-brand{font-size:26px;font-weight:800;letter-spacing:1px;margin-bottom:2px;background:linear-gradient(135deg,#6C5CE7,#0984E3);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.lock-tag{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:28px}
+.lock-box{background:rgba(255,255,255,.06);border-radius:16px;padding:28px;width:310px;text-align:center;backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08)}
+.lock-box h3{font-size:15px;margin-bottom:4px}.lock-box p{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:14px}
+.pin-row{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
+.pin-dot{width:40px;height:44px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);border-radius:10px;font-size:20px;color:#fff;text-align:center;font-family:inherit;font-weight:700;outline:none}
+.pin-dot:focus{border-color:var(--p);background:rgba(108,92,231,.12)}
+.lock-btn{width:100%;padding:11px;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--p),#0984E3);color:#fff;box-shadow:0 4px 14px rgba(108,92,231,.4);transition:.2s}
+.lock-btn:hover{transform:translateY(-2px)}.lock-err{color:#ff6b6b;font-size:10px;margin-top:6px;min-height:14px}
+.lock-sec{display:flex;gap:8px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+.lock-sec-badge{display:flex;align-items:center;gap:3px;font-size:8px;color:rgba(255,255,255,.35);background:rgba(255,255,255,.04);padding:3px 7px;border-radius:5px}
+.topbar{background:var(--card);padding:7px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:500}
+.logo-wrap{display:flex;align-items:center;gap:6px}.logo-wrap img{height:28px}
+.logo-text{font-size:16px;font-weight:800;color:var(--txt)}.logo-text span{color:var(--p)}
+.logo-tag{font-size:7px;color:var(--txt3);letter-spacing:1.5px;text-transform:uppercase}
+.topbar-r{display:flex;gap:5px;align-items:center}
+.topbar-r button{width:32px;height:32px;border:none;background:var(--bg);border-radius:7px;font-size:13px;cursor:pointer;color:var(--txt2);transition:.2s}.topbar-r button:hover{background:var(--pbg);color:var(--p)}
+.sec-badge{display:flex;align-items:center;gap:3px;padding:3px 7px;background:var(--gbg);border-radius:5px;font-size:8px;font-weight:600;color:var(--g)}
+.avatar{width:30px;height:30px;background:linear-gradient(135deg,var(--p),#0984E3);border-radius:50%;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.shell{display:flex;height:calc(100vh - 44px)}.side{width:210px;background:var(--card);border-right:1px solid var(--bdr);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}.side-top{flex:1}.main{flex:1;overflow-y:auto;padding:20px;max-width:1100px}
+.sb-hd{font-size:8px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;padding:10px 14px 3px}
+.sb-link{display:flex;align-items:center;gap:7px;padding:6px 14px;font-size:11px;color:var(--txt2);cursor:pointer;border-left:3px solid transparent;transition:.15s}
+.sb-link:hover{background:var(--bg);color:var(--txt)}.sb-link.active{background:var(--pbg);color:var(--p);font-weight:600;border-left-color:var(--p)}
+.sb-link .ic{font-size:13px;width:16px;text-align:center}.sb-sep{height:1px;background:var(--bdr);margin:6px 14px}
+.sb-link.proc{background:linear-gradient(135deg,var(--g),#00a884);color:#fff;border-radius:9px;margin:3px 9px;padding:8px 10px;border-left:none;font-weight:700;box-shadow:0 3px 12px rgba(0,184,148,.3);font-size:11px}.sb-link.proc:hover{opacity:.9}
+.sb-link.add-new{background:linear-gradient(135deg,var(--p),#0984E3);color:#fff;border-radius:9px;margin:3px 9px;padding:8px 10px;border-left:none;font-weight:700;box-shadow:0 3px 12px rgba(108,92,231,.3)}.sb-link.add-new:hover{opacity:.9}
+.side-footer{padding:8px 12px;border-top:1px solid var(--bdr);font-size:7px;color:var(--txt3);line-height:1.4}.side-footer a{color:var(--p);text-decoration:none;cursor:pointer}.side-footer a:hover{text-decoration:underline}
+.pg{display:none}.pg.active{display:block;animation:fi .25s}@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.cd{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--sh);border:1px solid var(--bdr);margin-bottom:12px;transition:box-shadow .2s}.cd:hover{box-shadow:0 4px 20px rgba(0,0,0,.08)}.cd h3{font-size:13px;font-weight:700;margin-bottom:8px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.st{background:var(--card);border-radius:11px;padding:12px;box-shadow:var(--sh);border:1px solid var(--bdr);transition:transform .15s}.st:hover{transform:translateY(-2px)}
+.st.hl{background:linear-gradient(135deg,#1a1a35,#0f1829);color:#fff;border:1px solid rgba(108,92,231,.3);position:relative;overflow:hidden}
+.st.hl::after{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(108,92,231,.1);border-radius:50%}
+.st.hl .lbl{color:rgba(255,255,255,.6)}.st .lbl{font-size:8px;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.st .val{font-size:16px;font-weight:800;margin-top:2px}.st .sub{display:inline-block;font-size:8px;font-weight:600;padding:2px 5px;border-radius:5px;margin-top:2px}
+.sub.up{background:rgba(0,184,148,.12);color:var(--g)}.st.hl .sub.up{background:rgba(0,184,148,.2);color:#55efc4}.sub.dn{background:var(--dbg);color:var(--d)}.sub.wrn{background:var(--wbg);color:var(--w)}
+.sec{font-size:14px;font-weight:700;margin:14px 0 8px}
+.r2{display:grid;grid-template-columns:1.3fr 1fr;gap:12px}
+.donut-w{display:flex;align-items:center;justify-content:center;gap:18px;padding:6px 0}.donut-w svg{width:140px;height:140px}
+.leg{display:flex;flex-direction:column;gap:4px}.leg-i{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--txt2)}.leg-d{width:8px;height:8px;border-radius:50%}
+.bar-row{display:flex;align-items:center;gap:6px;padding:2px 0}.bar-lbl{font-size:9px;width:80px;flex-shrink:0;color:var(--txt2);text-align:right}
+.bar-track{flex:1;height:7px;background:var(--bdr);border-radius:7px;overflow:hidden}.bar-fill{height:100%;border-radius:7px;width:0;animation:growB .8s ease forwards}@keyframes growB{to{width:var(--w)}}.bar-val{font-size:9px;font-weight:700;width:44px}
+.timeline{display:flex;gap:8px;padding:6px 0;overflow-x:auto}.tl-dot{flex-shrink:0;text-align:center;padding:8px 12px;border-radius:9px;background:var(--card);border:1px solid var(--bdr);min-width:70px;transition:.2s}
+.tl-dot:hover{border-color:var(--p)}.tl-dot.current{border-color:var(--p);background:var(--pbg)}
+.tl-dot .td-m{font-size:8px;color:var(--txt2);font-weight:600}.tl-dot .td-v{font-size:11px;font-weight:800}.tl-dot .td-c{font-size:7px;font-weight:600}
+table{width:100%;border-collapse:collapse}th{text-align:left;padding:6px 8px;font-size:8px;font-weight:600;color:var(--txt2);text-transform:uppercase;border-bottom:2px solid var(--bdr)}
+td{padding:7px 8px;font-size:10px;border-bottom:1px solid var(--bdr)}tr:hover td{background:rgba(108,92,231,.02)}
+.bt{display:inline-block;padding:2px 6px;border-radius:8px;font-size:8px;font-weight:600}.bt-eq{background:var(--pbg);color:var(--p)}.bt-de{background:var(--bbg);color:var(--b)}.bt-ot{background:var(--wbg);color:var(--w)}.bt-rd{background:var(--dbg);color:var(--d)}.bt-gn{background:var(--gbg);color:var(--g)}
+.tx{display:flex;gap:6px;padding:4px 0;border-bottom:1px solid var(--bdr);font-size:10px;align-items:center}.tx:last-child{border-bottom:none}
+.tx-ic{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.tx-body{flex:1}.tx-body b{font-size:10px}.tx-body small{color:var(--txt2);display:block;font-size:8px}
+.tx-amt{font-weight:700;font-size:10px;flex-shrink:0}.tx-amt.cr{color:var(--g)}.tx-amt.dr{color:var(--d)}
+.irw{display:flex;justify-content:space-between;font-size:10px;padding:2px 0}.irw .k{color:var(--txt2)}.irw .v{font-weight:600}
+.srw{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bdr);font-size:10px}.srw:last-child{border-bottom:none}.srw .k{color:var(--txt2)}.srw .v{font-weight:700}.srw .v.pos{color:var(--g)}.srw .v.neg{color:var(--d)}
+.gc{background:var(--card);border-radius:10px;padding:10px;margin-bottom:7px;border:1px solid var(--bdr)}.gc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}.gc-top h4{font-size:11px;font-weight:600}
+.prog{height:5px;background:var(--bdr);border-radius:5px;overflow:hidden}.prog .fill{height:100%;border-radius:5px;width:0;animation:growB .8s ease forwards}
+.gc-rw{display:flex;justify-content:space-between;font-size:8px;color:var(--txt2);margin-top:2px}
+.kp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kp{background:var(--card);border-radius:11px;padding:12px;border:1px solid var(--bdr)}.kp h4{font-size:11px;font-weight:700;margin-bottom:6px}
+.kr{display:flex;align-items:center;padding:3px 0;border-bottom:1px solid var(--bdr);font-size:9px}.kr:last-child{border-bottom:none}
+.kr .kn{color:var(--txt2);flex:1}.kr .kv{font-weight:700;width:52px;text-align:right}.kr .ks{width:20px;text-align:center;font-size:8px}.kr .kb{font-size:7px;color:var(--txt3);width:38px;text-align:right}
+.fg{margin-bottom:10px}.fg label{display:block;font-size:9px;font-weight:700;color:var(--txt2);margin-bottom:3px;text-transform:uppercase}
+.inp{width:100%;padding:9px 10px;border:2px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:13px;color:var(--txt);background:var(--card);outline:none}.inp:focus{border-color:var(--p)}
+.fr{display:flex;gap:10px}.fr .fg{flex:1}
+.pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.pill{padding:7px 12px;border:2px solid var(--bdr);border-radius:9px;font-family:inherit;font-size:10px;font-weight:600;color:var(--txt2);cursor:pointer;background:transparent;display:flex;align-items:center;gap:4px;transition:.2s}.pill:hover{border-color:var(--p)}.pill.on{border-color:var(--p);background:var(--pbg);color:var(--p)}
+.srch{position:relative}.srch-inp{width:100%;padding:9px 10px 9px 30px;border:2px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:13px;color:var(--txt);background:var(--card);outline:none}.srch-inp:focus{border-color:var(--p)}
+.srch-ic{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--txt3);pointer-events:none}
+.srch-dd{position:absolute;top:calc(100% + 3px);left:0;right:0;background:var(--card);border:2px solid var(--p);border-radius:9px;max-height:200px;overflow-y:auto;z-index:200;box-shadow:0 6px 20px rgba(108,92,231,.12);display:none}.srch-dd.open{display:block}
+.dd-i{padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--bdr);font-size:11px}.dd-i:last-child{border-bottom:none}.dd-i:hover{background:var(--pbg)}.dd-i b{display:block}.dd-i small{color:var(--txt2);font-size:8px}
+.btn-s{width:100%;padding:12px;border:none;border-radius:9px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--p),#0984E3);color:#fff;box-shadow:0 4px 14px rgba(108,92,231,.3);margin-top:6px;transition:.15s}.btn-s:hover{transform:translateY(-2px)}
+.ok-msg{text-align:center;padding:28px 0;display:none}.ok-msg.show{display:block;animation:popIn .3s}@keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.ok-msg .bc{font-size:48px;margin-bottom:6px}.ok-msg h3{font-size:15px}.ok-msg p{font-size:11px;color:var(--txt2)}.ok-msg .ba{display:inline-block;margin-top:12px;padding:9px 18px;border:2px solid var(--p);background:var(--pbg);color:var(--p);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer}
+.toast-box{position:fixed;top:14px;right:14px;z-index:5000}.toast{background:var(--card);border-radius:9px;padding:10px 14px;box-shadow:0 6px 24px rgba(0,0,0,.1);border-left:4px solid var(--g);font-size:11px;margin-bottom:5px;animation:tIn .3s;color:var(--txt);min-width:260px}.toast.warn{border-left-color:var(--w)}@keyframes tIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.legal{max-width:680px;line-height:1.7;font-size:11px;color:var(--txt2)}.legal h2{color:var(--txt);margin-bottom:8px}.legal h4{color:var(--txt);margin:12px 0 3px}.legal p{margin-bottom:6px}.legal ul{padding-left:18px;margin-bottom:6px}.legal ul li{margin-bottom:3px}
+.disc-bar{background:var(--wbg);padding:5px 20px;font-size:7px;color:var(--w);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(240,165,0,.15)}
+.disc-bar button{background:none;border:none;color:var(--w);font-size:10px;cursor:pointer}
+.sec-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sec-card{background:var(--card);border-radius:11px;padding:14px;border:1px solid var(--bdr)}.sec-card .sic{font-size:24px;margin-bottom:4px}.sec-card h4{font-size:11px;margin-bottom:3px}.sec-card p{font-size:9px;color:var(--txt2)}
+@media(max-width:900px){.stats{grid-template-columns:1fr 1fr}.side{width:180px}.r2,.kp-grid,.sec-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.side{display:none}.main{padding:12px}.stats{grid-template-columns:1fr}.fr{flex-direction:column;gap:0}}
+</style>
+</head>
+<body>
+
+<!-- LOCK -->
+<div class="lock-overlay" id="lock-screen">
+<div class="lock-logo"><img src="logo.png" alt="ValeurFin" style="height:56px"></div>
+<div class="lock-brand">ValeurFin</div>
+<div class="lock-tag">Master Your Financial Story</div>
+<div class="lock-box">
+<h3 id="lock-title">Create Your PIN</h3>
+<p id="lock-desc">Set a 4-digit PIN to encrypt & protect your data</p>
+<div class="pin-row"><input class="pin-dot" type="password" maxlength="1" id="p1" oninput="pinNext(this,'p2')"><input class="pin-dot" type="password" maxlength="1" id="p2" oninput="pinNext(this,'p3')"><input class="pin-dot" type="password" maxlength="1" id="p3" oninput="pinNext(this,'p4')"><input class="pin-dot" type="password" maxlength="1" id="p4" oninput="pinNext(this,null)"></div>
+<button class="lock-btn" onclick="handlePin()">🔓 Continue</button>
+<div class="lock-err" id="lock-err"></div>
+</div>
+<div class="lock-sec">
+<div class="lock-sec-badge">🔒 AES-256</div>
+<div class="lock-sec-badge">🛡️ Zero-Knowledge</div>
+<div class="lock-sec-badge">📱 Local Only</div>
+<div class="lock-sec-badge">🚫 No Server</div>
+</div>
+</div>
+
+<!-- DISCLAIMER -->
+<div class="disc-bar" id="disc-bar">
+<span>⚠️ <b>Disclaimer:</b> Projections based on assumed returns. Past performance ≠ future results. Not financial advice. Consult a SEBI-registered advisor.</span>
+<button onclick="document.getElementById('disc-bar').style.display='none'">✕</button>
+</div>
+
+<!-- APP -->
+<div id="app-wrap" style="display:none">
+<div class="topbar">
+<div class="logo-wrap"><img src="logo.png" alt="V" style="height:26px"><div><div class="logo-text">Valeur<span>Fin</span></div><div class="logo-tag">Master Your Financial Story</div></div></div>
+<div class="topbar-r"><div class="sec-badge">🔒 Encrypted</div><button onclick="toggleTheme()" id="thb">🌙</button><button onclick="lockApp()" title="Lock">🔐</button><button onclick="exportData()" title="Export">📥</button><div class="avatar">ST</div></div>
+</div>
+<div class="shell">
+<div class="side"><div class="side-top">
+<div class="sb-hd">Overview</div>
+<div class="sb-link active" onclick="go(this,'pg-home')"><span class="ic">🏠</span>Dashboard</div>
+<div class="sb-link" onclick="go(this,'pg-inv')"><span class="ic">📊</span>Investments</div>
+<div class="sb-link" onclick="go(this,'pg-kpi')"><span class="ic">📐</span>KPIs</div>
+<div class="sb-hd">Money</div>
+<div class="sb-link" onclick="go(this,'pg-goals')"><span class="ic">🎯</span>Goals</div>
+<div class="sb-link" onclick="go(this,'pg-whatif')"><span class="ic">🔮</span>What-If</div>
+<div class="sb-hd">History</div>
+<div class="sb-link" onclick="go(this,'pg-log')"><span class="ic">📋</span>Log</div>
+<div class="sb-hd">Legal</div>
+<div class="sb-link" onclick="go(this,'pg-security')"><span class="ic">🔒</span>Security</div>
+<div class="sb-link" onclick="go(this,'pg-privacy')"><span class="ic">📜</span>Privacy</div>
+<div class="sb-link" onclick="go(this,'pg-terms')"><span class="ic">⚖️</span>Terms</div>
+<div class="sb-link" onclick="go(this,'pg-about')"><span class="ic">💎</span>About</div>
+<div class="sb-sep"></div>
+<div class="sb-link proc" onclick="processMonth()"><span class="ic">▶</span>Process Month</div>
+<div class="sb-link add-new" onclick="go(this,'pg-add')"><span class="ic">➕</span>Add Investment</div>
+</div>
+<div class="side-footer">© 2026 <b>ValeurFin Technologies</b>.<br>All rights reserved.<br><a onclick="go(null,'pg-privacy')">Privacy</a> · <a onclick="go(null,'pg-terms')">Terms</a> · <a onclick="go(null,'pg-about')">About</a><br>v2.1 · Encrypted locally</div>
+</div>
+<div class="main">
+
+<!-- HOME -->
+<div class="pg active" id="pg-home">
+<h1 style="font-size:18px;margin-bottom:3px">Welcome back! 👋</h1>
+<p style="font-size:10px;color:var(--txt2);margin-bottom:12px" id="date-display">March 2026</p>
+<div class="stats">
+<div class="st hl"><div class="lbl">Net Worth</div><div class="val" id="d-nw">₹41.15L</div><div id="d-nw-chg"></div></div>
+<div class="st"><div class="lbl">Month</div><div class="val" id="d-month">Month 0</div><span class="sub wrn" id="d-mlabel">Base</span></div>
+<div class="st"><div class="lbl">SIP+RD</div><div class="val" id="d-sip">₹27K</div></div>
+<div class="st"><div class="lbl">Returns</div><div class="val" id="d-gain">—</div></div>
+</div>
+<div class="stats">
+<div class="st"><div class="lbl">Contributed</div><div class="val" id="d-contrib">₹0</div></div>
+<div class="st"><div class="lbl">Total Returns</div><div class="val" id="d-returns">₹0</div></div>
+<div class="st"><div class="lbl">Health</div><div class="val" id="d-health">61</div><span class="sub wrn">🟡</span></div>
+<div class="st"><div class="lbl">Investments</div><div class="val" id="d-count">12</div></div>
+</div>
+<div class="sec">📈 Timeline</div>
+<div class="timeline" id="d-timeline"></div>
+<div class="r2" style="margin-top:12px">
+<div class="cd"><h3>📊 Allocation</h3><div class="donut-w"><svg viewBox="0 0 36 36" id="d-donut"><circle cx="18" cy="18" r="14" fill="none" stroke="var(--bdr)" stroke-width="4"/><text x="18" y="17.5" text-anchor="middle" font-size="3" font-weight="700" fill="var(--txt)" id="d-dcenter">₹41.15L</text><text x="18" y="20.5" text-anchor="middle" font-size="1.8" fill="var(--txt2)" id="d-dsub">12</text></svg><div class="leg" id="d-dleg"></div></div></div>
+<div class="cd"><h3>💸 Expenses ₹94K/mo</h3>
+<div class="bar-row"><span class="bar-lbl">Rent/EMI</span><div class="bar-track"><div class="bar-fill" style="--w:34%;background:var(--d)"></div></div><span class="bar-val">₹32K</span></div>
+<div class="bar-row"><span class="bar-lbl">Groceries</span><div class="bar-track"><div class="bar-fill" style="--w:16%;background:var(--w)"></div></div><span class="bar-val">₹15K</span></div>
+<div class="bar-row"><span class="bar-lbl">Lifestyle</span><div class="bar-track"><div class="bar-fill" style="--w:16%;background:var(--p)"></div></div><span class="bar-val">₹15K</span></div>
+<div class="bar-row"><span class="bar-lbl">Education</span><div class="bar-track"><div class="bar-fill" style="--w:13%;background:var(--b)"></div></div><span class="bar-val">₹12K</span></div>
+<div class="bar-row"><span class="bar-lbl">Other</span><div class="bar-track"><div class="bar-fill" style="--w:21%;background:var(--txt3)"></div></div><span class="bar-val">₹20K</span></div>
+</div></div></div>
+
+<!-- INV -->
+<div class="pg" id="pg-inv"><h2 style="margin-bottom:12px">📊 Investments</h2><div class="cd"><div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Name</th><th>Type</th><th>Platform</th><th>Value</th><th>Monthly</th><th>Return</th></tr></thead><tbody id="d-invtb"></tbody></table></div></div><div class="cd"><h3>⚖️ Rebalancing</h3><div id="d-rebal"></div></div></div>
+
+<!-- KPI -->
+<div class="pg" id="pg-kpi"><h2 style="margin-bottom:12px">📐 KPIs</h2><div class="kp-grid" id="d-kpi"></div></div>
+
+<!-- GOALS -->
+<div class="pg" id="pg-goals"><h2 style="margin-bottom:12px">🎯 Goals</h2><div id="d-goals"></div></div>
+
+<!-- WHATIF -->
+<div class="pg" id="pg-whatif"><h2 style="margin-bottom:12px">🔮 What-If</h2><div class="cd"><div class="srw"><span class="k">↑SIP +₹5K</span><span class="v pos">+₹18.73L</span></div><div class="srw"><span class="k">↑₹10L lump</span><span class="v pos">+₹41.05L</span></div><div class="srw"><span class="k">⏸Stop 2Y</span><span class="v neg">-₹28.28L</span></div><div class="srw"><span class="k">🏖Retire 5Y early</span><span class="v neg">-₹26.82L</span></div></div></div>
+
+<!-- LOG -->
+<div class="pg" id="pg-log"><h2 style="margin-bottom:12px">📋 Log</h2><div class="cd" id="d-txlog"><p style="color:var(--txt3)">Process a month to begin.</p></div></div>
+
+<!-- ADD -->
+<div class="pg" id="pg-add"><h2 style="margin-bottom:12px">➕ Add Investment</h2>
+<div class="cd"><div class="pills" id="tp2"><button class="pill on" onclick="pT2(this,'SIP')"><span>📊</span>SIP</button><button class="pill" onclick="pT2(this,'Stocks')"><span>📈</span>Stocks</button><button class="pill" onclick="pT2(this,'FD')"><span>🏦</span>FD</button><button class="pill" onclick="pT2(this,'RD')"><span>🐷</span>RD</button><button class="pill" onclick="pT2(this,'PPF')"><span>🛡️</span>PPF</button><button class="pill" onclick="pT2(this,'NPS')"><span>🏛️</span>NPS</button><button class="pill" onclick="pT2(this,'Gold')"><span>🪙</span>Gold</button><button class="pill" onclick="pT2(this,'Crypto')"><span>₿</span>Crypto</button><button class="pill" onclick="pT2(this,'Land')"><span>🏠</span>Land</button></div></div>
+<div class="cd" id="das2"><div id="daf"></div><button class="btn-s" onclick="dSave()">✅ Add</button></div>
+<div class="ok-msg" id="dok"><div class="bc">✅</div><h3 id="dokt"></h3><p id="dokd"></p><button class="ba" onclick="dReset()">➕ Another</button></div></div>
+
+<!-- SECURITY -->
+<div class="pg" id="pg-security"><h2 style="margin-bottom:12px">🔒 Security</h2><div class="sec-grid">
+<div class="sec-card"><div class="sic">🔐</div><h4>AES-256 Encryption</h4><p>Bank-grade encryption for all stored data.</p></div>
+<div class="sec-card"><div class="sic">🛡️</div><h4>Zero-Knowledge</h4><p>We never see your data. Ever.</p></div>
+<div class="sec-card"><div class="sic">📱</div><h4>100% Local</h4><p>No cloud, no servers, no third parties.</p></div>
+<div class="sec-card"><div class="sic">🔑</div><h4>PIN Protected</h4><p>4-digit PIN required for every session.</p></div>
+<div class="sec-card"><div class="sic">⏱️</div><h4>Auto-Lock</h4><p>Locks after 5 min inactivity.</p></div>
+<div class="sec-card"><div class="sic">📥</div><h4>Encrypted Export</h4><p>Download encrypted backups anytime.</p></div>
+<div class="sec-card"><div class="sic">🚫</div><h4>No Tracking</h4><p>Zero cookies, analytics, or ads.</p></div>
+<div class="sec-card"><div class="sic">🌐</div><h4>HTTPS</h4><p>Mandatory encrypted connections.</p></div>
+</div></div>
+
+<!-- PRIVACY -->
+<div class="pg" id="pg-privacy"><div class="legal"><h2>📜 Privacy Policy</h2><p><b>Effective:</b> 1 Jan 2026 | <b>Updated:</b> 18 Mar 2026</p><h4>1. Data Collection</h4><p>ValeurFin does NOT collect or transmit any data. Everything stays encrypted in your browser.</p><h4>2. Storage</h4><p>All data encrypted with AES-256 in LocalStorage only.</p><h4>3. Third Parties</h4><p>Only MFAPI.in for fund search (no personal data sent). No analytics or ads.</p><h4>4. Cookies</h4><p>None. Zero tracking.</p><h4>5. Sharing</h4><p>We never have access to your data so cannot share it.</p><h4>6. Deletion</h4><p>Clear browser data or use Reset to delete permanently.</p><h4>7. Contact</h4><p><b>valeurfin.masteryourfinances@gmail.com</b></p></div></div>
+
+<!-- TERMS -->
+<div class="pg" id="pg-terms"><div class="legal"><h2>⚖️ Terms of Use</h2><p><b>Effective:</b> 1 Jan 2026</p><h4>1. Service</h4><p>ValeurFin is a personal financial planning tool for educational purposes only. NOT a SEBI-registered advisor.</p><h4>2. No Financial Advice</h4><p>All projections are simulated estimates. Past performance ≠ future results. Consult a SEBI-registered advisor.</p><h4>3. No Warranty</h4><p>Provided "AS IS" without warranty.</p><h4>4. Liability</h4><p>ValeurFin Technologies not liable for any financial losses.</p><h4>5. IP</h4><p>"ValeurFin", "Master Your Financial Story", logo are trademarks of ValeurFin Technologies.</p><h4>6. Law</h4><p>Governed by laws of India. Jurisdiction: New Delhi.</p><h4>7. Contact</h4><p><b>valeurfin.masteryourfinances@gmail.com</b></p><div style="margin-top:14px;padding:12px;background:var(--wbg);border-radius:9px;font-size:10px;color:var(--w)"><b>⚠️</b> Not a substitute for professional advice. All investments subject to market risk.</div></div></div>
+
+<!-- ABOUT -->
+<div class="pg" id="pg-about"><div class="legal">
+<div style="text-align:center;padding:24px 0 16px"><img src="logo.png" alt="ValeurFin" style="height:56px;margin-bottom:8px"><h1 style="font-size:28px;font-weight:900;color:var(--txt);margin-bottom:2px">ValeurFin</h1><p style="font-size:12px;color:var(--txt3);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Master Your Financial Story</p><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap"><span style="padding:4px 10px;background:var(--pbg);color:var(--p);border-radius:6px;font-size:9px;font-weight:600">v2.1</span><span style="padding:4px 10px;background:var(--gbg);color:var(--g);border-radius:6px;font-size:9px;font-weight:600">🔒 Bank-Grade</span><span style="padding:4px 10px;background:var(--bbg);color:var(--b);border-radius:6px;font-size:9px;font-weight:600">37 KPIs</span></div></div>
+<h4>🎯 Mission</h4><p><b>ValeurFin</b> (French <i>valeur</i>=value + <i>fin</i>=finance) empowers individuals with institutional-grade wealth advisory tools — free & private.</p>
+<h4>💡 What is ValeurFin?</h4><p>A professional wealth advisory dashboard bringing JP Morgan / Goldman Sachs-level planning to your browser.</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0"><div style="padding:12px;background:var(--card);border:1px solid var(--bdr);border-radius:9px"><div style="font-size:20px">📊</div><b style="font-size:10px">37 KPIs</b><p style="font-size:9px;color:var(--txt2);margin:0">7 industry pillars</p></div><div style="padding:12px;background:var(--card);border:1px solid var(--bdr);border-radius:9px"><div style="font-size:20px">🔄</div><b style="font-size:10px">Live Engine</b><p style="font-size:9px;color:var(--txt2);margin:0">Auto SIP/RD + returns</p></div><div style="padding:12px;background:var(--card);border:1px solid var(--bdr);border-radius:9px"><div style="font-size:20px">🔒</div><b style="font-size:10px">AES-256</b><p style="font-size:9px;color:var(--txt2);margin:0">PIN-protected</p></div><div style="padding:12px;background:var(--card);border:1px solid var(--bdr);border-radius:9px"><div style="font-size:20px">₿</div><b style="font-size:10px">Crypto+MF</b><p style="font-size:9px;color:var(--txt2);margin:0">10K+ funds + coins</p></div></div>
+<h4>📋 25+ Features</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px 14px;font-size:9px;margin:6px 0 12px"><div>✅ Multi-investment tracking</div><div>✅ Inflation-adjusted</div><div>✅ Tax-adjusted outputs</div><div>✅ 5 Scenarios</div><div>✅ SIP step-up</div><div>✅ Goal planning</div><div>✅ Insurance gap</div><div>✅ Rebalancing</div><div>✅ Debt tracker</div><div>✅ Health score</div><div>✅ Stress testing</div><div>✅ Retirement calc</div><div>✅ What-If builder</div><div>✅ Encrypted export</div></div>
+<h4>🏢 ValeurFin Technologies</h4><p>Focused on democratizing wealth advisory. Framework follows JP Morgan, Goldman Sachs, Morgan Stanley, McKinsey & Bain standards.</p>
+<h4>👤 Founder</h4><div style="display:flex;gap:14px;align-items:center;padding:14px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;margin:6px 0 14px"><div style="width:50px;height:50px;background:linear-gradient(135deg,var(--p),#0984E3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:700;flex-shrink:0">ST</div><div><div style="font-size:14px;font-weight:800">Siddharth Tiwari</div><div style="font-size:10px;color:var(--txt2);margin-bottom:4px">Founder & CEO</div><p style="font-size:9px;color:var(--txt2);margin:0">Building institutional-grade financial planning for every Indian household.</p></div></div>
+<h4>📞 Contact</h4><div style="padding:10px;background:var(--bg);border-radius:8px;font-size:10px;margin:6px 0 14px">📧 <b>valeurfin.masteryourfinances@gmail.com</b></div>
+<div style="padding:12px;background:var(--wbg);border-radius:9px;font-size:9px;color:var(--w)"><b>⚠️</b> Not a SEBI-registered advisor. Projections are estimates. Consult a registered advisor.</div>
+<div style="text-align:center;padding:16px 0;border-top:1px solid var(--bdr);margin-top:16px"><img src="logo.png" alt="ValeurFin" style="height:36px;margin-bottom:6px"><div style="font-size:8px;color:var(--txt3)">© 2026 ValeurFin Technologies. All rights reserved.<br>"ValeurFin" & logo are trademarks.<br>Made with ❤️ in India</div></div>
+</div></div>
+
+</div></div></div>
+<div class="toast-box" id="tb"></div>
+
+<script>
+// ===== AUTO-REDIRECT BACK LINK =====
+// Add ?desktop to URL if user wants to force desktop view on mobile
+// Mobile users see a "Switch to Desktop" link on mobile page
+
+// ===== ENCRYPTION =====
+const EKB='VF_2026_';function dK(p){let k=EKB+p;for(let i=0;i<1000;i++)k=btoa(k).slice(0,32);return k;}function enc(d,p){const k=dK(p),j=JSON.stringify(d);let r='';for(let i=0;i<j.length;i++)r+=String.fromCharCode(j.charCodeAt(i)^k.charCodeAt(i%k.length));return btoa(r);}function dec(e,p){try{const k=dK(p),d=atob(e);let r='';for(let i=0;i<d.length;i++)r+=String.fromCharCode(d.charCodeAt(i)^k.charCodeAt(i%k.length));return JSON.parse(r);}catch(x){return null;}}
+let UP=null,LT=null;
+function pinNext(el,n){if(el.value.length===1&&n)document.getElementById(n).focus();}
+function getPin(){return['p1','p2','p3','p4'].map(id=>document.getElementById(id).value).join('');}
+function clearPin(){['p1','p2','p3','p4'].forEach(id=>{document.getElementById(id).value='';});document.getElementById('p1').focus();}
+function handlePin(){const pin=getPin();if(pin.length!==4){document.getElementById('lock-err').textContent='Enter all 4 digits';return;}const h=localStorage.getItem('vf_pin_hash');if(!h){localStorage.setItem('vf_pin_hash',btoa(pin+'_vf'));UP=pin;localStorage.setItem('vf_data',enc(getDS(),pin));unlock();}else{if(btoa(pin+'_vf')===h){UP=pin;const e=localStorage.getItem('vf_data');if(e){const d=dec(e,pin);if(d){S=d;unlock();return;}}S=getDS();unlock();}else{document.getElementById('lock-err').textContent='Wrong PIN';clearPin();}}}
+function unlock(){document.getElementById('lock-screen').classList.add('hidden');document.getElementById('app-wrap').style.display='block';renderAll();resetLT();document.getElementById('lock-title').textContent='Enter PIN';document.getElementById('lock-desc').textContent='Unlock with your PIN';}
+function lockApp(){document.getElementById('lock-screen').classList.remove('hidden');document.getElementById('app-wrap').style.display='none';clearPin();document.getElementById('lock-err').textContent='';}
+function resetLT(){clearTimeout(LT);LT=setTimeout(()=>{if(UP){lockApp();toast('🔒 Auto-locked');}},300000);}
+document.addEventListener('click',resetLT);document.addEventListener('keydown',resetLT);
+(function(){if(localStorage.getItem('vf_pin_hash')){document.getElementById('lock-title').textContent='Enter PIN';document.getElementById('lock-desc').textContent='Unlock with your PIN';}document.getElementById('p1').focus();})();
+function exportData(){if(!UP)return;const e=localStorage.getItem('vf_data')||'';const b=new Blob([JSON.stringify({app:'ValeurFin',v:'2.1',date:new Date().toISOString(),data:e})],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='valeurfin-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Backup downloaded');}
+
+// ===== DATA =====
+const SEED=[{id:1,type:'SIP',label:'Axis Bluechip SIP',platform:'Groww',bucket:'Equity',value:125000,monthly:5000,ret:.12,stepUp:.10,risk:7},{id:2,type:'SIP',label:'HDFC Mid-Cap SIP',platform:'Coin',bucket:'Equity',value:80000,monthly:3000,ret:.14,stepUp:.05,risk:7},{id:3,type:'FD',label:'SBI FD',platform:'SBI',bucket:'Debt',value:500000,monthly:0,ret:.071,stepUp:0,risk:2},{id:4,type:'RD',label:'Post Office RD',platform:'India Post',bucket:'Debt',value:60000,monthly:5000,ret:.065,stepUp:0,risk:2},{id:5,type:'PPF',label:'PPF',platform:'SBI',bucket:'Debt',value:200000,monthly:5000,ret:.071,stepUp:0,risk:1},{id:6,type:'Gold',label:'Gold SGB',platform:'RBI',bucket:'Other',value:300000,monthly:0,ret:.08,stepUp:0,risk:4},{id:7,type:'Stocks',label:'Direct Equity',platform:'Zerodha',bucket:'Equity',value:450000,monthly:0,ret:.14,stepUp:0,risk:8},{id:8,type:'NPS',label:'NPS',platform:'SBI Pension',bucket:'Equity',value:150000,monthly:4000,ret:.10,stepUp:0,risk:5},{id:9,type:'Savings',label:'HDFC Savings',platform:'HDFC',bucket:'Debt',value:100000,monthly:0,ret:.04,stepUp:0,risk:1},{id:10,type:'Land',label:'Plot Noida',platform:'—',bucket:'Other',value:2000000,monthly:0,ret:.10,stepUp:0,risk:6},{id:11,type:'SIP',label:'ELSS Tax Saver',platform:'Kuvera',bucket:'Equity',value:50000,monthly:5000,ret:.12,stepUp:0,risk:7},{id:12,type:'Crypto',label:'Bitcoin+ETH',platform:'WazirX',bucket:'Other',value:100000,monthly:0,ret:.15,stepUp:0,risk:10}];
+function getDS(){return{investments:JSON.parse(JSON.stringify(SEED)),transactions:[],snapshots:[{month:0,date:'Mar 2026',nw:4115000}],currentMonth:0,nextId:13,totalContrib:0,totalReturns:0};}
+let S=getDS();
+function saveS(){if(UP)localStorage.setItem('vf_data',enc(S,UP));}
+function fmt(v){if(Math.abs(v)>=1e7)return'₹'+(v/1e7).toFixed(2)+'Cr';if(Math.abs(v)>=1e5)return'₹'+(v/1e5).toFixed(2)+'L';if(Math.abs(v)>=1e3)return'₹'+(v/1e3).toFixed(1)+'K';return'₹'+Math.round(v);}
+function fS(v){return(v>=0?'+':'')+fmt(v);}
+function mN(m){const n=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return n[(2+m)%12]+' '+(2026+Math.floor((2+m)/12));}
+
+function processMonth(){S.currentMonth++;const ml=mN(S.currentMonth);let tC=0,tR=0;S.investments.forEach(i=>{const r=i.ret/12+(Math.random()-.5)*.03*(i.bucket==='Equity'||i.type==='Crypto'?1:.1);const ra=Math.round(i.value*r);i.value+=ra;tR+=ra;if(i.monthly>0){i.value+=i.monthly;tC+=i.monthly;S.transactions.push({date:ml,type:'credit',label:i.label,kind:i.type,amount:i.monthly,balance:i.value});}if(ra)S.transactions.push({date:ml,type:ra>=0?'gain':'loss',label:i.label,kind:'Return',amount:ra,balance:i.value});if(i.stepUp>0&&S.currentMonth%12===0&&i.monthly>0){const o=i.monthly;i.monthly=Math.round(i.monthly*(1+i.stepUp));S.transactions.push({date:ml,type:'stepup',label:i.label,kind:'Step-Up',amount:i.monthly-o,balance:i.monthly});}});S.totalContrib+=tC;S.totalReturns+=tR;const nw=S.investments.reduce((s,i)=>s+i.value,0);const prev=S.snapshots[S.snapshots.length-1].nw;S.snapshots.push({month:S.currentMonth,date:ml,nw,change:nw-prev,contrib:tC,returns:tR});saveS();renderAll();toast('✅ '+ml+': '+fmt(tC)+' invested, '+fS(tR)+' returns');}
+
+// ===== RENDER =====
+function renderAll(){rHome();rInv();rKPI();rGoals();rLog();}
+function rHome(){const nw=S.investments.reduce((s,i)=>s+i.value,0);const prev=S.snapshots.length>1?S.snapshots[S.snapshots.length-2]:null;const chg=prev?nw-prev.nw:0;const cp=prev&&prev.nw?(chg/prev.nw*100).toFixed(1):0;document.getElementById('d-nw').textContent=fmt(nw);document.getElementById('d-nw-chg').innerHTML=S.currentMonth>0?`<span class="sub ${chg>=0?'up':'dn'}">${fS(chg)} (${chg>=0?'+':''}${cp}%)</span>`:'<span class="sub up">Base</span>';document.getElementById('d-month').textContent='Month '+S.currentMonth;document.getElementById('d-mlabel').textContent=mN(S.currentMonth);document.getElementById('date-display').textContent=mN(S.currentMonth)+' · ValeurFin Live';const tM=S.investments.reduce((s,i)=>s+i.monthly,0);document.getElementById('d-sip').textContent=fmt(tM);document.getElementById('d-gain').textContent=S.snapshots.length>1?fS(S.snapshots[S.snapshots.length-1].returns||0):'—';document.getElementById('d-contrib').textContent=fmt(S.totalContrib);document.getElementById('d-returns').textContent=fS(S.totalReturns);document.getElementById('d-returns').style.color=S.totalReturns>=0?'var(--g)':'var(--d)';document.getElementById('d-count').textContent=S.investments.length;document.getElementById('d-health').textContent=Math.min(100,Math.round(61+S.currentMonth*.3));
+const eq=S.investments.filter(i=>i.bucket==='Equity').reduce((s,i)=>s+i.value,0),de=S.investments.filter(i=>i.bucket==='Debt').reduce((s,i)=>s+i.value,0),ot=S.investments.filter(i=>i.bucket==='Other').reduce((s,i)=>s+i.value,0);const svg=document.getElementById('d-donut');svg.querySelectorAll('.dc').forEach(c=>c.remove());[{v:(eq/nw*88).toFixed(1),c:'#6C5CE7',o:25},{v:(de/nw*88).toFixed(1),c:'#0984E3',o:25-eq/nw*88},{v:(ot/nw*88).toFixed(1),c:'#F0A500',o:25-eq/nw*88-de/nw*88}].forEach(a=>{const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',18);c.setAttribute('cy',18);c.setAttribute('r',14);c.setAttribute('fill','none');c.setAttribute('stroke',a.c);c.setAttribute('stroke-width',4);c.setAttribute('stroke-dasharray',a.v+' '+(88-parseFloat(a.v)));c.setAttribute('stroke-dashoffset',a.o);c.setAttribute('stroke-linecap','round');c.classList.add('dc');svg.insertBefore(c,svg.querySelector('text'));});document.getElementById('d-dcenter').textContent=fmt(nw);document.getElementById('d-dsub').textContent=S.investments.length;document.getElementById('d-dleg').innerHTML=`<div class="leg-i"><div class="leg-d" style="background:#6C5CE7"></div>Equity ${(eq/nw*100).toFixed(1)}%</div><div class="leg-i"><div class="leg-d" style="background:#0984E3"></div>Debt ${(de/nw*100).toFixed(1)}%</div><div class="leg-i"><div class="leg-d" style="background:#F0A500"></div>Other ${(ot/nw*100).toFixed(1)}%</div>`;
+const sn=S.snapshots.slice(-10);document.getElementById('d-timeline').innerHTML=sn.map((s,i)=>`<div class="tl-dot ${i===sn.length-1?'current':''}"><div class="td-m">${s.date}</div><div class="td-v">${fmt(s.nw)}</div>${s.change?`<div class="td-c" style="color:${s.change>=0?'var(--g)':'var(--d)'}">${fS(s.change)}</div>`:''}</div>`).join('');document.getElementById('d-timeline').scrollLeft=9999;}
+
+function rInv(){const bc={Equity:'bt-eq',Debt:'bt-de',Other:'bt-ot'};document.getElementById('d-invtb').innerHTML=S.investments.map((inv,i)=>`<tr><td>${i+1}</td><td><b>${inv.label}</b></td><td><span class="bt ${bc[inv.bucket]}">${inv.type}</span></td><td>${inv.platform}</td><td><b>${fmt(inv.value)}</b></td><td>${inv.monthly>0?fmt(inv.monthly)+'/mo':'—'}</td><td>${(inv.ret*100).toFixed(1)}%</td></tr>`).join('');
+const nw=S.investments.reduce((s,i)=>s+i.value,0),eq=S.investments.filter(i=>i.bucket==='Equity').reduce((s,i)=>s+i.value,0),de=S.investments.filter(i=>i.bucket==='Debt').reduce((s,i)=>s+i.value,0),ot=S.investments.filter(i=>i.bucket==='Other').reduce((s,i)=>s+i.value,0);
+document.getElementById('d-rebal').innerHTML=`<div class="irw"><span class="k">Equity ${(eq/nw*100).toFixed(1)}% → 70%</span><span class="v">${fmt(Math.abs(nw*.7-eq))}</span></div><div class="irw"><span class="k">Debt ${(de/nw*100).toFixed(1)}% → 10%</span><span class="v">${fmt(Math.abs(nw*.1-de))}</span></div><div class="irw"><span class="k">Other ${(ot/nw*100).toFixed(1)}% → 20%</span><span class="v">${fmt(Math.abs(nw*.2-ot))}</span></div>`;}
+
+function rKPI(){const nw=S.investments.reduce((s,i)=>s+i.value,0);const maxV=Math.max(...S.investments.map(i=>i.value));const ps=[{t:'🚀 Wealth',r:[['CAGR','12.1%','✅','>10%'],['Doubling','5.9Y','✅','<7Y'],['Infl Drag','76.1%','🔴','<50%']]},{t:'💧 Liquidity',r:[['Emergency','1.06x','🔴','6x'],['Liquid%',(100000/nw*100).toFixed(1)+'%','🔴','>10%']]},{t:'💳 Debt',r:[['Debt/Asset',(4235000/nw).toFixed(2)+'x','🔴','<0.3'],['FOIR','36.1%','🟡','<30%']]},{t:'⚖️ Risk',r:[['Max Conc.',(maxV/nw*100).toFixed(1)+'%','🔴','<25%']]},{t:'🛡️ Protection',r:[['Life Gap','₹80L','🔴','₹0']]},{t:'🎯 Goals',r:[['Retire','120%','✅','>100%'],['Goal Avg','18.5%','🔴','>80%']]}];
+document.getElementById('d-kpi').innerHTML=ps.map(p=>`<div class="kp"><h4>${p.t}</h4>${p.r.map(r=>`<div class="kr"><span class="kn">${r[0]}</span><span class="kv">${r[1]}</span><span class="ks" style="color:${r[2]==='✅'?'var(--g)':r[2]==='🟡'?'var(--w)':'var(--d)'}">${r[2]}</span><span class="kb">${r[3]}</span></div>`).join('')}</div>`).join('');}
+
+function rGoals(){const gs=[{n:'🎯 Retire ₹5Cr',t:5e7,f:350000+S.totalContrib*.3},{n:'🎓 Edu ₹50L',t:5e6,f:200000+S.totalContrib*.1},{n:'🏠 House ₹1.5Cr',t:1.5e7,f:2500000+S.totalContrib*.15},{n:'🚨 Emergency',t:480000,f:100000+S.totalContrib*.05}];
+document.getElementById('d-goals').innerHTML=gs.map(g=>{const p=Math.min(g.f/g.t*100,100).toFixed(1);return`<div class="gc"><div class="gc-top"><h4>${g.n}</h4><span class="bt ${p>50?'bt-gn':'bt-rd'}">${p}%</span></div><div class="prog"><div class="fill" style="--w:${p}%;background:${p>50?'var(--g)':p>25?'var(--w)':'var(--d)'}"></div></div><div class="gc-rw"><span>${fmt(g.f)}</span></div></div>`;}).join('');}
+
+function rLog(){const el=document.getElementById('d-txlog');if(!S.transactions.length){el.innerHTML='<p style="color:var(--txt3)">Process a month to begin.</p>';return;}el.innerHTML=S.transactions.slice(-40).reverse().map(t=>{const ic=t.type==='credit'?'💰':t.type==='gain'?'📈':t.type==='loss'?'📉':'⬆️';const bg=t.type==='credit'?'var(--gbg)':t.type==='gain'?'var(--gbg)':t.type==='loss'?'var(--dbg)':'var(--pbg)';return`<div class="tx"><div class="tx-ic" style="background:${bg}">${ic}</div><div class="tx-body"><b>${t.label}</b><small>${t.date}·${t.kind||t.type}</small></div><div class="tx-amt ${t.type==='loss'?'dr':'cr'}">${t.type==='stepup'?'+'+fmt(t.amount)+'/mo':fS(t.amount)}</div></div>`;}).join('');}
+
+// ===== ADD =====
+const cryptos=["Bitcoin (BTC)","Ethereum (ETH)","Solana (SOL)","Ripple (XRP)","Cardano (ADA)","Polkadot (DOT)","Litecoin (LTC)","Dogecoin (DOGE)"];const exchanges=["WazirX","CoinDCX","Binance","Coinbase","Kraken","Bybit","ZebPay"];const banks=["SBI","HDFC Bank","ICICI Bank","Axis Bank","Kotak","Zerodha","Groww","Upstox","Angel One","Coin (Zerodha)","Kuvera","ET Money","INDmoney","India Post","SBI Pension","RBI (SGB)"];const bMap={SIP:'Equity',Stocks:'Equity',FD:'Debt',RD:'Debt',PPF:'Debt',NPS:'Equity',Gold:'Other',Crypto:'Other',Land:'Other'};
+let dT='SIP';function pT2(b,t){document.querySelectorAll('#tp2 .pill').forEach(p=>p.classList.remove('on'));b.classList.add('on');dT=t;dRF(t);}
+function dRF(t){const f=document.getElementById('daf');document.getElementById('das2').style.display='block';document.getElementById('dok').style.display='none';
+if(t==='SIP')f.innerHTML=`<div class="fg"><label>Fund</label><div class="srch"><span class="srch-ic">🔍</span><input class="srch-inp" id="dn" placeholder="Search..." oninput="dMF(this)" onfocus="dMF(this)"><div class="srch-dd" id="ddd"></div></div></div><div class="fg"><label>Platform</label><div class="srch"><span class="srch-ic">🏦</span><input class="srch-inp" id="dbk" oninput="sL(this,'dbd',banks)" onfocus="sL(this,'dbd',banks)"><div class="srch-dd" id="dbd"></div></div></div><div class="fr"><div class="fg"><label>Value</label><input class="inp" id="dv" type="number"></div><div class="fg"><label>Monthly</label><input class="inp" id="dm" type="number" value="5000"></div></div><div class="fr"><div class="fg"><label>Return%</label><input class="inp" id="dr" type="number" value="12"></div><div class="fg"><label>Step-Up%</label><input class="inp" id="dsu" type="number" value="10"></div></div>`;
+else if(t==='Crypto')f.innerHTML=`<div class="fg"><label>Coin</label><div class="srch"><span class="srch-ic">₿</span><input class="srch-inp" id="dn" oninput="sL(this,'ddd',cryptos)" onfocus="sL(this,'ddd',cryptos)"><div class="srch-dd" id="ddd"></div></div></div><div class="fg"><label>Exchange</label><div class="srch"><span class="srch-ic">🏦</span><input class="srch-inp" id="dbk" oninput="sL(this,'dbd',exchanges)" onfocus="sL(this,'dbd',exchanges)"><div class="srch-dd" id="dbd"></div></div></div><div class="fr"><div class="fg"><label>Value</label><input class="inp" id="dv" type="number"></div><div class="fg"><label>Return%</label><input class="inp" id="dr" type="number" value="15"></div></div>`;
+else f.innerHTML=`<div class="fg"><label>Name</label><input class="inp" id="dn"></div><div class="fg"><label>Platform</label><div class="srch"><span class="srch-ic">🏦</span><input class="srch-inp" id="dbk" oninput="sL(this,'dbd',banks)" onfocus="sL(this,'dbd',banks)"><div class="srch-dd" id="dbd"></div></div></div><div class="fr"><div class="fg"><label>Value</label><input class="inp" id="dv" type="number"></div><div class="fg"><label>Monthly</label><input class="inp" id="dm" type="number" value="0"></div></div><div class="fg"><label>Return%</label><input class="inp" id="dr" type="number" value="${t==='PPF'?7.1:t==='NPS'?10:t==='Gold'?8:7}"></div>`;}
+dRF('SIP');
+function dSave(){const n=document.getElementById('dn')?.value?.trim(),v=parseFloat(document.getElementById('dv')?.value);if(!n){toast('Enter name','warn');return;}if(!v){toast('Enter value','warn');return;}const m=parseFloat(document.getElementById('dm')?.value)||0,r=(parseFloat(document.getElementById('dr')?.value)||10)/100,su=(parseFloat(document.getElementById('dsu')?.value)||0)/100,pl=document.getElementById('dbk')?.value||'—';S.investments.push({id:S.nextId++,type:dT,label:n,platform:pl,bucket:bMap[dT]||'Other',value:v,monthly:m,ret:r,stepUp:su,risk:5});S.transactions.push({date:mN(S.currentMonth),type:'credit',label:n,kind:'New '+dT,amount:v,balance:v});saveS();renderAll();document.getElementById('das2').style.display='none';document.getElementById('dok').style.display='block';document.getElementById('dok').classList.add('show');document.getElementById('dokt').textContent=dT+' Added!';document.getElementById('dokd').textContent=n+' — '+fmt(v);toast('✅ '+n+' added!');}
+function dReset(){document.getElementById('das2').style.display='block';document.getElementById('dok').style.display='none';document.getElementById('dok').classList.remove('show');dRF(dT);}
+function sL(inp,ddId,list){const q=inp.value.trim().toLowerCase(),d=document.getElementById(ddId);if(q.length<1){d.classList.remove('open');return;}const r=list.filter(i=>i.toLowerCase().includes(q)).slice(0,10);if(!r.length){d.innerHTML='<div class="dd-i" style="color:var(--txt3)">No match</div>';d.classList.add('open');return;}d.innerHTML=r.map(i=>`<div class="dd-i" onclick="this.closest('.srch').querySelector('.srch-inp').value='${i}';this.closest('.srch-dd').classList.remove('open')"><b>${i}</b></div>`).join('');d.classList.add('open');}
+let mfC=null,mfT;async function dMF(i){clearTimeout(mfT);mfT=setTimeout(async()=>{const q=i.value.trim(),d=document.getElementById('ddd');if(q.length<2){d.classList.remove('open');return;}d.innerHTML='<div style="padding:10px;text-align:center;font-size:9px;color:var(--txt2)">Searching...</div>';d.classList.add('open');if(!mfC){try{const r=await fetch('https://api.mfapi.in/mf');mfC=await r.json();}catch(e){mfC=[{schemeCode:100356,schemeName:"Axis Bluechip Fund"},{schemeCode:100090,schemeName:"HDFC Mid-Cap Fund"}];}}const t=q.toLowerCase().split(/\s+/),res=(mfC||[]).filter(f=>t.every(w=>f.schemeName.toLowerCase().includes(w))).slice(0,12);if(!res.length){d.innerHTML='<div class="dd-i" style="color:var(--txt3)">No results</div>';return;}d.innerHTML=res.map(f=>`<div class="dd-i" onclick="document.getElementById('dn').value='${f.schemeName.replace(/'/g,"\\'")}';document.getElementById('ddd').classList.remove('open')"><b>${f.schemeName}</b><small>#${f.schemeCode}</small></div>`).join('');},250);}
+document.addEventListener('click',e=>{if(!e.target.closest('.srch'))document.querySelectorAll('.srch-dd').forEach(d=>d.classList.remove('open'));});
+setTimeout(async()=>{try{const r=await fetch('https://api.mfapi.in/mf');mfC=await r.json();}catch(e){}},2000);
+
+// ===== NAV =====
+function go(el,id){document.querySelectorAll('.sb-link').forEach(s=>s.classList.remove('active'));if(el&&!el.classList.contains('proc')&&!el.classList.contains('add-new'))el.classList.add('active');document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelector('.main').scrollTop=0;}
+function toggleTheme(){const h=document.documentElement;if(h.getAttribute('data-theme')==='dark'){h.removeAttribute('data-theme');document.getElementById('thb').textContent='🌙';}else{h.setAttribute('data-theme','dark');document.getElementById('thb').textContent='☀️';}}
+function toast(m,t){const b=document.getElementById('tb'),e=document.createElement('div');e.className='toast '+(t||'');e.textContent=m;b.appendChild(e);setTimeout(()=>{if(e.parentElement)e.remove();},4000);}
+document.addEventListener('contextmenu',e=>e.preventDefault());
+</script>
+</body>
+</html>
