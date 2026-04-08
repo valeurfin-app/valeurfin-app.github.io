@@ -1,0 +1,51 @@
+{
+  "name": "ValeurFin — Master Your Financial Story",
+  "short_name": "ValeurFin",
+  "description": "Professional Wealth Advisory Dashboard. Track investments, goals, and master your financial story with institutional-grade tools.",
+  "start_url": "./valeurfin-mobile.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f0f23",
+  "theme_color": "#6C5CE7",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["finance", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Home",
+      "url": "./valeurfin-mobile.html",
+      "icons": [{"src": "logo-192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Add Investment",
+      "short_name": "Add",
+      "url": "./valeurfin-mobile.html#add",
+      "icons": [{"src": "logo-192.png", "sizes": "192x192"}]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
