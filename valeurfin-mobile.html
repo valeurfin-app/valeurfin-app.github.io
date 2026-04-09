@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+<script>
+// Redirect desktop users to desktop version  
+if(!/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)){
+  if(!window.location.href.includes('index.html')){
+    window.location.href='index.html';
+  }
+}
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>ValeurFin — Master Your Financial Story</title>
@@ -533,6 +543,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="more-item" onclick="goMore('pg-family')"><span class="mi-ic">👨‍👩‍👧‍👦</span>Family</div>
 <div class="more-item" onclick="goMore('pg-security')"><span class="mi-ic">🔒</span>Security</div>
 <div class="more-item" onclick="goMore('pg-about')"><span class="mi-ic">💎</span>About</div>
+<div class="more-item" id="install-btn" onclick="installApp()" style="display:none"><span class="mi-ic">📲</span>Install App</div>
 </div>
 </div>
 
@@ -1289,6 +1300,29 @@ function initApp(){
 
 // ===== SERVICE WORKER =====
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+
+// ===== PWA INSTALL =====
+var deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  deferredPrompt=e;
+  var btn=document.getElementById('install-btn');
+  if(btn)btn.style.display='';
+});
+function installApp(){
+  if(!deferredPrompt){fireNotif('ℹ️','Open in browser','Use Chrome/Safari Share → Add to Home Screen');return}
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(result){
+    if(result.outcome==='accepted')fireNotif('✅','Installed!','App added to home screen');
+    deferredPrompt=null;
+    var btn=document.getElementById('install-btn');if(btn)btn.style.display='none';
+  });
+}
+window.addEventListener('appinstalled',function(){
+  fireNotif('🎉','Installed!','ValeurFin is now on your home screen');
+  var btn=document.getElementById('install-btn');if(btn)btn.style.display='none';
+});
+
 
 // ===== LAUNCH =====
 document.addEventListener('DOMContentLoaded',boot);
