@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+<script>
+// Auto-redirect mobile users to mobile version
+if(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)){
+  if(!window.location.href.includes('valeurfin-mobile')){
+    window.location.href='valeurfin-mobile.html';
+  }
+}
+</script>
+
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ValeurFin — Master Your Financial Story</title>
