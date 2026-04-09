@@ -346,6 +346,11 @@ select.inp{-webkit-appearance:none}
 .about-disclaimer{padding:8px;background:var(--wbg);border-radius:8px;font-size:8px;color:var(--w);margin-top:8px}
 
 @keyframes popIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* === TRADINGVIEW WIDGETS === */
+.tradingview-widget-container{overflow:hidden;border-radius:8px}
+.tradingview-widget-copyright{display:none !important}
+
 </style>
 </head>
 <body>
@@ -572,14 +577,121 @@ select.inp{-webkit-appearance:none}
 </div>
 
 <!-- MARKET PULSE -->
+<!-- MARKET PULSE — REPLACE ENTIRE pg-market -->
 <div class="pg" id="pg-market">
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
 <div style="display:flex;align-items:center;gap:4px;font-size:8px;color:var(--txt2);margin-bottom:6px"><span class="live-dot"></span><span id="mp-time-m">—</span><button class="btn-sm" onclick="fetchLivePrices()">🔄</button></div>
-<div class="cd"><h3>📊 Portfolio Live <span class="cd-badge">LIVE</span></h3><div id="mp-portfolio-m"></div></div>
+
+<!-- Indian Indices Ticker -->
+<div class="cd"><h3>📈 Indian Indices <span class="cd-badge">LIVE</span></h3>
+<div style="overflow:hidden;border-radius:8px">
+<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
+<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+{
+  "symbols": [
+    {"proName": "NSE:NIFTY", "title": "NIFTY 50"},
+    {"proName": "BSE:SENSEX", "title": "SENSEX"},
+    {"proName": "NSE:BANKNIFTY", "title": "BANK NIFTY"},
+    {"proName": "NSE:NIFTY_IT", "title": "NIFTY IT"},
+    {"proName": "NSE:CNXPHARMA", "title": "PHARMA"},
+    {"proName": "NSE:CNXAUTO", "title": "AUTO"},
+    {"proName": "NSE:CNXMETAL", "title": "METAL"},
+    {"proName": "NSE:CNXENERGY", "title": "ENERGY"}
+  ],
+  "showSymbolLogo": false,
+  "isTransparent": true,
+  "displayMode": "compact",
+  "colorTheme": "dark",
+  "locale": "in"
+}
+</script>
+</div>
+</div>
+</div>
+
+<!-- NIFTY 50 Mini Chart -->
+<div class="cd"><h3>📈 NIFTY 50 <span class="cd-badge">1M</span></h3>
+<div style="overflow:hidden;border-radius:8px;height:200px">
+<div class="tradingview-widget-container" style="width:100%;height:100%"><div class="tradingview-widget-container__widget" style="width:100%;height:100%"></div>
+<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+{
+  "symbol": "NSE:NIFTY",
+  "width": "100%",
+  "height": "100%",
+  "locale": "in",
+  "dateRange": "1M",
+  "colorTheme": "dark",
+  "isTransparent": true,
+  "autosize": true
+}
+</script>
+</div>
+</div>
+</div>
+
+<!-- NSE Heatmap -->
+<div class="cd"><h3>📊 NSE Heatmap <span class="cd-badge">INDIA</span></h3>
+<div style="overflow:hidden;border-radius:8px;height:350px">
+<div class="tradingview-widget-container" style="width:100%;height:100%"><div class="tradingview-widget-container__widget" style="width:100%;height:100%"></div>
+<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js" async>
+{
+  "exchanges": ["NSE"],
+  "dataSource": "NSE",
+  "grouping": "sector",
+  "blockSize": "market_cap_basic",
+  "blockColor": "change",
+  "locale": "in",
+  "symbolUrl": "",
+  "colorTheme": "dark",
+  "hasTopBar": false,
+  "isDataSetEnabled": false,
+  "isZoomEnabled": true,
+  "hasSymbolTooltip": true,
+  "isMonoSize": false,
+  "width": "100%",
+  "height": "100%"
+}
+</script>
+</div>
+</div>
+</div>
+
+<!-- Portfolio Live Prices -->
+<div class="cd"><h3>📊 Portfolio <span class="cd-badge">LIVE</span></h3><div id="mp-portfolio-m"></div></div>
 <div class="cd"><h3>🔥 Gainers</h3><div id="mp-gainers-m"></div></div>
 <div class="cd"><h3>📉 Losers</h3><div id="mp-losers-m"></div></div>
 <div class="cd"><h3>📈 52W High</h3><div id="mp-52high-m"></div></div>
 <div class="cd"><h3>📉 52W Low</h3><div id="mp-52low-m"></div></div>
+
+<!-- Market Movers -->
+<div class="cd"><h3>📊 Market Movers <span class="cd-badge">NSE</span></h3>
+<div style="overflow:hidden;border-radius:8px;height:350px">
+<div class="tradingview-widget-container" style="width:100%;height:100%"><div class="tradingview-widget-container__widget" style="width:100%;height:100%"></div>
+<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-hotlists.js" async>
+{
+  "colorTheme": "dark",
+  "dateRange": "1D",
+  "exchange": "NSE",
+  "showChart": true,
+  "locale": "in",
+  "largeChartUrl": "",
+  "isTransparent": true,
+  "showSymbolLogo": true,
+  "showFloatingTooltip": false,
+  "width": "100%",
+  "height": "100%",
+  "plotLineColorGrowing": "rgba(0, 184, 148, 1)",
+  "plotLineColorFalling": "rgba(214, 48, 49, 1)",
+  "gridLineColor": "rgba(42, 42, 74, 0.2)",
+  "scaleFontColor": "rgba(160, 160, 176, 1)",
+  "belowLineFillColorGrowing": "rgba(0, 184, 148, 0.05)",
+  "belowLineFillColorFalling": "rgba(214, 48, 49, 0.05)"
+}
+</script>
+</div>
+</div>
+</div>
+
 </div>
 
 <!-- INCOME -->
