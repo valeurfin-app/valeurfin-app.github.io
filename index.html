@@ -595,10 +595,94 @@ select.inp{-webkit-appearance:none;cursor:pointer}
 <div class="cd"><h3>📉 Top Losers (Nifty 50)</h3><div id="mp-losers"></div></div>
 <div class="cd"><h3>📊 52-Week High</h3><div id="mp-52high"></div></div>
 <div class="cd"><h3>📊 52-Week Low</h3><div id="mp-52low"></div></div>
-<div class="cd"><h3>📊 Market Heatmap</h3>
+<div class="cd"><h3>📊 Market Heatmap — NSE India <span class="cd-badge">LIVE</span></h3>
 <div id="mp-heatmap">
-<!-- TradingView Widget -->
-<iframe src="https://s.tradingview.com/embed-widget/stock-heatmap/?locale=in&exchange=NSE&colorTheme=dark&width=100%25&height=400" style="width:100%;height:400px;border:none;border-radius:10px" allowtransparency="true"></iframe>
+<!-- TradingView Stock Heatmap — Indian Market (NSE) -->
+<div class="tradingview-widget-container">
+<div class="tradingview-widget-container__widget"></div>
+<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js" async>
+{
+  "exchanges": [],
+  "dataSource": "SENSEX",
+  "grouping": "sector",
+  "blockSize": "market_cap_basic",
+  "blockColor": "change",
+  "locale": "in",
+  "symbolUrl": "",
+  "colorTheme": "dark",
+  "hasTopBar": true,
+  "isDataSet498Enabled": false,
+  "isZoomEnabled": true,
+  "hasSymbolTooltip": true,
+  "isMonoSize": false,
+  "width": "100%",
+  "height": "450"
+}
+</script>
+</div>
+</div>
+<div class="cd"><h3>📊 Nifty 50 Heatmap <span class="cd-badge">LIVE</span></h3>
+<div id="mp-heatmap-nifty">
+<div class="tradingview-widget-container">
+<div class="tradingview-widget-container__widget"></div>
+<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js" async>
+{
+  "exchanges": [],
+  "dataSource": "NIFTY50",
+  "grouping": "sector",
+  "blockSize": "market_cap_basic",
+  "blockColor": "change",
+  "locale": "in",
+  "symbolUrl": "",
+  "colorTheme": "dark",
+  "hasTopBar": true,
+  "isDataSet498Enabled": false,
+  "isZoomEnabled": true,
+  "hasSymbolTooltip": true,
+  "isMonoSize": false,
+  "width": "100%",
+  "height": "450"
+}
+</script>
+</div>
+</div>
+<div class="cd"><h3>📊 Sector Performance — India <span class="cd-badge">LIVE</span></h3>
+<div id="mp-sector-perf">
+<div class="tradingview-widget-container">
+<div class="tradingview-widget-container__widget"></div>
+<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+{
+  "colorTheme": "dark",
+  "dateRange": "1D",
+  "showChart": false,
+  "locale": "in",
+  "width": "100%",
+  "height": "350",
+  "largeChartUrl": "",
+  "isTransparent": true,
+  "showSymbolLogo": true,
+  "showFloatingTooltip": true,
+  "tabs": [
+    {
+      "title": "Indian Indices",
+      "symbols": [
+        {"s": "NSE:NIFTY", "d": "Nifty 50"},
+        {"s": "BSE:SENSEX", "d": "Sensex"},
+        {"s": "NSE:BANKNIFTY", "d": "Bank Nifty"},
+        {"s": "NSE:CNXIT", "d": "Nifty IT"},
+        {"s": "NSE:CNXPHARMA", "d": "Nifty Pharma"},
+        {"s": "NSE:CNXAUTO", "d": "Nifty Auto"},
+        {"s": "NSE:CNXFMCG", "d": "Nifty FMCG"},
+        {"s": "NSE:CNXMETAL", "d": "Nifty Metal"},
+        {"s": "NSE:CNXREALTY", "d": "Nifty Realty"},
+        {"s": "NSE:CNXENERGY", "d": "Nifty Energy"},
+        {"s": "NSE:CNXINFRA", "d": "Nifty Infra"},
+        {"s": "NSE:CNXPSUBANK", "d": "Nifty PSU Bank"}
+      ]
+    }
+  ]
+}
+</script>
 </div>
 </div>
 </div>
@@ -1057,8 +1141,43 @@ function showSuccess(icon,title,desc,details){
 function closeSuccessPopup(){document.getElementById('success-popup').classList.remove('open')}
 
 // ===== THEME =====
-function toggleTheme(){S.theme=S.theme==='dark'?'light':'dark';applyTheme();saveS()}
-function applyTheme(){document.documentElement.setAttribute('data-theme',S.theme);document.getElementById('thb').textContent=S.theme==='dark'?'☀️':'🌙'}
+function toggleTheme(){
+  S.theme=S.theme==='dark'?'light':'dark';
+  applyTheme();
+  updateHeatmapTheme();
+  saveS();
+}
+
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme',S.theme);
+  document.getElementById('thb').textContent=S.theme==='dark'?'☀️':'🌙';
+}
+
+function updateHeatmapTheme(){
+  // TradingView widgets need reload to change theme
+  // This refreshes the widget containers
+  const containers=document.querySelectorAll('.tradingview-widget-container');
+  containers.forEach(c=>{
+    const scripts=c.querySelectorAll('script');
+    scripts.forEach(s=>{
+      if(s.textContent){
+        try{
+          const config=JSON.parse(s.textContent);
+          config.colorTheme=S.theme==='dark'?'dark':'light';
+          const newScript=document.createElement('script');
+          newScript.type='text/javascript';
+          newScript.src=s.src;
+          newScript.async=true;
+          newScript.textContent=JSON.stringify(config);
+          const widgetDiv=c.querySelector('.tradingview-widget-container__widget');
+          if(widgetDiv)widgetDiv.innerHTML='';
+          const oldScript=s;
+          oldScript.parentNode.replaceChild(newScript,oldScript);
+        }catch(e){}
+      }
+    });
+  });
+}
 
 // ===== NAVIGATION =====
 function go(btn,pgId){
