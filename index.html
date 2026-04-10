@@ -1322,16 +1322,17 @@ function renderAll(){
 }
 
 // ===== SCORE FUNCTIONS =====
-function calcWealthScore(nw,invested,returns,mSpend,mIncome,inv){
-  var score=0;
-  var liquid=inv.filter(function(i){return['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+i.value},0);
-  var em=mSpend>0?liquid/mSpend:0;score+=Math.min(15,Math.round(em/6*15));
-  var sr=mIncome>0?(mIncome-mSpend)/mIncome*100:0;score+=Math.min(15,Math.round(sr/30*15));
+function calcWealthScore(nw,invested,returns,mExp,mInc,inv){
+  if(!inv.length&&!S.expenses.length&&!S.income.length)return{score:0,grade:'Start Adding Data',color:'#636E72'};
+  var score=0;var liq=inv.filter(function(i){return['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+i.value},0);
+  var em=mExp>0?liq/mExp:0;score+=Math.min(15,Math.round(em/6*15));
+  var sr=mInc>0?(mInc-mExp)/mInc*100:0;score+=Math.min(15,Math.round(sr/30*15));
   var bk={};inv.forEach(function(i){bk[i.bucket||invBucket(i.type)]=1});score+=Math.min(15,Object.keys(bk).length*4);
-  score+=10;
+  if(inv.length>0)score+=5;
   var rp=invested>0?(returns/invested*100):0;score+=Math.min(15,Math.max(0,Math.round((rp+10)/20*15)));
-  score+=10;
-  if(S.goals&&S.goals.length){var avg=S.goals.reduce(function(s,g){return s+(g.current/g.target*100)},0)/S.goals.length;score+=Math.min(10,Math.round(avg/100*10))}else score+=5;
+  if(S.expenses.length>0)score+=3;
+  if(S.income.length>0)score+=3;
+  if(S.goals&&S.goals.length){var avg=S.goals.reduce(function(s,g){return s+(g.current/g.target*100)},0)/S.goals.length;score+=Math.min(10,Math.round(avg/100*10))}
   score+=Math.round(calcInsuranceScore().score/100*10);
   score=Math.min(100,Math.max(0,score));
   var grade,color;
@@ -1341,7 +1342,7 @@ function calcWealthScore(nw,invested,returns,mSpend,mIncome,inv){
 
 function calcInsuranceScore(){
   var policies=filterByMember(S.insurance);var score=0;
-  if(!policies.length)return{score:0,grade:'Not Insured',color:'#D63031',breakdown:''};
+  if(!policies.length)return{score:0,grade:'No Policies',color:'#636E72',breakdown:''};
   var held=policies.filter(function(p){return p.status==='active'}).map(function(p){return p.insType});
   INS_TYPES.forEach(function(t){if(held.includes(t.id))score+=t.weight});
   score=Math.min(100,score);
