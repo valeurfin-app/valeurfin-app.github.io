@@ -1237,9 +1237,7 @@ function rMarketM(){
 function renderHeatmapM(){
   var el=document.getElementById('tv-heatmap-m');if(!el||el.getAttribute('data-loaded')==='true')return;
   var theme=S.theme==='dark'?'dark':'light';
-  var config={"exchanges":["NSE"],"dataSource":"AllIN","grouping":"sector","blockSize":"market_cap_basic","blockColor":"change","locale":"in","colorTheme":theme,"hasTopBar":false,"isDataSetEnabled":false,"isZoomEnabled":true,"hasSymbolTooltip":true,"width":"100%","height":"350"};
-  var encoded=encodeURIComponent(JSON.stringify(config));
-  el.innerHTML='<iframe src="https://www.tradingview.com/embed-widget/stock-heatmap/?locale=in#'+encoded+'" style="width:100%;height:350px;border:none;border-radius:8px" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>';
+  el.innerHTML='<iframe srcdoc=\'<!DOCTYPE html><html><head><style>body{margin:0;overflow:hidden}</style></head><body><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js" async>{&quot;exchanges&quot;:[&quot;NSE&quot;],&quot;dataSource&quot;:&quot;AllIN&quot;,&quot;grouping&quot;:&quot;sector&quot;,&quot;blockSize&quot;:&quot;market_cap_basic&quot;,&quot;blockColor&quot;:&quot;change&quot;,&quot;locale&quot;:&quot;in&quot;,&quot;colorTheme&quot;:&quot;'+theme+'&quot;,&quot;hasTopBar&quot;:false,&quot;isDataSetEnabled&quot;:false,&quot;isZoomEnabled&quot;:true,&quot;hasSymbolTooltip&quot;:true,&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;350&quot;}</script></div></body></html>\' style="width:100%;height:350px;border:none;border-radius:8px"></iframe>';
   el.setAttribute('data-loaded','true');
 }
 
