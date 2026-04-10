@@ -909,8 +909,27 @@ function processMonth(){processMonthSilent();var last=S.snapshots[S.snapshots.le
 // ===== BOOT =====
 async function boot(){
   try{await openDB()}catch(e){DB=null}
-  var data=null;try{data=await loadS()}catch(e){}
-  if(!data||!data.user||!data.user.name){document.getElementById('onboard').classList.remove('hidden');setupPinInputs('ob-pin-');obUpdateProgress();return}
+  var data=null;
+
+  try{data=await loadS()}catch(e){data=null}
+
+  if(!data||!data.user||!data.user.name){
+    try{var ls=localStorage.getItem('vf_backup');if(ls){data=JSON.parse(ls);if(!data||!data.user||!data.user.name)data=null}}catch(e){data=null}
+  }
+  if(!data||!data.user||!data.user.name){
+    try{var ss=sessionStorage.getItem('vf_session');if(ss){data=JSON.parse(ss);if(!data||!data.user||!data.user.name)data=null}}catch(e){data=null}
+  }
+  if(!data||!data.user||!data.user.name){
+    data=loadFromCookie();if(data&&(!data.user||!data.user.name))data=null;
+  }
+  if(!data||!data.user||!data.user.name){
+    if(DB){await new Promise(function(r){setTimeout(r,200)});try{data=await loadS()}catch(e){data=null}if(data&&(!data.user||!data.user.name))data=null}
+  }
+
+  if(!data||!data.user||!data.user.name){
+    document.getElementById('onboard').classList.remove('hidden');setupPinInputs('ob-pin-');obUpdateProgress();return;
+  }
+
   S=data;
   if(!S.version||S.version<4.0){
     S.version=4.0;S.expenses=S.expenses||[];S.budgets=S.budgets||{};S.income=S.income||[];S.reminders=S.reminders||[];S.insurance=S.insurance||[];S.dividends=S.dividends||[];S.goals=S.goals||[];S.family=S.family||[];S.snapshots=S.snapshots||[];S.transactions=S.transactions||[];
@@ -919,7 +938,12 @@ async function boot(){
     await saveS();
   }
   S.user.securityQ=S.user.securityQ||'';S.user.securityA=S.user.securityA||'';S.aiMode=S.aiMode||'local';S.geminiKey=S.geminiKey||'';
-  var j=JSON.stringify(S);try{localStorage.setItem(LS_KEY,j)}catch(e){}try{sessionStorage.setItem(SS_KEY,j)}catch(e){}saveToCookie(S);
+
+  var j=JSON.stringify(S);
+  try{localStorage.setItem('vf_backup',j)}catch(e){}
+  try{sessionStorage.setItem('vf_session',j)}catch(e){}
+  saveToCookie(S);
+
   if(S.user.hasPin){showLock();setupPinInputs('lk-pin-');[1,2,3,4].forEach(function(i){document.getElementById('lk-pin-'+i).addEventListener('input',function(){if(i===4&&this.value)setTimeout(checkLockPin,100)})});return}
   S.lastOpened=Date.now();checkAutoProcess();await saveS();initApp();
 }
