@@ -1277,7 +1277,7 @@ async function boot(){
 
 function renderAll(){
   renderFamilyDD();rDash();rInv();rExp();rIncome();rReminders();rGoals();rInsurance();rKPI();rDividends();rWhatIf();rLog();rFamily();rSecurity();renderAddForm();rBotPageChips();
-  document.getElementById('tb-month').textContent='Month '+S.currentMonth+' · '+mN(S.currentMonth);
+  document.getElementById('tb-month').textContent=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
   document.getElementById('sb-avatar').textContent=(S.user.name||'U').charAt(0).toUpperCase();
   document.getElementById('sb-uname').textContent=S.user.name||'User';
   document.getElementById('sb-umode').textContent=S.user.mode==='family'?'Family':'Individual';
