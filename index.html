@@ -13,14 +13,26 @@ if(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)){
 
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>ValeurFin — Master Your Financial Story</title>
-<meta name="description" content="ValeurFin v4.0 — Professional Wealth Advisory Dashboard">
+<meta name="description" content="ValeurFin v4.0 — India's Privacy-First Wealth Advisory Dashboard. Track investments, expenses, insurance — 100% on your device.">
+<meta name="keywords" content="wealth tracker, investment tracker, mutual fund, SIP, personal finance, India">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta name="referrer" content="no-referrer">
+<!-- PWA / Mobile -->
 <meta name="theme-color" content="#0f0f23">
-<link rel="icon" href="logo.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ValeurFin">
+<meta name="application-name" content="ValeurFin">
+<!-- Icons -->
+<link rel="icon" href="logo.png" type="image/png">
 <link rel="apple-touch-icon" href="logo.png">
+<link rel="apple-touch-icon" sizes="152x152" href="logo.png">
+<link rel="apple-touch-icon" sizes="180x180" href="logo.png">
+<link rel="apple-touch-icon" sizes="167x167" href="logo.png">
+<!-- Manifest -->
 <link rel="manifest" href="manifest.json">
 <style>
 /* ValeurFin v4.0 — Complete Stylesheet */
@@ -332,6 +344,8 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 .ob-inp::placeholder{color:rgba(255,255,255,.25)}
 .ob-select{width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:inherit;font-size:14px;outline:none;-webkit-appearance:none}
 .ob-select option{background:#1a1a35;color:#fff}
+.ob-select option:disabled{color:rgba(255,255,255,.3)}
+.ob-select option[value=""]{color:rgba(255,255,255,.4)}
 .ob-row{display:flex;gap:8px}
 .ob-row .ob-fg{flex:1}
 .ob-btn{width:100%;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;margin-top:6px}
@@ -412,12 +426,13 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 .about-disclaimer{padding:12px;background:var(--wbg);border-radius:10px;font-size:9px;color:var(--w);margin-top:10px}
 
 /* === DROPDOWN === */
-.dd{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--bdr);border-radius:8px;box-shadow:var(--sh);max-height:200px;overflow-y:auto;z-index:100;display:none}
-.dd.open{display:block}
-.dd-i{padding:8px 10px;cursor:pointer;font-size:10px;border-bottom:1px solid var(--bdr);transition:.1s}
-.dd-i:hover{background:var(--pbg)}
-.dd-i b{display:block;font-size:11px}
-.dd-i small{color:var(--txt2)}
+.dd{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1px solid var(--p);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.2);max-height:280px;overflow-y:auto;z-index:9999;display:none}
+.dd.open{display:block;animation:fadeIn .15s ease}
+.dd-i{padding:10px 12px;cursor:pointer;font-size:11px;border-bottom:1px solid var(--bdr);transition:.1s;line-height:1.4}
+.dd-i:last-child{border-bottom:none}
+.dd-i:hover{background:var(--pbg);color:var(--p)}
+.dd-i b{display:block;font-size:11px;font-weight:600}
+.dd-i small{color:var(--txt2);font-size:9px}
 
 /* === INVESTMENT TABLE ITEMS === */
 .t-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
@@ -493,10 +508,18 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div id="ob-family-section" style="display:none">
 <h3 style="font-size:11px;margin-bottom:6px;color:rgba(255,255,255,.6)">Add Family Members</h3>
 <div class="ob-family-list" id="ob-family-list"></div>
+<div style="margin-top:8px">
+<p style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:4px">Enter name and select relation, then click + Add</p>
 <div class="ob-add-member">
-<input id="ob-fm-name" placeholder="Name">
-<select id="ob-fm-relation"><option value="">Relation</option><option>Spouse</option><option>Father</option><option>Mother</option><option>Son</option><option>Daughter</option><option>Brother</option><option>Sister</option><option>Other</option></select>
-<button onclick="obAddMember()">+ Add</button>
+<input id="ob-fm-name" placeholder="Member name" style="flex:2">
+<select id="ob-fm-relation" style="flex:1.5">
+  <option value="">Relation ▾</option>
+  <option>Spouse</option><option>Father</option><option>Mother</option>
+  <option>Son</option><option>Daughter</option><option>Brother</option>
+  <option>Sister</option><option>Grandparent</option><option>Other</option>
+</select>
+<button onclick="obAddMember()" style="white-space:nowrap;flex-shrink:0">+ Add</button>
+</div>
 </div>
 </div>
 <div class="ob-err" id="ob-err-2"></div>
@@ -513,12 +536,39 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <input class="pin-dot" id="ob-pin-3" type="password" maxlength="1" inputmode="numeric" onfocus="this.select()">
 <input class="pin-dot" id="ob-pin-4" type="password" maxlength="1" inputmode="numeric" onfocus="this.select()">
 </div>
-<div class="ob-fg" style="margin-top:12px"><label>Security Question (for PIN recovery)</label><select class="ob-inp" id="ob-sec-q" style="font-size:11px;padding:8px"><option value="">Select a question</option><option>What is your mother's maiden name?</option><option>What was your first pet's name?</option><option>What city were you born in?</option><option>What is your favorite movie?</option></select></div>
-<div class="ob-fg"><label>Your Answer</label><input class="ob-inp" id="ob-sec-a" placeholder="Answer for PIN recovery" style="font-size:12px"></div>
+
+<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;margin-top:14px;text-align:left">
+<p style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">🔑 PIN Recovery (Optional but Recommended)</p>
+<div class="ob-fg">
+  <label>Security Question</label>
+  <select class="ob-select" id="ob-sec-q" onchange="obSecQChange(this)">
+    <option value="">— Select a question —</option>
+    <option value="mother">What is your mother's maiden name?</option>
+    <option value="pet">What was your first pet's name?</option>
+    <option value="city">What city were you born in?</option>
+    <option value="school">What was the name of your first school?</option>
+    <option value="movie">What is your favourite movie?</option>
+    <option value="custom">Write your own question...</option>
+  </select>
+</div>
+<div class="ob-fg" id="ob-custom-q-wrap" style="display:none">
+  <label>Your Custom Question</label>
+  <input class="ob-inp" id="ob-custom-q" placeholder="e.g. What is your lucky number?">
+</div>
+<div class="ob-fg">
+  <label>Your Answer <span style="color:rgba(255,255,255,.3);font-weight:400">(remember this — needed to reset PIN)</span></label>
+  <input class="ob-inp" id="ob-sec-a" placeholder="Your answer (case-insensitive)" autocomplete="off">
+</div>
+</div>
+
 <div class="ob-err" id="ob-err-3"></div>
-<button class="ob-btn ob-btn-primary" onclick="obFinish(true)">Set PIN & Launch →</button>
-<button class="ob-btn ob-btn-ghost" onclick="obFinish(false)">Skip for now →</button>
-<div class="ob-sec" style="margin-top:14px"><span class="ob-sec-badge">🔒 Data stored locally</span><span class="ob-sec-badge">🛡️ PIN adds lock screen</span></div>
+<button class="ob-btn ob-btn-primary" onclick="obFinish(true)" style="margin-top:14px">Set PIN &amp; Launch →</button>
+<button class="ob-btn ob-btn-ghost" onclick="obFinish(false)">Skip PIN (not recommended) →</button>
+<div class="ob-sec" style="margin-top:14px">
+  <span class="ob-sec-badge">🔒 Data stored locally only</span>
+  <span class="ob-sec-badge">🛡️ PIN locks the dashboard</span>
+  <span class="ob-sec-badge">🔑 Question recovers access</span>
+</div>
 </div>
 </div>
 </div>
@@ -613,6 +663,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <button class="tb-btn" onclick="toggleTheme()" id="thb" title="Theme">🌙</button>
 <button class="tb-btn" onclick="exportData()" title="Export">📤</button>
 <button class="tb-btn" onclick="importDataPrompt()" title="Import">📥</button>
+<button class="tb-btn" id="pwa-install-btn" onclick="installApp()" title="Install App" style="display:none">📲</button>
 <input type="file" id="imp-file" accept=".json" style="display:none" onchange="importData(event)">
 </div>
 </div>
@@ -635,6 +686,20 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="modal-overlay" id="div-modal"><div class="modal"><h2>💰 Add Dividend Entry</h2><p class="m-sub">Record dividend received</p><div id="dvm-form"></div><div class="modal-btns"><button class="btn-s" onclick="saveDividend()">Save</button><button class="btn-cancel" onclick="closeDivModal()">Cancel</button></div></div></div>
 
 <div class="modal-overlay" id="goal-modal"><div class="modal"><h2 id="gm-title">🎯 Add Goal</h2><p class="m-sub">Define milestones</p><div id="gm-form"></div><div class="modal-btns"><button class="btn-s" onclick="saveGoalModal()">Save</button><button class="btn-cancel" onclick="closeGoalModal()">Cancel</button></div></div></div>
+
+<!-- ===== SWP MODAL ===== -->
+<div class="modal-overlay" id="swp-modal">
+<div class="modal">
+<h2>🔄 SWP Setup</h2>
+<p class="m-sub" id="swp-modal-sub">Systematic Withdrawal Plan</p>
+<div id="swp-modal-form"></div>
+<div class="modal-btns">
+  <button class="btn-s" onclick="saveSWP()">💾 Save SWP</button>
+  <button class="btn-del" onclick="removeSWP()" id="swp-remove-btn" style="display:none">🗑️ Remove SWP</button>
+  <button class="btn-cancel" onclick="closeSWPModal()">Cancel</button>
+</div>
+</div>
+</div>
 
 <div class="modal-overlay" id="ai-modal"><div class="modal"><h2>🤖 AI Settings</h2><p class="m-sub">Configure ValeurBot AI mode</p><div class="fg"><label>AI Mode</label><select class="inp" id="ai-mode-select"><option value="local">Local (Offline — Free)</option><option value="gemini">Gemini AI (Online — Free Tier)</option></select></div><div id="ai-key-section" style="display:none"><div class="fg"><label>Gemini API Key</label><input class="inp" id="ai-key-input" placeholder="Paste your Gemini API key"></div><p style="font-size:9px;color:var(--txt2)">Get free key: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--p)">aistudio.google.com</a></p></div><div class="modal-btns"><button class="btn-s" onclick="saveAISettings()">Save</button><button class="btn-cancel" onclick="closeAIModal()">Cancel</button></div></div></div>
 
@@ -679,6 +744,10 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== INVESTMENTS ===== -->
 <div class="pg" id="pg-inv">
+<div class="cd" id="swp-summary-card" style="display:none;border-left:3px solid var(--b);margin-bottom:8px">
+<h3 style="color:var(--b)">🔄 Active SWPs <span id="swp-count-badge" class="cd-badge"></span></h3>
+<div id="swp-summary-list" style="font-size:11px;color:var(--txt2)"></div>
+</div>
 <div class="cd">
 <h3>📊 Investments <span class="cd-badge" id="inv-count">0</span> <span class="live-badge up" id="inv-live-badge" style="display:none"><span class="live-dot"></span> LIVE</span></h3>
 <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap" id="inv-filters"></div>
@@ -814,7 +883,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== PRIVACY ===== -->
 <div class="pg" id="pg-privacy">
-<div class="cd"><div class="legal"><h2>📜 Privacy Policy</h2><p><strong>Effective:</strong> April 2026 | v4.0</p><h4>1. Data Collection</h4><p>ValeurFin collects ZERO data on any external server. All information is stored exclusively on your device using IndexedDB, localStorage, sessionStorage, and cookies as fallback.</p><h4>2. Storage</h4><p>Data is stored locally with quad-redundancy. No tracking, no third-party sharing.</p><h4>3. Third-Party</h4><p>MFAPI for fund search, Yahoo Finance for live prices (only stock symbols sent), TradingView widgets for market visualization. Optional: Gemini AI if user provides their own API key.</p><h4>4. Deletion</h4><p>Security → Wipe All Data to permanently delete.</p><h4>5. Contact</h4><p>valeurfin.masteryourfinances@gmail.com</p></div></div>
+<div class="cd"><div class="legal"><h2>📜 Privacy Policy</h2><p><strong>Effective:</strong> April 2026 | v4.0</p><h4>1. Data Collection</h4><p>ValeurFin collects ZERO data on any external server. All information is stored exclusively on your device using IndexedDB, localStorage, sessionStorage, and cookies as fallback.</p><h4>2. Storage</h4><p>Data is stored locally with quad-redundancy. No tracking, no third-party sharing.</p><h4>3. Third-Party</h4><p>MFAPI for fund search, Yahoo Finance for live prices (only stock symbols sent), TradingView widgets for market visualization. Optional: Gemini AI if user provides their own API key.</p><h4>4. Deletion</h4><p>Security → Wipe All Data to permanently delete.</p><h4>5. Contact</h4><p><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fb8d9a979e8e899d9295d5969a888f9e8982948e899d92959a95989e88bb9c969a9297d5989496">[email&#160;protected]</a></p></div></div>
 </div>
 
 <!-- ===== TERMS ===== -->
@@ -827,7 +896,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="cd">
 <div class="about-hero"><img src="logo.png" alt="V"><h2>ValeurFin</h2><p>Master Your Financial Story</p></div>
 <div class="about-features"><div>📊 Investments</div><div>📈 Live Market</div><div>💸 Expenses</div><div>🛡️ Insurance</div><div>🤖 AI Assistant</div><div>🎯 Goals</div><div>💰 Dividends</div><div>📐 KPIs</div><div>🔮 What-If</div><div>⏰ Reminders</div><div>🧮 Tax Calc</div><div>🚪 Exit Signals</div><div>🔍 Screener</div><div>🎤 Voice</div><div>👨‍👩‍👧‍👦 Family</div><div>🔒 Secure</div></div>
-<div class="about-founder"><div class="af-avatar">ST</div><div class="af-info"><h3>Siddharth Tiwari</h3><p>Founder & Developer<br>valeurfin.masteryourfinances@gmail.com</p></div></div>
+<div class="about-founder"><div class="af-avatar">ST</div><div class="af-info"><h3>Siddharth Tiwari</h3><p>Founder & Developer<br><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="8bfdeae7eefef9ede2e5a5e6eaf8ffeef9f2e4fef9ede2e5eae5e8eef8cbece6eae2e7a5e8e4e6">[email&#160;protected]</a></p></div></div>
 <div class="about-disclaimer">⚠️ Educational tool. Not financial advice. Consult SEBI-registered advisor. No data leaves your device. Live prices may be delayed.</div>
 <div style="text-align:center;margin-top:10px;font-size:9px;color:var(--txt3)">v4.0 · © 2026 ValeurFin Technologies · Built with 💜 in India</div>
 </div>
@@ -848,7 +917,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- === END PART 2 of 7 — All HTML Complete === -->
 
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ====================================================
 // ValeurFin v4.0 — Complete Wealth Advisory Engine
 // © 2026 ValeurFin Technologies — Siddharth Tiwari
@@ -926,7 +995,7 @@ var STOCK_DB=[
 // ===== STATE =====
 var S=null,DB=null,currentMember='all',editingId=null,editingType=null,alertList=[];
 var selectedInvType='SIP',mfSearchResults=[],livePrices={},priceLastFetched=null;
-var saveInProgress=false,lastSaveHash='';
+var saveInProgress=false,lastSaveHash='',idbWritten=false;
 
 var CORS_PROXIES=['https://corsproxy.io/?','https://api.allorigins.win/raw?url='];
 var activeProxy=0;
@@ -953,19 +1022,22 @@ function simpleHash(str){var h=0;for(var i=0;i<str.length;i++){h=((h<<5)-h)+str.
 function saveS(){
   if(saveInProgress)return Promise.resolve();
   saveInProgress=true;
+  if(!S){saveInProgress=false;return Promise.resolve()}
   var json=JSON.stringify(S);
   var hash=simpleHash(json);
+  // ALWAYS write to fast synchronous stores on every call
   try{localStorage.setItem(LS_KEY,json)}catch(e){}
   try{sessionStorage.setItem(SS_KEY,json)}catch(e){}
-  saveToCookie(S);
-  if(hash===lastSaveHash){saveInProgress=false;return Promise.resolve()}
+  try{saveToCookie(S)}catch(e){}
+  // Skip IDB write only if data truly unchanged AND IDB was already written
+  if(hash===lastSaveHash&&idbWritten){saveInProgress=false;return Promise.resolve()}
   lastSaveHash=hash;
   return new Promise(function(res){
     if(!DB){saveInProgress=false;res();return}
     try{
       var tx=DB.transaction(STORE_NAME,'readwrite');
       tx.objectStore(STORE_NAME).put({id:'main',data:S,updated:Date.now()});
-      tx.oncomplete=function(){saveInProgress=false;res()};
+      tx.oncomplete=function(){idbWritten=true;saveInProgress=false;res()};
       tx.onerror=function(){saveInProgress=false;res()};
     }catch(e){saveInProgress=false;res()}
   });
@@ -1028,8 +1100,17 @@ function fmt(n){if(n==null||isNaN(n))return'₹0';var a=Math.abs(n);if(a>=1e7)re
 function fmtFull(n){return'₹'+Math.round(n||0).toLocaleString('en-IN')}
 function fS(n){return(n>=0?'+':'')+fmt(n)}
 function pct(n){return(n>=0?'+':'')+n.toFixed(1)+'%'}
-function mN(m){var d=new Date(2026,3+m);return d.toLocaleDateString('en-IN',{month:'short',year:'numeric'})}
-function mNFull(m){var d=new Date(2026,3+m);return d.toLocaleDateString('en-IN',{month:'long',year:'numeric'})}
+function mN(m){
+  // Use app creation date as base so month labels are always accurate
+  var base=S&&S.createdAt?new Date(S.createdAt):new Date();
+  var d=new Date(base.getFullYear(),base.getMonth()+m);
+  return d.toLocaleDateString('en-IN',{month:'short',year:'numeric'});
+}
+function mNFull(m){
+  var base=S&&S.createdAt?new Date(S.createdAt):new Date();
+  var d=new Date(base.getFullYear(),base.getMonth()+m);
+  return d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+}
 function catIcon(id){var c=EXPENSE_CATS.find(function(x){return x.id===id});return c?c.icon:'📋'}
 function catLabel(id){var c=EXPENSE_CATS.find(function(x){return x.id===id});return c?c.label:id}
 function catColor(id){var c=EXPENSE_CATS.find(function(x){return x.id===id});return c?c.color:'#636E72'}
@@ -1170,9 +1251,43 @@ function obNext(step){
 }
 function obBack(step){obShowStep(step-1)}
 function obSelectMode(mode){obMode=mode;var i=document.getElementById('omc-individual'),f=document.getElementById('omc-family'),fs=document.getElementById('ob-family-section');if(i)i.classList.toggle('selected',mode==='individual');if(f)f.classList.toggle('selected',mode==='family');if(fs)fs.style.display=mode==='family'?'block':'none'}
-function obAddMember(){var n=document.getElementById('ob-fm-name').value.trim(),r=document.getElementById('ob-fm-relation').value;if(!n||!r)return;obMembers.push({id:uid(),name:n,relation:r,age:''});document.getElementById('ob-fm-name').value='';document.getElementById('ob-fm-relation').value='';obRenderMembers()}
+function obAddMember(){
+  var nEl=document.getElementById('ob-fm-name');
+  var rEl=document.getElementById('ob-fm-relation');
+  var n=(nEl?nEl.value:'').trim();
+  var r=rEl?rEl.value:'';
+  // Validate with user-visible feedback
+  if(!n){
+    if(nEl){nEl.style.border='1px solid #ff6b6b';nEl.placeholder='Enter name first!';nEl.focus();}
+    return;
+  }
+  if(!r){
+    if(rEl){rEl.style.border='1px solid #ff6b6b';rEl.focus();}
+    toast('Select a relation first','err');
+    return;
+  }
+  // Clear error styles
+  if(nEl){nEl.style.border='';nEl.placeholder='Name';}
+  if(rEl) rEl.style.border='';
+  obMembers.push({id:uid(),name:n,relation:r,age:''});
+  if(nEl)nEl.value='';
+  if(rEl)rEl.value='';
+  obRenderMembers();
+  if(nEl)nEl.focus();
+}
 function obRemoveMember(id){obMembers=obMembers.filter(function(m){return m.id!==id});obRenderMembers()}
 function obRenderMembers(){document.getElementById('ob-family-list').innerHTML=obMembers.map(function(m){return '<div class="ob-fm"><span>'+m.name+' ('+m.relation+')</span><button onclick="obRemoveMember(\''+m.id+'\')">✕</button></div>'}).join('')||'<div style="font-size:10px;color:rgba(255,255,255,.3);padding:6px">No members yet</div>'}
+
+function obSecQChange(sel){
+  var wrap=document.getElementById('ob-custom-q-wrap');
+  var customInp=document.getElementById('ob-custom-q');
+  if(sel.value==='custom'){
+    if(wrap)wrap.style.display='block';
+    if(customInp){customInp.focus();}
+  } else {
+    if(wrap)wrap.style.display='none';
+  }
+}
 function obFinish(withPin){
   var pin='';
   if(withPin){pin=[1,2,3,4].map(function(i){return document.getElementById('ob-pin-'+i).value}).join('');if(pin.length!==4||!/^\d{4}$/.test(pin)){document.getElementById('ob-err-3').textContent='Enter valid 4-digit PIN';return}}
@@ -1183,14 +1298,48 @@ function obFinish(withPin){
   S.user.location=document.getElementById('ob-location').value.trim()||'';
   S.user.mode=obMode;S.user.hasPin=withPin;S.user.pin=withPin?btoa(pin):'';
   var sq=document.getElementById('ob-sec-q');var sa=document.getElementById('ob-sec-a');
-  S.user.securityQ=sq?sq.value:'';S.user.securityA=sa?(sa.value||'').trim():'';
+  var sqVal=sq?sq.value:'';
+  // If custom question selected, use the typed question text
+  if(sqVal==='custom'){var cq=document.getElementById('ob-custom-q');sqVal=cq?(cq.value.trim()||'Custom security question'):'Custom security question';}
+  // Map option values to full question text
+  var qMap={mother:"What is your mother's maiden name?",pet:"What was your first pet's name?",city:"What city were you born in?",school:"What was the name of your first school?",movie:"What is your favourite movie?"};
+  S.user.securityQ=qMap[sqVal]||sqVal||'';
+  S.user.securityA=sa?(sa.value||'').trim():'';
+
   S.family=obMembers;S.lastOpened=Date.now();S.theme='dark';
   saveS().then(function(){document.getElementById('onboard').classList.add('hidden');applyTheme();initApp()});
 }
 
 // ===== FAMILY =====
-function renderFamilyDD(){var dd=document.getElementById('sb-family-dd'),sw=document.getElementById('sb-family-switch');if(S.user.mode==='family'&&S.family.length>0){sw.style.display='block';dd.innerHTML='<option value="all">👨‍👩‍👧‍👦 All</option><option value="self">'+S.user.name+'</option>'+S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')}else sw.style.display='none'}
-function switchMember(val){currentMember=val;renderAll()}
+function renderFamilyDD(){
+  var dd=document.getElementById('sb-family-dd'),sw=document.getElementById('sb-family-switch');
+  if(S.user.mode==='family'&&S.family.length>0){
+    sw.style.display='block';
+    // Rebuild options but PRESERVE the currently selected member
+    var saved=currentMember;
+    dd.innerHTML='<option value="all">👨\u200d👩\u200d👧\u200d👦 All Members</option>'
+      +'<option value="self">'+S.user.name+' (You)</option>'
+      +S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+' ('+f.relation+')</option>'}).join('');
+    // Restore selection after rebuilding DOM
+    dd.value=saved||'all';
+    // If value didn't stick (member removed), reset to all
+    if(dd.value!==saved){currentMember='all';dd.value='all';}
+  }else{
+    sw.style.display='none';
+    currentMember='all';
+  }
+}
+function switchMember(val){
+  currentMember=val||'all';
+  renderAll();
+  // Show which member is selected in a toast
+  if(val&&val!=='all'){
+    var name=val==='self'?S.user.name:(S.family.find(function(f){return f.id===val})||{}).name||'Member';
+    toast('👤 Viewing: '+name);
+  }else if(val==='all'){
+    toast('👨\u200d👩\u200d👧\u200d👦 Viewing: All Members');
+  }
+}
 function rFamily(){var el=document.getElementById('family-list');el.innerHTML='<div class="exp-item"><div class="exp-ic" style="background:var(--pbg)">👤</div><div class="exp-body"><h4>'+S.user.name+' (You)</h4><p>Owner</p></div></div>'+S.family.map(function(f){return '<div class="exp-item"><div class="exp-ic" style="background:var(--gbg)">👤</div><div class="exp-body"><h4>'+f.name+'</h4><p>'+f.relation+'</p></div><div class="exp-actions"><button onclick="removeFamily(\''+f.id+'\')">🗑️</button></div></div>'}).join('')}
 function openAddFamilyMember(){var n=prompt('Name:');if(!n)return;var r=prompt('Relation:');if(!r)return;S.family.push({id:uid(),name:n.trim(),relation:r,age:''});saveS().then(function(){renderAll();toast('✅ Added')})}
 function removeFamily(id){if(!confirm('Remove?'))return;S.family=S.family.filter(function(f){return f.id!==id});saveS().then(function(){renderAll()})}
@@ -1211,7 +1360,22 @@ function autoOrManualProcess(){
 function processMonthSilent(){
   var month=S.currentMonth,tC=0,tR=0;
   S.investments.forEach(function(inv){
-    if(inv.monthly>0){var m=inv.monthly;if(inv.stepUp&&month>0&&month%12===0){m=m*(1+inv.stepUp/100);inv.monthly=Math.round(m)}inv.invested+=m;inv.value+=m;tC+=m;S.transactions.push({id:uid(),date:mN(month),type:'credit',label:inv.label,amount:m,icon:invIcon(inv.type)})}
+    if(inv.monthly>0){var m=inv.monthly;var suf=inv.stepUpFrom||0;if(inv.stepUp&&month>suf&&(month-suf)%12===0){m=m*(1+inv.stepUp/100);inv.monthly=Math.round(m)}inv.invested+=m;inv.value+=m;tC+=m;S.transactions.push({id:uid(),date:mN(month),type:'credit',label:inv.label,amount:m,icon:invIcon(inv.type)})}
+    // SWP Processing — withdraw monthly amount if SWP is active
+    if(inv.swpAmount>0&&inv.value>0){
+      var swpOk=true;
+      if(inv.swpStartDate){var swpStart=new Date(inv.swpStartDate);swpOk=Date.now()>=swpStart.getTime();}
+      if(swpOk){
+        var swpAmt=Math.min(inv.swpAmount,inv.value*0.9); // cap at 90% of current value
+        inv.value=Math.max(0,inv.value-swpAmt);
+        // Auto-record as income entry
+        var swpIncLabel='SWP: '+inv.label;
+        var existingSwpInc=S.income.find(function(ic){return ic.swpRef===inv.id});
+        if(existingSwpInc){existingSwpInc.amount=swpAmt;}
+        else{S.income.push({id:uid(),label:swpIncLabel,category:'dividends',amount:swpAmt,frequency:'monthly',owner:inv.owner||'self',swpRef:inv.id,createdAt:Date.now()});}
+        S.transactions.push({id:uid(),date:mN(month),type:'credit',label:swpIncLabel,amount:swpAmt,icon:'🔄'});
+      }
+    }
     var base=inv.returnRate||0;
     var vol=inv.type==='Crypto'?8:inv.type==='Stocks'?3:inv.type==='Gold'?2:inv.type==='FD'||inv.type==='RD'||inv.type==='PPF'?.2:1.5;
     var mR=(base/12/100)+(Math.random()-.5)*vol/100;var rAmt=inv.value*mR;inv.value+=rAmt;inv.returns=(inv.returns||0)+rAmt;tR+=rAmt;
@@ -1233,6 +1397,15 @@ async function boot(){
   try{await openDB()}catch(e){DB=null}
   var data=null;
   try{data=await loadS()}catch(e){}
+  // Retry after 600ms — IDB sometimes isn't ready on first attempt (PWA cold start)
+  if(!data||!data.user||!data.user.name){
+    await new Promise(function(r){setTimeout(r,600)});
+    try{data=await loadS()}catch(e){}
+  }
+  // Second retry — check localStorage directly in case IDB is blocked
+  if(!data||!data.user||!data.user.name){
+    data=loadFromLocal();
+  }
   if(!data||!data.user||!data.user.name){
     document.getElementById('onboard').classList.remove('hidden');
     setupPinInputs('ob-pin-');obUpdateProgress();return;
@@ -1478,6 +1651,7 @@ function rDashAlerts(){
 function rInv(){
   var inv=filterByMember(S.investments);var tbody=document.getElementById('inv-tbody');var empty=document.getElementById('inv-empty');
   document.getElementById('inv-count').textContent=inv.length;
+  rSwpSummary(inv);
   document.getElementById('inv-live-badge').style.display=inv.some(function(i){return i.livePrice})?'inline-flex':'none';
   if(!inv.length){tbody.innerHTML='';empty.style.display='block';return}
   empty.style.display='none';
@@ -1486,13 +1660,37 @@ function rInv(){
     var xirr=i.invested>0&&S.currentMonth>0?(Math.pow(val/i.invested,12/Math.max(1,S.currentMonth))-1)*100:0;
     var liveUp=(i.dayChangePct||0)>=0;
     var taxInfo=getTaxInfo(i);var exitCue=getExitCue(i,val,ret,retP);
-    return '<tr><td><div class="t-icon" style="background:'+(BUCKET_COLORS[i.bucket]||'#636E72')+'20">'+invIcon(i.type)+'</div></td><td><div class="t-name">'+i.label+'</div><div class="t-sub">'+i.type+(i.nseSymbol?' · '+i.nseSymbol:'')+'</div></td><td><div class="t-sub">'+(i.platform||'—')+'</div></td><td class="t-val">'+fmt(i.invested)+'</td><td class="t-val">'+fmt(val)+'</td><td>'+(i.livePrice?'<span class="live-badge '+(liveUp?'up':'dn')+'">₹'+i.livePrice.toFixed(2)+'</span>':'—')+'</td><td style="color:'+(ret>=0?'var(--g)':'var(--d)')+'">'+fS(ret)+'<br><small>'+pct(retP)+'</small></td><td>'+xirr.toFixed(1)+'%</td><td><small style="color:'+(SECTOR_COLORS[i.sector]||'var(--txt2)')+'">'+(i.sector||'—')+'</small></td><td><span class="tax-badge '+taxInfo.badge+'">'+taxInfo.label+'</span></td><td><span class="exit-cue '+exitCue.cls+'">'+exitCue.icon+'</span></td><td><small>'+getOwnerName(i.owner)+'</small></td><td><div class="t-actions"><button onclick="openEditInv(\''+i.id+'\')">✏️</button><button onclick="quickDeleteInv(\''+i.id+'\')">🗑️</button></div></td></tr>';
+    var swpBadge=i.swpAmount>0?'<span style="font-size:7px;background:var(--bbg);color:var(--b);padding:1px 5px;border-radius:3px;font-weight:700;margin-left:3px">🔄SWP</span>':'';
+    var swpBtn=(i.type==='SIP'||i.type==='ELSS')?'<button onclick="openSWPModal(\''+i.id+'\');" style="color:var(--b)" title="Setup SWP">🔄</button>':'';
+    return '<tr data-id="'+i.id+'" data-type="'+i.type+'">'
+      +'<td><div class="t-icon" style="background:'+(BUCKET_COLORS[i.bucket]||'#636E72')+'20">'+invIcon(i.type)+'</div></td>'
+      +'<td><div class="t-name">'+i.label+swpBadge+'</div><div class="t-sub">'+i.type+(i.nseSymbol?' · '+i.nseSymbol:'')+'</div></td>'
+      +'<td><div class="t-sub">'+(i.platform||'—')+'</div></td>'
+      +'<td class="t-val">'+fmt(i.invested)+'</td>'
+      +'<td class="t-val">'+fmt(val)+'</td>'
+      +'<td>'+(i.livePrice?'<span class="live-badge '+(liveUp?'up':'dn')+'">₹'+i.livePrice.toFixed(2)+'</span>':'—')+'</td>'
+      +'<td style="color:'+(ret>=0?'var(--g)':'var(--d)')+'">'+fS(ret)+'<br><small>'+pct(retP)+'</small></td>'
+      +'<td>'+xirr.toFixed(1)+'%</td>'
+      +'<td><small style="color:'+(SECTOR_COLORS[i.sector]||'var(--txt2)')+'">'+(i.sector||'—')+'</small></td>'
+      +'<td><span class="tax-badge '+taxInfo.badge+'">'+taxInfo.label+'</span></td>'
+      +'<td><span class="exit-cue '+exitCue.cls+'">'+exitCue.icon+'</span></td>'
+      +'<td><small>'+getOwnerName(i.owner)+'</small></td>'
+      +'<td><div class="t-actions">'+swpBtn+'<button onclick="openEditInv(\''+i.id+'\')">✏️</button><button onclick="quickDeleteInv(\''+i.id+'\')">🗑️</button></div></td>'
+      +'</tr>';
   }).join('');
   var types=[]; inv.forEach(function(i){if(types.indexOf(i.type)===-1)types.push(i.type)});
   document.getElementById('inv-filters').innerHTML='<button class="pill on" onclick="filterInv(this,\'all\')">All</button>'+types.map(function(t){return '<button class="pill" onclick="filterInv(this,\''+t+'\')">'+invIcon(t)+' '+t+'</button>'}).join('');
 }
 
-function filterInv(btn,type){document.querySelectorAll('#inv-filters .pill').forEach(function(p){p.classList.remove('on')});btn.classList.add('on');var rows=document.querySelectorAll('#inv-tbody tr');var inv=filterByMember(S.investments);rows.forEach(function(row,i){row.style.display=type==='all'?'':inv[i]&&inv[i].type===type?'':'none'})}
+function filterInv(btn,type){
+  document.querySelectorAll('#inv-filters .pill').forEach(function(p){p.classList.remove('on')});
+  btn.classList.add('on');
+  // Use data-type attribute set on each row — reliable regardless of order
+  document.querySelectorAll('#inv-tbody tr').forEach(function(row){
+    if(type==='all'){row.style.display='';}
+    else{row.style.display=row.getAttribute('data-type')===type?'':'none';}
+  });
+}
 
 // ===== EDIT INVESTMENT =====
 function openEditInv(id){
@@ -1503,6 +1701,7 @@ function openEditInv(id){
   h+='<div class="fg"><label>Started Date</label><input class="inp" id="edit-started" type="date" value="'+(inv.started||'')+'"></div>';
   if(inv.monthly>0){h+='<div class="fr"><div class="fg"><label>Monthly</label><input class="inp" id="edit-monthly" type="number" value="'+inv.monthly+'"></div><div class="fg"><label>Due</label><select class="inp" id="edit-due">';for(var d=1;d<=28;d++)h+='<option value="'+d+'" '+(d==inv.dueDate?'selected':'')+'>'+d+'th</option>';h+='</select></div></div>'}
   h+='<div class="fg"><label>Return %</label><input class="inp" id="edit-return" type="number" value="'+(inv.returnRate||0)+'" step="0.1"></div>';
+  if(inv.type==='SIP'||inv.type==='ELSS'){h+='<div style="background:var(--bbg);border:1px solid var(--b);border-radius:10px;padding:12px;margin-top:6px"><div style="font-size:11px;font-weight:700;color:var(--b);margin-bottom:8px">🔄 SWP — Systematic Withdrawal Plan</div><div class="fr"><div class="fg"><label>Monthly Withdrawal (₹) <small style="color:var(--txt2)">(0 = off)</small></label><input class="inp" id="edit-swp" type="number" value="'+(inv.swpAmount||0)+'"></div><div class="fg"><label>SWP Start Date</label><input class="inp" id="edit-swp-start" type="date" value="'+(inv.swpStartDate||'')+'"></div></div><p style="font-size:9px;color:var(--txt2);margin-top:4px">💡 SWP withdraws a fixed amount monthly from this investment and records it as income.</p></div>';}
   if(inv.type==='Stocks'){h+='<div class="fr"><div class="fg"><label>NSE Symbol</label><input class="inp" id="edit-symbol" value="'+(inv.nseSymbol||'')+'"></div><div class="fg"><label>Sector</label><select class="inp" id="edit-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option '+(inv.sector===s?'selected':'')+'>'+s+'</option>'}).join('')+'</select></div></div>';h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="edit-qty" type="number" value="'+(inv.qty||0)+'"></div><div class="fg"><label>Avg Price</label><input class="inp" id="edit-avgprice" type="number" value="'+(inv.avgPrice||0)+'"></div></div>'}
   if(inv.type==='FD'||inv.type==='RD'){h+='<div class="fg"><label>Maturity Date</label><input class="inp" id="edit-maturity" type="date" value="'+(inv.maturityDate||'')+'"></div>'}
   h+='<div class="fr"><div class="fg"><label>Target Return %</label><input class="inp" id="edit-target" type="number" value="'+(inv.targetReturn||'')+'"></div><div class="fg"><label>Stop Loss %</label><input class="inp" id="edit-stoploss" type="number" value="'+(inv.stopLoss||'')+'"></div></div>';
@@ -1526,7 +1725,10 @@ function saveEdit(){
     var eow=document.getElementById('edit-owner');if(eow)inv.owner=eow.value;
     var et=document.getElementById('edit-target');inv.targetReturn=et?parseFloat(et.value)||null:inv.targetReturn;
     var esl=document.getElementById('edit-stoploss');inv.stopLoss=esl?parseFloat(esl.value)||null:inv.stopLoss;
-    inv.returns=inv.value-inv.invested}
+    inv.returns=inv.value-inv.invested;
+    var eswp=document.getElementById('edit-swp');if(eswp)inv.swpAmount=parseFloat(eswp.value)||0;
+    var eswps=document.getElementById('edit-swp-start');if(eswps)inv.swpStartDate=eswps.value||'';
+  }
   saveS().then(function(){renderAll();closeEditModal();toast('✅ Saved')});
 }
 function showDeleteConfirm(){document.getElementById('em-del-confirm').style.display='block'}
@@ -1545,32 +1747,256 @@ function resetAddForm(){selectedInvType='SIP';renderAddForm()}
 
 function buildAddFields(){
   var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var form=document.getElementById('add-form');
-  var h='<div class="fg"><label>Name</label><div style="position:relative"><input class="inp" id="add-name" placeholder="'+t.label+' name"';
-  if(t.hasMF)h+=' oninput="searchMF(this.value)"';if(t.id==='Stocks')h+=' oninput="searchStock(this.value)"';
-  h+='><div class="dd" id="'+(t.hasMF?'mf-dd':'stock-dd')+'"></div></div></div>';
+  var ddId = t.hasMF ? 'mf-dd' : (t.id==='Stocks' ? 'stock-dd' : 'no-dd');
+  var onInputAttr = t.hasMF ? ' oninput="searchMF(this.value)" autocomplete="off"'
+                 : t.id==='Stocks' ? ' oninput="searchStock(this.value)" autocomplete="off"'
+                 : '';
+  var h='<div class="fg"><label>'+(t.hasMF?'Fund Name':'Name')+(t.hasMF?' <small style="color:var(--txt2);font-weight:400">(type to search)</small>':'')+'</label><div style="position:relative">'
+    +'<input class="inp" id="add-name" placeholder="'+(t.hasMF?'e.g. HDFC Balanced Advantage, Parag Parikh...':''+t.label+' name')+'"'
+    +onInputAttr+'>'
+    +'<div class="dd" id="'+ddId+'" style="max-height:260px"></div></div></div>';
   h+='<div class="fr"><div class="fg"><label>Platform</label><select class="inp" id="add-platform"><option value="">Select</option>'+(t.id==='Crypto'?CRYPTO_EXCHANGES:t.id==='FD'||t.id==='RD'||t.id==='PPF'?BANKS:PLATFORMS).map(function(p){return '<option>'+p+'</option>'}).join('')+'</select></div>';
   h+='<div class="fg"><label>Started</label><input class="inp" id="add-started" type="date"></div></div>';
   h+='<div class="fg"><label>Current Value (₹)</label><input class="inp" id="add-current" type="number" placeholder="₹"></div>';
   if(t.id==='Stocks')h+='<div class="fr"><div class="fg"><label>NSE Symbol</label><input class="inp" id="add-symbol"></div><div class="fg"><label>Sector</label><select class="inp" id="add-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div></div>';
   if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
-  if(t.hasMonthly){h+='<div class="fr"><div class="fg"><label>Monthly (₹)</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due</label><select class="inp" id="add-due">';for(var d=1;d<=28;d++)h+='<option value="'+d+'">'+d+'th</option>';h+='</select></div></div><div class="fr"><div class="fg"><label>Step-Up %</label><input class="inp" id="add-stepup" type="number" value="10"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="12"></div></div>'}
+  if(t.hasMonthly){h+='<div class="fr"><div class="fg"><label>Monthly SIP (₹)</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';for(var d=1;d<=28;d++)h+='<option value="'+d+'">'+d+'th</option>';h+='</select></div></div>';h+='<div class="fr"><div class="fg"><label>Step-Up % <small style="color:var(--txt2);font-weight:400">(Annual, every 12 months)</small></label><input class="inp" id="add-stepup" type="number" value="10" placeholder="e.g. 10 = 10% more each year"></div><div class="fg"><label>Expected Return % / yr</label><input class="inp" id="add-return" type="number" placeholder="12"></div></div>';h+='<div class="fr"><div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start (Month 1)</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div><div class="fg"></div></div>';}
   else h+='<div class="fr"><div class="fg"><label>Invested (₹)</label><input class="inp" id="add-invested" type="number"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="8"></div></div>';
   if(t.hasFD)h+='<div class="fr"><div class="fg"><label>Maturity</label><input class="inp" id="add-maturity" type="date"></div><div class="fg"><label>Interest %</label><input class="inp" id="add-fdrate" type="number" placeholder="7.5"></div></div>';
   if(t.id==='Stocks')h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="add-qty" type="number"></div><div class="fg"><label>Avg Price</label><input class="inp" id="add-avgprice" type="number"></div></div>';
   form.innerHTML=h;
 }
 
-function searchMF(q){var dd=document.getElementById('mf-dd');if(q.length<3){dd.classList.remove('open');return}fetch('https://api.mfapi.in/mf/search?q='+encodeURIComponent(q)).then(function(r){return r.json()}).then(function(data){mfSearchResults=data.slice(0,10);if(mfSearchResults.length){dd.innerHTML=mfSearchResults.map(function(m,i){return '<div class="dd-i" onclick="selectMF('+i+')"><b>'+(m.schemeName||m.name||'Fund')+'</b></div>'}).join('');dd.classList.add('open')}else dd.classList.remove('open')}).catch(function(){dd.classList.remove('open')})}
-function selectMF(i){document.getElementById('add-name').value=mfSearchResults[i].schemeName||mfSearchResults[i].name||'';document.getElementById('mf-dd').classList.remove('open')}
+// ============================================================
+// MF Search — CORS-proxied, debounced, local fallback database
+// mfapi.in does NOT send CORS headers, so direct fetch is blocked
+// by all browsers. We route through the same CORS proxies used
+// for Yahoo Finance. Local fund DB handles offline/fallback.
+// ============================================================
+
+var mfSearchTimer   = null;
+var mfSearchVersion = 0;
+
+// Popular Indian mutual funds for instant offline search
+var LOCAL_MF_DB = [
+  // HDFC
+  {n:'HDFC Balanced Advantage Fund',c:'118989'},{n:'HDFC Flexi Cap Fund',c:'118985'},
+  {n:'HDFC Mid-Cap Opportunities Fund',c:'118990'},{n:'HDFC Small Cap Fund',c:'118994'},
+  {n:'HDFC Top 100 Fund',c:'118986'},{n:'HDFC ELSS Tax Saver Fund',c:'118988'},
+  {n:'HDFC Liquid Fund',c:'118997'},{n:'HDFC Short Term Debt Fund',c:'118998'},
+  {n:'HDFC Index Fund Nifty 50',c:'118983'},{n:'HDFC Nifty Next 50 Index Fund',c:'118984'},
+  // SBI
+  {n:'SBI Bluechip Fund',c:'120503'},{n:'SBI Flexi Cap Fund',c:'120506'},
+  {n:'SBI Small Cap Fund',c:'120509'},{n:'SBI Focused Equity Fund',c:'120504'},
+  {n:'SBI ELSS Tax Relief 96',c:'120507'},{n:'SBI Magnum Mid Cap Fund',c:'120508'},
+  {n:'SBI Nifty Index Fund',c:'120500'},{n:'SBI Liquid Fund',c:'120510'},
+  // ICICI
+  {n:'ICICI Prudential Balanced Advantage Fund',c:'120465'},{n:'ICICI Prudential Bluechip Fund',c:'120467'},
+  {n:'ICICI Prudential Flexi Cap Fund',c:'120468'},{n:'ICICI Prudential ELSS Tax Saver Fund',c:'120466'},
+  {n:'ICICI Prudential Value Discovery Fund',c:'120469'},{n:'ICICI Prudential Small Cap Fund',c:'120470'},
+  {n:'ICICI Prudential Nifty 50 Index Fund',c:'120463'},{n:'ICICI Prudential Liquid Fund',c:'120471'},
+  // Axis
+  {n:'Axis Bluechip Fund',c:'120620'},{n:'Axis Flexi Cap Fund',c:'120621'},
+  {n:'Axis Small Cap Fund',c:'120623'},{n:'Axis Mid Cap Fund',c:'120622'},
+  {n:'Axis ELSS Tax Saver Fund',c:'120624'},{n:'Axis Liquid Fund',c:'120625'},
+  {n:'Axis Focused 25 Fund',c:'120619'},{n:'Axis Long Term Equity Fund',c:'120626'},
+  // Kotak
+  {n:'Kotak Flexicap Fund',c:'120255'},{n:'Kotak Bluechip Fund',c:'120253'},
+  {n:'Kotak Small Cap Fund',c:'120257'},{n:'Kotak Emerging Equity Fund',c:'120254'},
+  {n:'Kotak ELSS Tax Saver Fund',c:'120256'},{n:'Kotak Liquid Fund',c:'120258'},
+  {n:'Kotak Nifty 50 Index Fund',c:'120252'},
+  // Nippon (erstwhile Reliance)
+  {n:'Nippon India Flexi Cap Fund',c:'119672'},{n:'Nippon India Small Cap Fund',c:'119674'},
+  {n:'Nippon India Bluechip Fund',c:'119670'},{n:'Nippon India Growth Fund',c:'119671'},
+  {n:'Nippon India ELSS Tax Saver Fund',c:'119673'},{n:'Nippon India Liquid Fund',c:'119675'},
+  {n:'Nippon India Index Fund Nifty 50',c:'119668'},
+  // Mirae
+  {n:'Mirae Asset Large Cap Fund',c:'118825'},{n:'Mirae Asset Flexi Cap Fund',c:'118826'},
+  {n:'Mirae Asset ELSS Tax Saver Fund',c:'118827'},{n:'Mirae Asset Nifty 50 Index Fund',c:'118824'},
+  {n:'Mirae Asset Emerging Bluechip Fund',c:'118828'},
+  // Parag Parikh
+  {n:'Parag Parikh Flexi Cap Fund',c:'122639'},{n:'Parag Parikh Tax Saver Fund',c:'122640'},
+  {n:'Parag Parikh Conservative Hybrid Fund',c:'122638'},
+  // DSP
+  {n:'DSP Flexi Cap Fund',c:'120175'},{n:'DSP Mid Cap Fund',c:'120176'},
+  {n:'DSP Small Cap Fund',c:'120178'},{n:'DSP ELSS Tax Saver Fund',c:'120177'},
+  {n:'DSP Nifty 50 Equal Weight Index Fund',c:'120174'},
+  // Aditya Birla (ABSL)
+  {n:'Aditya Birla SL Flexi Cap Fund',c:'119533'},{n:'Aditya Birla SL Frontline Equity Fund',c:'119530'},
+  {n:'Aditya Birla SL Small Cap Fund',c:'119535'},{n:'Aditya Birla SL Mid Cap Fund',c:'119534'},
+  {n:'Aditya Birla SL ELSS Tax Relief 96',c:'119536'},{n:'Aditya Birla SL Liquid Fund',c:'119537'},
+  {n:'Aditya Birla SL Nifty 50 Index Fund',c:'119528'},
+  // UTI
+  {n:'UTI Flexi Cap Fund',c:'120685'},{n:'UTI Nifty 50 Index Fund',c:'120683'},
+  {n:'UTI Nifty Next 50 Index Fund',c:'120684'},{n:'UTI ELSS Tax Saver Fund',c:'120686'},
+  {n:'UTI Small Cap Fund',c:'120687'},{n:'UTI Mid Cap Fund',c:'120688'},
+  // Franklin
+  {n:'Franklin India Flexi Cap Fund',c:'100035'},{n:'Franklin India ELSS Tax Shield Fund',c:'100038'},
+  {n:'Franklin India Prima Fund',c:'100036'},{n:'Franklin India Smaller Companies Fund',c:'100037'},
+  // Quant
+  {n:'Quant Small Cap Fund',c:'120843'},{n:'Quant Mid Cap Fund',c:'120844'},
+  {n:'Quant Flexi Cap Fund',c:'120845'},{n:'Quant ELSS Tax Saver Fund',c:'120846'},
+  {n:'Quant Active Fund',c:'120842'},
+  // Canara Robeco
+  {n:'Canara Robeco Emerging Equities Fund',c:'101271'},{n:'Canara Robeco Flexi Cap Fund',c:'101273'},
+  {n:'Canara Robeco Bluechip Equity Fund',c:'101270'},{n:'Canara Robeco ELSS Tax Saver Fund',c:'101272'},
+  // Tata
+  {n:'Tata Digital India Fund',c:'120849'},{n:'Tata Small Cap Fund',c:'120850'},
+  {n:'Tata Nifty 50 Index Fund',c:'120847'},{n:'Tata ELSS Tax Saver Fund',c:'120848'},
+  // PGIM
+  {n:'PGIM India Flexi Cap Fund',c:'120694'},{n:'PGIM India Mid Cap Opportunities Fund',c:'120695'},
+  {n:'PGIM India ELSS Tax Saver Fund',c:'120696'},
+  // Edelweiss
+  {n:'Edelweiss Mid Cap Fund',c:'135798'},{n:'Edelweiss Flexi Cap Fund',c:'135796'},
+  {n:'Edelweiss ELSS Tax Saver Fund',c:'135797'},
+  // Motilal Oswal
+  {n:'Motilal Oswal Nifty 50 Index Fund',c:'120841'},{n:'Motilal Oswal Nasdaq 100 FOF',c:'120840'},
+  {n:'Motilal Oswal Flexi Cap Fund',c:'120839'},{n:'Motilal Oswal Mid Cap Fund',c:'120838'},
+  // Bandhan (erstwhile IDFC)
+  {n:'Bandhan Flexi Cap Fund',c:'119009'},{n:'Bandhan Small Cap Fund',c:'119012'},
+  {n:'Bandhan ELSS Tax Saver Fund',c:'119010'},{n:'Bandhan Nifty 50 Index Fund',c:'119007'},
+];
+
+function searchLocalMF(q){
+  var lq = q.toLowerCase();
+  return LOCAL_MF_DB.filter(function(f){
+    return f.n.toLowerCase().indexOf(lq) !== -1;
+  }).slice(0, 12).map(function(f){
+    return {schemeName: f.n, schemeCode: f.c};
+  });
+}
+
+function searchMF(q){
+  var dd = document.getElementById('mf-dd');
+  if(!dd) return;
+  if(!q || q.length < 2){ dd.classList.remove('open'); return; }
+
+  // 1. Show local results INSTANTLY while API loads
+  var localResults = searchLocalMF(q);
+  mfSearchResults = localResults;
+  if(localResults.length){
+    dd.innerHTML = '<div style="padding:4px 10px;font-size:9px;color:var(--txt3);background:var(--bg)">📚 Local results — loading more from API...</div>'
+      + localResults.map(function(m, i){
+          return '<div class="dd-i" onclick="selectMF('+i+',mfSearchVersion)">'
+            + '<b style="font-size:11px;line-height:1.4">'+m.schemeName+'</b>'
+            + '<small style="color:var(--txt3)"> · Code: '+m.schemeCode+'</small>'
+            + '</div>';
+        }).join('');
+    dd.classList.add('open');
+  } else {
+    dd.innerHTML = '<div class="dd-i" style="color:var(--txt3);cursor:default">🔍 Searching...</div>';
+    dd.classList.add('open');
+  }
+
+  // 2. Fire API call through CORS proxy (debounced 450ms)
+  clearTimeout(mfSearchTimer);
+  var myVersion = ++mfSearchVersion;
+
+  mfSearchTimer = setTimeout(function(){
+    var mfUrl = 'https://api.mfapi.in/mf/search?q=' + encodeURIComponent(q);
+    // Try CORS proxies in order — same pattern as stock price fetching
+    var proxies = CORS_PROXIES.slice();
+    var tryProxy = function(idx){
+      if(idx >= proxies.length){
+        // All proxies failed — keep local results, update header message
+        if(myVersion !== mfSearchVersion) return;
+        var dd2 = document.getElementById('mf-dd');
+        if(!dd2) return;
+        var localR = searchLocalMF(q);
+        if(localR.length){
+          mfSearchResults = localR;
+          dd2.innerHTML = '<div style="padding:4px 10px;font-size:9px;color:var(--w);background:var(--wbg)">⚠️ API unavailable — showing local fund database</div>'
+            + localR.map(function(m,i){
+                return '<div class="dd-i" onclick="selectMF('+i+','+myVersion+')">'
+                  + '<b style="font-size:11px;line-height:1.4">'+m.schemeName+'</b>'
+                  + '<small style="color:var(--txt3)"> · Code: '+m.schemeCode+'</small>'
+                  + '</div>';
+              }).join('');
+          dd2.classList.add('open');
+        } else {
+          dd2.innerHTML = '<div class="dd-i" style="color:var(--w);cursor:default">'
+            + '⚠️ No results found. Type the fund name manually.</div>';
+          dd2.classList.add('open');
+        }
+        return;
+      }
+      var proxyUrl = proxies[idx] + encodeURIComponent(mfUrl);
+      fetch(proxyUrl, {
+        signal: AbortSignal.timeout ? AbortSignal.timeout(7000) : undefined
+      })
+      .then(function(r){
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        return r.json();
+      })
+      .then(function(data){
+        if(myVersion !== mfSearchVersion) return;
+        var dd2 = document.getElementById('mf-dd');
+        if(!dd2) return;
+        // mfapi returns array directly OR wrapped
+        var results = Array.isArray(data) ? data : (data.data || []);
+        if(!results.length){
+          // Keep local results if API has nothing
+          var localR = searchLocalMF(q);
+          if(!localR.length){
+            dd2.innerHTML = '<div class="dd-i" style="color:var(--txt3);cursor:default">No funds found for "'+q+'"</div>';
+          }
+          return;
+        }
+        mfSearchResults = results.slice(0, 15);
+        dd2.innerHTML = '<div style="padding:4px 10px;font-size:9px;color:var(--txt3);background:var(--bg)">🔍 '+mfSearchResults.length+' funds found</div>'
+          + mfSearchResults.map(function(m, i){
+              var name = m.schemeName || m.scheme_name || m.name || 'Fund';
+              var code = m.schemeCode || m.scheme_code || '';
+              return '<div class="dd-i" onclick="selectMF('+i+','+myVersion+')">'
+                + '<b style="font-size:11px;line-height:1.4">'+name+'</b>'
+                + (code ? '<small style="color:var(--txt3)"> · Code: '+code+'</small>' : '')
+                + '</div>';
+            }).join('');
+        dd2.classList.add('open');
+      })
+      .catch(function(){
+        // This proxy failed — try next one
+        tryProxy(idx + 1);
+      });
+    };
+    tryProxy(0);
+  }, 450);
+}
+
+function selectMF(i, version){
+  if(!mfSearchResults || i >= mfSearchResults.length) return;
+  var m = mfSearchResults[i];
+  var name = m.schemeName || m.scheme_name || m.name || '';
+  var inp = document.getElementById('add-name');
+  if(inp){ inp.value = name; inp.focus(); }
+  var dd = document.getElementById('mf-dd');
+  if(dd) dd.classList.remove('open');
+  clearTimeout(mfSearchTimer);
+}
 function searchStock(q){var dd=document.getElementById('stock-dd');if(q.length<2){dd.classList.remove('open');return}var f=STOCK_DB.filter(function(s){return s.name.toLowerCase().includes(q.toLowerCase())||s.sym.toLowerCase().includes(q.toLowerCase())}).slice(0,10);if(f.length){dd.innerHTML=f.map(function(s){return '<div class="dd-i" onclick="selectStock(\''+s.name+'\',\''+s.sym+'\',\''+s.sector+'\')"><b>'+s.name+'</b><small>'+s.sym+'</small></div>'}).join('');dd.classList.add('open')}else dd.classList.remove('open')}
-function selectStock(name,sym,sector){document.getElementById('add-name').value=name;document.getElementById('stock-dd').classList.remove('open');var es=document.getElementById('add-symbol');if(es)es.value=sym;var esc=document.getElementById('add-sector');if(esc)esc.value=sector}
+function selectStock(name,sym,sector){
+  var inp=document.getElementById('add-name');
+  if(inp){inp.value=name;inp.focus();}
+  var dd=document.getElementById('stock-dd');if(dd)dd.classList.remove('open');
+  var es=document.getElementById('add-symbol');if(es)es.value=sym;
+  var esc=document.getElementById('add-sector');if(esc)esc.value=sector;
+  clearTimeout(mfSearchTimer);
+}
+
+// Close all dropdowns when clicking outside them
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.dd')&&!e.target.closest('#add-name')){
+    var dds=document.querySelectorAll('.dd.open');
+    dds.forEach(function(d){d.classList.remove('open');});
+  }
+});
 
 function addInvestment(){
   var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var name=document.getElementById('add-name').value.trim();if(!name){toast('Enter name','err');return}
   var started=document.getElementById('add-started').value||'';var currentVal=parseFloat(document.getElementById('add-current').value)||0;
   var monthly=t.hasMonthly?(parseFloat(document.getElementById('add-monthly').value)||0):0;
   var dueDate=t.hasMonthly?(document.getElementById('add-due').value||'5'):'';
-  var stepUp=t.hasMonthly?(parseFloat(document.getElementById('add-stepup').value)||0):0;
+  var stepUp=t.hasMonthly?(parseFloat(document.getElementById('add-stepup').value)||0):0;var stepUpFrom=t.hasMonthly?(parseInt(document.getElementById('add-stepup-from')?document.getElementById('add-stepup-from').value:0)||0):0;
   var returnRate=parseFloat(document.getElementById('add-return').value)||0;
   var invested=t.hasMonthly?currentVal:(parseFloat(document.getElementById('add-invested').value)||currentVal);
   var platform=document.getElementById('add-platform').value||'';
@@ -1582,7 +2008,7 @@ function addInvestment(){
   var nseSymbol=document.getElementById('add-symbol')?document.getElementById('add-symbol').value:'';
   var sector=document.getElementById('add-sector')?document.getElementById('add-sector').value:'';
   if(t.id==='Stocks'&&!nseSymbol){var look=stockLookup(name);if(look){nseSymbol=look.sym;if(!sector)sector=look.sector}}
-  var inv={id:uid(),type:selectedInvType,label:name,platform:platform,bucket:t.bucket,invested:invested||currentVal,value:currentVal||invested,monthly:monthly,dueDate:dueDate,stepUp:stepUp,returnRate:t.hasFD?fdRate:returnRate,returns:0,owner:owner,started:started,maturityDate:maturityDate,qty:qty,avgPrice:avgPrice,nseSymbol:nseSymbol,sector:sector,livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,createdAt:Date.now()};
+  var inv={id:uid(),type:selectedInvType,label:name,platform:platform,bucket:t.bucket,invested:invested||currentVal,value:currentVal||invested,monthly:monthly,dueDate:dueDate,stepUp:stepUp,stepUpFrom:stepUpFrom||0,returnRate:t.hasFD?fdRate:returnRate,returns:0,owner:owner,started:started,maturityDate:maturityDate,qty:qty,avgPrice:avgPrice,nseSymbol:nseSymbol,sector:sector,livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,createdAt:Date.now()};
   S.investments.push(inv);
   saveS().then(function(){renderAll();showSuccess('🎉','Added',name,{'Type':t.label,'Value':fmtFull(inv.value)});resetAddForm()});
 }
@@ -1622,9 +2048,43 @@ function deleteInc(id){S.income=S.income.filter(function(i){return i.id!==id});s
 function closeIncModal(){document.getElementById('inc-modal').classList.remove('open')}
 
 // ===== REMINDERS =====
-function rReminders(){var rems=filterByMember(S.reminders);var el=document.getElementById('rem-list');var empty=document.getElementById('rem-empty');if(!rems.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';el.innerHTML=rems.map(function(r){return '<div class="rem-item"><div class="rem-ic" style="background:var(--wbg)">'+remIcon(r.remType)+'</div><div class="rem-body"><h4>'+r.label+'</h4><p>Due: '+r.dueDate+'th</p></div><div class="rem-r" style="color:var(--d)">'+fmtFull(r.amount)+'</div><div class="rem-actions"><button onclick="deleteRem(\''+r.id+'\')">🗑️</button></div></div>'}).join('')}
-function openRemModal(){document.getElementById('rmm-form').innerHTML='<div class="fg"><label>Description</label><input class="inp" id="rem-label"></div><div class="fr"><div class="fg"><label>Type</label><select class="inp" id="rem-type">'+REMINDER_TYPES.map(function(t){return '<option value="'+t.id+'">'+t.icon+' '+t.label+'</option>'}).join('')+'</select></div><div class="fg"><label>Amount</label><input class="inp" id="rem-amount" type="number"></div></div><div class="fg"><label>Due Date</label><select class="inp" id="rem-due">';var rh='';for(var d=1;d<=28;d++)rh+='<option value="'+d+'">'+d+'th</option>';document.getElementById('rmm-form').innerHTML+='</select></div>';document.getElementById('rem-modal').classList.add('open')}
-function saveReminder(){var l=document.getElementById('rem-label').value.trim(),t=document.getElementById('rem-type').value,a=parseFloat(document.getElementById('rem-amount').value)||0,d=document.getElementById('rem-due')?document.getElementById('rem-due').value:'5';if(!l||!a){toast('Fill fields','err');return}S.reminders.push({id:uid(),label:l,remType:t,amount:a,frequency:'monthly',dueDate:d,createdAt:Date.now()});saveS().then(function(){renderAll();closeRemModal();toast('✅ Saved')})}
+function rReminders(){var rems=filterByMember(S.reminders);var el=document.getElementById('rem-list');var empty=document.getElementById('rem-empty');if(!rems.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';el.innerHTML=rems.map(function(r){
+    var freqLabel=r.frequency==='monthly'?'Monthly':r.frequency==='quarterly'?'Quarterly':'Yearly';
+    return '<div class="rem-item"><div class="rem-ic" style="background:var(--wbg)">'+remIcon(r.remType)+'</div>'
+      +'<div class="rem-body"><h4>'+r.label+'</h4><p>'+remLabel(r.remType)+' · Due '+r.dueDate+'th · '+freqLabel+'</p></div>'
+      +'<div class="rem-r" style="color:var(--d)"><div class="rv">'+fmtFull(r.amount)+'</div></div>'
+      +'<div class="rem-actions"><button onclick="openRemModal(\''+r.id+'\')">✏️</button><button onclick="deleteRem(\''+r.id+'\')">🗑️</button></div></div>';
+  }).join('')}
+function openRemModal(editId){
+  var existing=editId?(S.reminders||[]).find(function(r){return r.id===editId}):null;
+  var dateOpts='';for(var d=1;d<=28;d++)dateOpts+='<option value="'+d+'" '+(existing&&existing.dueDate==d?'selected':d===5?'selected':'')+'> '+d+'th</option>';
+  var h='<div class="fg"><label>Description</label><input class="inp" id="rem-label" placeholder="e.g. HDFC Credit Card" value="'+(existing?existing.label:'')+'"></div>';
+  h+='<div class="fr"><div class="fg"><label>Type</label><select class="inp" id="rem-type">'+REMINDER_TYPES.map(function(t){return '<option value="'+t.id+'" '+(existing&&existing.remType===t.id?'selected':'')+'>'+t.icon+' '+t.label+'</option>'}).join('')+'</select></div>';
+  h+='<div class="fg"><label>Amount (₹)</label><input class="inp" id="rem-amount" type="number" placeholder="₹" value="'+(existing?existing.amount:'')+'"></div></div>';
+  h+='<div class="fr"><div class="fg"><label>Due Date</label><select class="inp" id="rem-due">'+dateOpts+'</select></div>';
+  h+='<div class="fg"><label>Frequency</label><select class="inp" id="rem-freq"><option value="monthly" '+(existing&&existing.frequency==='monthly'?'selected':'')+'>Monthly</option><option value="quarterly" '+(existing&&existing.frequency==='quarterly'?'selected':'')+'>Quarterly</option><option value="yearly" '+(existing&&existing.frequency==='yearly'?'selected':'')+'>Yearly</option></select></div></div>';
+  if(editId)h+='<input type="hidden" id="rem-edit-id" value="'+editId+'">';
+  document.getElementById('rmm-form').innerHTML=h;
+  document.getElementById('rmm-title').textContent=editId?'✏️ Edit Reminder':'⏰ Add Reminder';
+  document.getElementById('rem-modal').classList.add('open');
+}
+function saveReminder(){
+  var l=(document.getElementById('rem-label').value||'').trim();
+  var t=document.getElementById('rem-type').value;
+  var a=parseFloat(document.getElementById('rem-amount').value)||0;
+  var d=(document.getElementById('rem-due')?document.getElementById('rem-due').value:'5')||'5';
+  var fr=document.getElementById('rem-freq')?document.getElementById('rem-freq').value:'monthly';
+  var eid=document.getElementById('rem-edit-id')?document.getElementById('rem-edit-id').value:'';
+  if(!l||!a){toast('Fill in description and amount','err');return;}
+  if(eid){
+    // Edit existing
+    var existing=S.reminders.find(function(r){return r.id===eid});
+    if(existing){existing.label=l;existing.remType=t;existing.amount=a;existing.dueDate=d;existing.frequency=fr;}
+  } else {
+    S.reminders.push({id:uid(),label:l,remType:t,amount:a,frequency:fr,dueDate:d,createdAt:Date.now()});
+  }
+  saveS().then(function(){renderAll();closeRemModal();toast('✅ Reminder saved');generateAlerts();});
+}
 function deleteRem(id){S.reminders=S.reminders.filter(function(r){return r.id!==id});saveS().then(function(){renderAll()})}
 function closeRemModal(){document.getElementById('rem-modal').classList.remove('open')}
 
@@ -1758,14 +2218,36 @@ function rMarket(){
 }
 
 function renderIndiaHeatmap(){
-  var el=document.getElementById('tradingview-heatmap');if(!el||el.getAttribute('data-loaded')==='true')return;
+  var el=document.getElementById('tradingview-heatmap');
+  if(!el||el.getAttribute('data-loaded')==='true')return;
   var theme=S.theme==='dark'?'dark':'light';
   el.innerHTML='';
-  var container=document.createElement('div');container.className='tradingview-widget-container';container.style.cssText='width:100%;height:450px;border-radius:10px;overflow:hidden';
-  var inner=document.createElement('div');inner.className='tradingview-widget-container__widget';inner.style.cssText='width:100%;height:100%';container.appendChild(inner);
-  var script=document.createElement('script');script.type='text/javascript';script.src='https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js';script.async=true;
-  script.textContent=JSON.stringify({"exchanges":["NSE"],"dataSource":"AllIN","grouping":"sector","blockSize":"market_cap_basic","blockColor":"change","locale":"in","colorTheme":theme,"hasTopBar":true,"isDataSetEnabled":true,"isZoomEnabled":true,"hasSymbolTooltip":true,"width":"100%","height":"450"});
-  container.appendChild(script);el.appendChild(container);el.setAttribute('data-loaded','true');
+  // Use iframe srcdoc — the ONLY approach that works on GitHub Pages (CSP blocks script.textContent)
+  var cfg={
+    exchanges:['NSE'],dataSource:'AllIN',grouping:'sector',
+    blockSize:'market_cap_basic',blockColor:'change',locale:'in',
+    colorTheme:theme,hasTopBar:true,isDataSetEnabled:true,
+    isZoomEnabled:true,hasSymbolTooltip:true,width:'100%',height:'440'
+  };
+  var cfgJson=JSON.stringify(cfg);
+  var srcdoc='<!DOCTYPE html><html><head>'
+    +'<style>*{margin:0;padding:0}body{overflow:hidden}</style>'
+    +'</head><body>'
+    +'<div class="tradingview-widget-container" style="width:100%;height:440px">'
+    +'<div class="tradingview-widget-container__widget"></div>'
+    +'<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js" async>'
+    +cfgJson
+    +'</'+'script>'
+    +'</div>'
+    +'</body></html>';
+  var iframe=document.createElement('iframe');
+  iframe.setAttribute('srcdoc',srcdoc);
+  iframe.style.cssText='width:100%;height:460px;border:none;border-radius:10px;background:transparent';
+  iframe.setAttribute('frameborder','0');
+  iframe.setAttribute('scrolling','no');
+  iframe.setAttribute('allowtransparency','true');
+  el.appendChild(iframe);
+  el.setAttribute('data-loaded','true');
 }
 
 // ===== TAX CALCULATOR =====
@@ -1905,16 +2387,80 @@ function rKPI(){
 // ===== ALERTS =====
 function generateAlerts(){
   alertList=[];
-  S.investments.filter(function(i){return i.monthly>0&&i.dueDate}).forEach(function(i){var today=new Date().getDate();var due=parseInt(i.dueDate);if(Math.abs(today-due)<=3)alertList.push({icon:'📈',title:i.label+' SIP Due',desc:'₹'+i.monthly.toLocaleString('en-IN')+' on '+due+'th'})});
-  S.reminders.forEach(function(r){var today=new Date().getDate();var due=parseInt(r.dueDate);if(Math.abs(today-due)<=5)alertList.push({icon:remIcon(r.remType),title:r.label+' Due',desc:fmtFull(r.amount)})});
-  S.investments.filter(function(i){return i.maturityDate}).forEach(function(i){var days=Math.floor((new Date(i.maturityDate)-Date.now())/(1e3*60*60*24));if(days<=30&&days>=0)alertList.push({icon:'🏦',title:i.label+' Maturing',desc:days+' days'});if(days<0)alertList.push({icon:'⏰',title:i.label+' Matured',desc:'Take action'})});
-  S.investments.filter(function(i){return i.fiftyTwoHigh&&i.livePrice}).forEach(function(i){if(i.livePrice>=i.fiftyTwoHigh*0.98)alertList.push({icon:'📈',title:i.label+' 52W High',desc:'₹'+i.livePrice.toFixed(0)});if(i.fiftyTwoLow&&i.livePrice<=i.fiftyTwoLow*1.02)alertList.push({icon:'📉',title:i.label+' 52W Low',desc:'₹'+i.livePrice.toFixed(0)})});
-  var exits=getExitSignals(S.investments);exits.filter(function(s){return s.level==='sell'}).forEach(function(s){alertList.push({icon:s.icon,title:s.inv.label+' — '+s.label,desc:s.reason})});
+  var today=new Date().getDate();
+  var now=Date.now();
+
+  // --- RECURRING INVESTMENTS (SIP, RD, PPF, NPS, ELSS) ---
+  // Show all upcoming in next 7 days, and overdue in last 3 days
+  S.investments.filter(function(i){return i.monthly>0&&i.dueDate}).forEach(function(i){
+    var due=parseInt(i.dueDate);
+    var diff=due-today; // negative = already passed this month
+    var absDiff=Math.abs(diff);
+    var typeIcon=i.type==='RD'?'🏦':i.type==='PPF'?'🏛️':i.type==='NPS'?'🏛️':'📈';
+    if(diff>=0&&diff<=7){
+      // Due in next 7 days
+      var daysLabel=diff===0?'Today':diff===1?'Tomorrow':diff+' days';
+      alertList.push({icon:typeIcon,title:i.label+' Due',desc:'₹'+i.monthly.toLocaleString('en-IN')+' — '+daysLabel,priority:diff===0?0:1});
+    } else if(diff<0&&absDiff<=3){
+      // Overdue in last 3 days
+      alertList.push({icon:'⚠️',title:i.label+' Overdue!',desc:'₹'+i.monthly.toLocaleString('en-IN')+' was due '+absDiff+' day(s) ago',priority:0});
+    }
+  });
+
+  // --- PAYMENT REMINDERS ---
+  S.reminders.forEach(function(r){
+    var due=parseInt(r.dueDate);
+    var diff=due-today;
+    var absDiff=Math.abs(diff);
+    if(diff>=0&&diff<=7){
+      var daysLabel=diff===0?'Today':diff===1?'Tomorrow':diff+' days';
+      alertList.push({icon:remIcon(r.remType),title:r.label+' Due',desc:fmtFull(r.amount)+' — '+daysLabel,priority:diff===0?0:1});
+    } else if(diff<0&&absDiff<=3){
+      alertList.push({icon:'⚠️',title:r.label+' Overdue!',desc:fmtFull(r.amount)+' was due '+absDiff+' day(s) ago',priority:0});
+    }
+  });
+
+  // --- INSURANCE PREMIUM DUE ---
+  (S.insurance||[]).filter(function(p){return p.status==='active'&&p.premDueDate}).forEach(function(p){
+    var due=parseInt(p.premDueDate);
+    var diff=due-today;
+    if(diff>=0&&diff<=7){
+      var daysLabel=diff===0?'Today':diff===1?'Tomorrow':diff+' days';
+      alertList.push({icon:'🛡️',title:p.label+' Premium Due',desc:fmtFull(p.premium)+'/'+p.premFreq+' — '+daysLabel,priority:diff===0?0:1});
+    }
+  });
+
+  // --- FD / RD MATURITY ---
+  S.investments.filter(function(i){return i.maturityDate}).forEach(function(i){
+    var days=Math.floor((new Date(i.maturityDate)-now)/(1e3*60*60*24));
+    if(days<0){alertList.push({icon:'⏰',title:i.label+' Matured',desc:'Action needed — renew or withdraw',priority:0});}
+    else if(days<=7){alertList.push({icon:'🏦',title:i.label+' Maturing Soon',desc:days===0?'Today!':days+' day(s) left',priority:0});}
+    else if(days<=30){alertList.push({icon:'🏦',title:i.label+' Maturing',desc:days+' days left',priority:2});}
+  });
+
+  // --- 52-WEEK ALERTS ---
+  S.investments.filter(function(i){return i.fiftyTwoHigh&&i.livePrice}).forEach(function(i){
+    if(i.livePrice>=i.fiftyTwoHigh*0.98)alertList.push({icon:'📈',title:i.label+' Near 52W High',desc:'₹'+i.livePrice.toFixed(0)+' / High: ₹'+i.fiftyTwoHigh.toFixed(0),priority:2});
+    if(i.fiftyTwoLow&&i.livePrice<=i.fiftyTwoLow*1.02)alertList.push({icon:'📉',title:i.label+' Near 52W Low',desc:'₹'+i.livePrice.toFixed(0)+' / Low: ₹'+i.fiftyTwoLow.toFixed(0),priority:2});
+  });
+
+  // --- EXIT SIGNALS ---
+  var exits=getExitSignals(S.investments);
+  exits.filter(function(s){return s.level==='sell'}).forEach(function(s){
+    alertList.push({icon:s.icon,title:s.inv.label+' — '+s.label,desc:s.reason,priority:0});
+  });
+
+  // --- INSURANCE GAPS ---
   var insT=(S.insurance||[]).filter(function(p){return p.status==='active'}).map(function(p){return p.insType});
-  if(!insT.includes('term_life'))alertList.push({icon:'🛡️',title:'No Term Insurance',desc:'Essential coverage'});
-  if(!insT.includes('health'))alertList.push({icon:'❤️',title:'No Health Insurance',desc:'Medical cover needed'});
+  if(!insT.includes('term_life'))alertList.push({icon:'🛡️',title:'No Term Insurance',desc:'Essential coverage missing',priority:3});
+  if(!insT.includes('health'))alertList.push({icon:'❤️',title:'No Health Insurance',desc:'Medical cover needed',priority:3});
+
+  // Sort by priority (0=urgent, 3=info)
+  alertList.sort(function(a,b){return (a.priority||2)-(b.priority||2)});
+
   var badge=document.getElementById('alert-badge');
-  if(alertList.length>0){badge.textContent=alertList.length;badge.classList.add('show')}else badge.classList.remove('show');
+  if(alertList.length>0){badge.textContent=alertList.length;badge.classList.add('show');}
+  else badge.classList.remove('show');
 }
 
 function toggleAlerts(){
@@ -1923,7 +2469,22 @@ function toggleAlerts(){
   if(!alertList.length){list.innerHTML='<div class="alert-empty">✅ No alerts</div>';return}
   list.innerHTML=alertList.map(function(a,i){return '<div class="alert-item"><span class="a-ic">'+a.icon+'</span><div class="a-body"><b>'+a.title+'</b><small>'+a.desc+'</small></div><button class="a-close" onclick="dismissAlert('+i+')">✕</button></div>'}).join('');
 }
-function dismissAlert(i){alertList.splice(i,1);toggleAlerts();var badge=document.getElementById('alert-badge');if(alertList.length)badge.textContent=alertList.length;else badge.classList.remove('show')}
+function dismissAlert(i){
+  alertList.splice(i,1);
+  // Rebuild panel in-place without toggle (no flicker)
+  var badge=document.getElementById('alert-badge');
+  if(alertList.length){badge.textContent=alertList.length;badge.classList.add('show');}
+  else badge.classList.remove('show');
+  var list=document.getElementById('alert-list');
+  if(list){
+    if(!alertList.length){list.innerHTML='<div class="alert-empty">✅ No alerts</div>';return;}
+    list.innerHTML=alertList.map(function(a,idx){
+      return '<div class="alert-item"><span class="a-ic">'+a.icon+'</span>'
+        +'<div class="a-body"><b>'+a.title+'</b><small>'+a.desc+'</small></div>'
+        +'<button class="a-close" onclick="dismissAlert('+idx+')">✕</button></div>';
+    }).join('');
+  }
+}
 function clearAlerts(){alertList=[];document.getElementById('alert-list').innerHTML='<div class="alert-empty">✅ No alerts</div>';document.getElementById('alert-badge').classList.remove('show')}
 
 // === END PART 5 of 7 ===
@@ -2085,6 +2646,153 @@ function stopVoice(btn){isListening=false;if(btn){btn.classList.remove('listenin
 // 🚀 INIT & BOOT — Part 7 of 7 (FINAL)
 // ====================================================
 
+// ===== PWA INSTALL =====
+var deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  // Browser is ready to show install prompt — capture it and show our button
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  var btn = document.getElementById('pwa-install-btn');
+  if(btn) btn.style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', function() {
+  // App was installed — hide the button
+  deferredInstallPrompt = null;
+  var btn = document.getElementById('pwa-install-btn');
+  if(btn) btn.style.display = 'none';
+  toast('✅ ValeurFin installed! Find it in your apps.');
+});
+
+function installApp(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(function(result){
+      if(result.outcome === 'accepted'){
+        toast('✅ Installing ValeurFin...');
+      }
+      deferredInstallPrompt = null;
+      var btn = document.getElementById('pwa-install-btn');
+      if(btn) btn.style.display = 'none';
+    });
+  } else {
+    // Fallback — show manual install instructions
+    toast('To install: use browser menu → "Add to Home Screen" or "Install app"', 'warn');
+  }
+}
+
+// ===== SWP MODAL FUNCTIONS =====
+var swpEditingId = null;
+
+function openSWPModal(invId){
+  var inv = S.investments.find(function(i){ return i.id === invId; });
+  if(!inv){ toast('Investment not found','err'); return; }
+  swpEditingId = invId;
+  document.getElementById('swp-modal-sub').textContent = inv.label + ' — ' + inv.type;
+  var removeBtn = document.getElementById('swp-remove-btn');
+  if(removeBtn) removeBtn.style.display = inv.swpAmount > 0 ? 'inline-flex' : 'none';
+
+  var h = '';
+  h += '<div style="background:var(--bbg);border-radius:10px;padding:12px;margin-bottom:12px;font-size:11px;color:var(--b)">';
+  h += '🔄 <b>What is SWP?</b> A Systematic Withdrawal Plan lets you withdraw a fixed amount every month from this investment. ';
+  h += 'The withdrawal is auto-recorded as income each month when you process months.</div>';
+
+  if(inv.swpAmount > 0){
+    h += '<div style="background:var(--gbg);border:1px solid var(--g);border-radius:8px;padding:8px;margin-bottom:10px;font-size:11px">';
+    h += '✅ <b>SWP Active</b> — ₹'+Math.round(inv.swpAmount).toLocaleString('en-IN')+'/month';
+    if(inv.swpStartDate) h += ' from '+new Date(inv.swpStartDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+    h += '</div>';
+  }
+
+  // Current value context
+  var val = inv.liveValue || inv.value;
+  var maxSWP = Math.round(val * 0.1); // suggest max 10% per month
+  h += '<div class="fr">';
+  h += '<div class="fg"><label>Monthly Withdrawal Amount (₹)</label>';
+  h += '<input class="inp" id="swp-amount" type="number" value="'+(inv.swpAmount||'')+'" placeholder="e.g. 5000" min="0">';
+  h += '<small style="color:var(--txt2);font-size:9px">Suggested max: ₹'+maxSWP.toLocaleString('en-IN')+'/mo (10% of current value ₹'+Math.round(val).toLocaleString('en-IN')+')</small></div>';
+  h += '<div class="fg"><label>SWP Start Date</label>';
+  h += '<input class="inp" id="swp-start-date" type="date" value="'+(inv.swpStartDate||new Date().toISOString().slice(0,10))+'"></div>';
+  h += '</div>';
+
+  h += '<div class="fg"><label>Auto-record as income category</label>';
+  h += '<select class="inp" id="swp-income-cat">';
+  h += '<option value="dividends" '+(inv.swpIncomeCat==="dividends"?'selected':'')+'>💰 Dividends/Returns</option>';
+  h += '<option value="interest" '+(inv.swpIncomeCat==="interest"?'selected':'')+'>🏦 Interest Income</option>';
+  h += '<option value="others" '+(inv.swpIncomeCat==="others"?'selected':'')+'>📋 Others</option>';
+  h += '</select></div>';
+
+  document.getElementById('swp-modal-form').innerHTML = h;
+  document.getElementById('swp-modal').classList.add('open');
+}
+
+function saveSWP(){
+  var inv = S.investments.find(function(i){ return i.id === swpEditingId; });
+  if(!inv){ toast('Investment not found','err'); return; }
+  var amt = parseFloat(document.getElementById('swp-amount').value) || 0;
+  var dt  = document.getElementById('swp-start-date').value || '';
+  var cat = document.getElementById('swp-income-cat').value || 'dividends';
+  if(amt < 0){ toast('Amount cannot be negative','err'); return; }
+  var val = inv.liveValue || inv.value;
+  if(amt > val){ toast('Withdrawal cannot exceed investment value','err'); return; }
+  inv.swpAmount    = amt;
+  inv.swpStartDate = dt;
+  inv.swpIncomeCat = cat;
+  // If removing SWP (amt=0), also remove the auto-income entry
+  if(amt === 0){
+    S.income = S.income.filter(function(ic){ return ic.swpRef !== inv.id; });
+  } else {
+    // Update or create income entry
+    var existing = S.income.find(function(ic){ return ic.swpRef === inv.id; });
+    if(existing){ existing.amount = amt; existing.category = cat; }
+    else {
+      S.income.push({id:uid(),label:'SWP: '+inv.label,category:cat,amount:amt,frequency:'monthly',owner:inv.owner||'self',swpRef:inv.id,createdAt:Date.now()});
+    }
+  }
+  saveS().then(function(){
+    renderAll();
+    closeSWPModal();
+    if(amt > 0) toast('✅ SWP of ₹'+amt.toLocaleString('en-IN')+'/mo set for '+inv.label);
+    else toast('🗑️ SWP removed from '+inv.label);
+  });
+}
+
+function removeSWP(){
+  document.getElementById('swp-amount').value = '0';
+  saveSWP();
+}
+
+function closeSWPModal(){
+  document.getElementById('swp-modal').classList.remove('open');
+  swpEditingId = null;
+}
+
+// Update rInv to show SWP summary card
+function rSwpSummary(inv){
+  var active = inv.filter(function(i){ return i.swpAmount > 0; });
+  var card   = document.getElementById('swp-summary-card');
+  var list   = document.getElementById('swp-summary-list');
+  var badge  = document.getElementById('swp-count-badge');
+  if(!card) return;
+  if(!active.length){ card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  if(badge) badge.textContent = active.length + ' active';
+  var total = active.reduce(function(s,i){ return s + i.swpAmount; }, 0);
+  if(list){
+    list.innerHTML = active.map(function(i){
+      return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bdr)">'
+        +'<span>'+i.label+' <small>('+i.type+')</small></span>'
+        +'<span style="color:var(--b);font-weight:700">-₹'+Math.round(i.swpAmount).toLocaleString('en-IN')+'/mo</span>'
+        +'</div>';
+    }).join('')
+    + '<div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700">'
+    + '<span>Total monthly withdrawal</span>'
+    + '<span style="color:var(--b)">-₹'+Math.round(total).toLocaleString('en-IN')+'/mo</span>'
+    + '</div>';
+  }
+}
+
 function initApp(){
   applyTheme();
   renderAll();
@@ -2107,22 +2815,23 @@ function initApp(){
     }
   }
 
-  // Track exports
+  // Track exports — wrap exportData to record last export timestamp
   var origExport=exportData;
-  exportData=function(){origExport();try{localStorage.setItem('vf_last_export',Date.now().toString())}catch(e){}};
+  exportData=function(){
+    origExport();
+    try{localStorage.setItem('vf_last_export',Date.now().toString());}catch(e){}
+  };
 }
 
-// ===== SERVICE WORKER =====
+document.addEventListener('DOMContentLoaded',boot);
+
+// ===== SERVICE WORKER REGISTRATION =====
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js').then(function(){}).catch(function(){});
+    navigator.serviceWorker.register('sw.js').catch(function(){});
   });
 }
-
-// ===== LAUNCH =====
-document.addEventListener('DOMContentLoaded',boot);
 
 </script>
 </body>
 </html>
-<!-- === FILE COMPLETE === -->
