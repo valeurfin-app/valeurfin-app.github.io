@@ -1230,13 +1230,46 @@ function processMonth(){
 
 // ===== BOOT =====
 async function boot(){
+  // Step 1: Try IndexedDB
   try{await openDB()}catch(e){DB=null}
+
+  // Step 2: Try loading — multiple attempts
   var data=null;
-  try{data=await loadS()}catch(e){}
+
+  // Attempt 1: IndexedDB
+  try{data=await loadS()}catch(e){data=null}
+
+  // Attempt 2: If IDB failed, try localStorage directly
+  if(!data||!data.user||!data.user.name){
+    try{var ls=localStorage.getItem('vf_backup');if(ls){data=JSON.parse(ls);if(!data||!data.user||!data.user.name)data=null}}catch(e){data=null}
+  }
+
+  // Attempt 3: sessionStorage
+  if(!data||!data.user||!data.user.name){
+    try{var ss=sessionStorage.getItem('vf_session');if(ss){data=JSON.parse(ss);if(!data||!data.user||!data.user.name)data=null}}catch(e){data=null}
+  }
+
+  // Attempt 4: Cookies
+  if(!data||!data.user||!data.user.name){
+    data=loadFromCookie();
+    if(data&&(!data.user||!data.user.name))data=null;
+  }
+
+  // Attempt 5: If IDB had timing issue, retry once after small delay
+  if(!data||!data.user||!data.user.name){
+    if(DB){
+      await new Promise(function(r){setTimeout(r,200)});
+      try{data=await loadS()}catch(e){data=null}
+      if(data&&(!data.user||!data.user.name))data=null;
+    }
+  }
+
+  // If truly no data, show onboarding
   if(!data||!data.user||!data.user.name){
     document.getElementById('onboard').classList.remove('hidden');
     setupPinInputs('ob-pin-');obUpdateProgress();return;
   }
+
   S=data;
   // Migration
   if(!S.version||S.version<4.0){
@@ -1257,8 +1290,13 @@ async function boot(){
   }
   S.user.securityQ=S.user.securityQ||'';S.user.securityA=S.user.securityA||'';
   S.aiMode=S.aiMode||'local';S.geminiKey=S.geminiKey||'';
-  // Sync all stores
-  var j=JSON.stringify(S);try{localStorage.setItem(LS_KEY,j)}catch(e){}try{sessionStorage.setItem(SS_KEY,j)}catch(e){}saveToCookie(S);
+
+  // Sync all stores immediately
+  var j=JSON.stringify(S);
+  try{localStorage.setItem('vf_backup',j)}catch(e){}
+  try{sessionStorage.setItem('vf_session',j)}catch(e){}
+  saveToCookie(S);
+
   if(S.user.hasPin){
     showLock();setupPinInputs('lk-pin-');
     [1,2,3,4].forEach(function(i){document.getElementById('lk-pin-'+i).addEventListener('input',function(){if(i===4&&this.value)setTimeout(checkLockPin,100)})});
