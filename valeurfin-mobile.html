@@ -937,12 +937,14 @@ function wipeAllData(){
 function signOut(){
   if(!confirm('Sign out? Your data stays safe on this device.'))return;
   try{localStorage.setItem('vf_signed_out','1')}catch(e){}
+  // Hide all UI — topbar, bottom nav (bnav), content area
+  var tb=document.querySelector('.topbar');if(tb)tb.style.display='none';
+  var nav=document.querySelector('.bnav');if(nav)nav.style.display='none';
+  var content=document.getElementById('content');if(content)content.style.display='none';
+  // Show welcome back screen
   var wb=document.getElementById('welcome-back-screen');
   var wbName=document.getElementById('wb-username');
   if(wbName)wbName.textContent='Welcome back, '+(S.user.name||'there')+' 👋';
-  var app=document.getElementById('app');if(app)app.style.display='none';
-  var tb=document.querySelector('.topbar');if(tb)tb.style.display='none';
-  var nav=document.querySelector('.bottom-nav');if(nav)nav.style.display='none';
   if(wb)wb.classList.remove('hidden');
 }
 
