@@ -1904,6 +1904,18 @@ function processMonth(){
 }
 
 // ===== BOOT =====
+function ordinal(n){var s=n%100;if(s>=11&&s<=13)return n+'th';switch(n%10){case 1:return n+'st';case 2:return n+'nd';case 3:return n+'rd';default:return n+'th';}}
+
+function invHasLots(inv){return inv.lots&&inv.lots.length>0;}
+function getInvQty(inv){if(invHasLots(inv))return inv.lots.reduce(function(s,l){return s+(l.qty||0)},0);return inv.qty||0;}
+function getInvInvested(inv){if(invHasLots(inv))return inv.lots.reduce(function(s,l){return s+(l.qty||0)*(l.price||0)},0);return inv.invested||0;}
+function getInvAvgPrice(inv){if(!invHasLots(inv))return inv.avgPrice||0;var q=getInvQty(inv);return q?getInvInvested(inv)/q:0;}
+function getInvValue(inv){if((inv.type==='SIP'||inv.type==='ELSS')&&inv.totalUnits&&inv.currentNAV)return inv.totalUnits*inv.currentNAV;if(invHasLots(inv)&&inv.livePrice)return getInvQty(inv)*inv.livePrice;return inv.liveValue||inv.value||0;}
+function getInvReturns(inv){return getInvValue(inv)-getInvInvested(inv);}
+function getInvXIRR(inv){var val=getInvValue(inv);var invested=getInvInvested(inv);if(!invested||invested<=0)return 0;if(invHasLots(inv)&&inv.lots.length>0)return calcLotsXIRR(inv.lots,val);if(inv.started){var months=(Date.now()-new Date(inv.started))/(1000*60*60*24*30.44);if(months<0.5)return 0;return(Math.pow(val/invested,12/months)-1)*100;}return(Math.pow(val/invested,12/Math.max(1,S.currentMonth))-1)*100;}
+function calcLotsXIRR(lots,currentValue){if(!lots||!lots.length)return 0;var cfs=lots.map(function(l){return{date:new Date(l.date),amount:-(l.qty*l.price)};});cfs.push({date:new Date(),amount:currentValue});cfs.sort(function(a,b){return a.date-b.date});var first=cfs[0].date;function npv(r){return cfs.reduce(function(s,cf){var y=(cf.date-first)/(365.25*24*3600*1000);return s+cf.amount/Math.pow(1+r,y)},0);}var rate=0.1;for(var i=0;i<100;i++){var f=npv(rate);var df=npv(rate+0.0001);var delta=(df-f)/0.0001;if(Math.abs(delta)<1e-10)break;rate=rate-f/delta;if(rate<-0.999)rate=-0.999;}if(isNaN(rate)||!isFinite(rate))return 0;return rate*100;}
+function getQtyOnDate(inv,dateStr){var t=new Date(dateStr);if(invHasLots(inv))return inv.lots.filter(function(l){return new Date(l.date)<=t}).reduce(function(s,l){return s+(l.qty||0)},0);return inv.qty||0;}
+function syncInvFromLots(inv){if(!invHasLots(inv))return;inv.qty=getInvQty(inv);inv.avgPrice=getInvAvgPrice(inv);inv.invested=getInvInvested(inv);inv.value=getInvValue(inv);inv.returns=getInvReturns(inv);}
 async function boot(){
   console.log('[VF] boot() started');
   try{await openDB();console.log('[VF] IDB opened:',!!DB)}catch(e){DB=null;console.warn('[VF] IDB failed:',e)}
@@ -2033,8 +2045,8 @@ function renderScoreRing(score,grade,label,color){
 // ===== DASHBOARD =====
 function rDash(){
   var inv=filterByMember(S.investments);
-  var nw=inv.reduce(function(s,i){return s+(i.liveValue||i.value)},0);
-  var invested=inv.reduce(function(s,i){return s+i.invested},0);
+  var nw=inv.reduce(function(s,i){return s+getInvValue(i)},0);
+  var invested=inv.reduce(function(s,i){return s+getInvInvested(i)},0);
   var returns=nw-invested;var retPct=invested>0?(returns/invested*100):0;
   var monthlySIP=inv.filter(function(i){return i.monthly>0}).reduce(function(s,i){return s+i.monthly},0);
   var exps=filterByMember(S.expenses);
@@ -2189,8 +2201,7 @@ function rInv(){
   if(!inv.length){tbody.innerHTML='';empty.style.display='block';return}
   empty.style.display='none';
   tbody.innerHTML=inv.map(function(i){
-    var val=i.liveValue||i.value;var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;
-    var xirr=i.invested>0&&S.currentMonth>0?(Math.pow(val/i.invested,12/Math.max(1,S.currentMonth))-1)*100:0;
+    var val=getInvValue(i);var invested=getInvInvested(i);var ret=val-invested;var retP=invested>0?(ret/invested*100):0;var xirr=getInvXIRR(i);
     var liveUp=(i.dayChangePct||0)>=0;
     var taxInfo=getTaxInfo(i);var exitCue=getExitCue(i,val,ret,retP);
     var swpBadge=i.swpAmount>0?'<span style="font-size:7px;background:var(--bbg);color:var(--b);padding:1px 5px;border-radius:3px;font-weight:700;margin-left:3px">🔄SWP</span>':'';
@@ -2199,7 +2210,7 @@ function rInv(){
       +'<td><div class="t-icon" style="background:'+(BUCKET_COLORS[i.bucket]||'#636E72')+'20">'+invIcon(i.type)+'</div></td>'
       +'<td><div class="t-name">'+i.label+swpBadge+'</div><div class="t-sub">'+i.type+(i.nseSymbol?' · '+i.nseSymbol:'')+'</div></td>'
       +'<td><div class="t-sub">'+(i.platform||'—')+'</div></td>'
-      +'<td class="t-val">'+fmt(i.invested)+'</td>'
+      +'<td class="t-val">'+fmt(getInvInvested(i))+'</td>'
       +'<td class="t-val">'+fmt(val)+'</td>'
       +'<td>'+(i.livePrice?'<span class="live-badge '+(liveUp?'up':'dn')+'">₹'+i.livePrice.toFixed(2)+'</span>':'—')+'</td>'
       +'<td style="color:'+(ret>=0?'var(--g)':'var(--d)')+'">'+fS(ret)+'<br><small>'+pct(retP)+'</small></td>'
@@ -2234,7 +2245,7 @@ function openEditInv(id){
   var h='<div class="fg"><label>Name</label><input class="inp" id="edit-name" value="'+inv.label+'"></div>';
   h+='<div class="fr"><div class="fg"><label>Invested</label><input class="inp" id="edit-invested" type="number" value="'+Math.round(inv.invested)+'"></div><div class="fg"><label>Current</label><input class="inp" id="edit-value" type="number" value="'+Math.round(inv.liveValue||inv.value)+'"></div></div>';
   h+='<div class="fg"><label>Started Date</label><input class="inp" id="edit-started" type="date" value="'+(inv.started||'')+'"></div>';
-  if(inv.monthly>0){h+='<div class="fr"><div class="fg"><label>Monthly</label><input class="inp" id="edit-monthly" type="number" value="'+inv.monthly+'"></div><div class="fg"><label>Due</label><select class="inp" id="edit-due">';for(var d=1;d<=28;d++)h+='<option value="'+d+'" '+(d==inv.dueDate?'selected':'')+'>'+d+'th</option>';h+='</select></div></div>'}
+  if(inv.monthly>0){h+='<div class="fr"><div class="fg"><label>Monthly</label><input class="inp" id="edit-monthly" type="number" value="'+inv.monthly+'"></div><div class="fg"><label>Due</label><select class="inp" id="edit-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'" '+(d==inv.dueDate?'selected':'')+'>'+ordinal(d)+'</option>';h+='</select></div></div>'}
   h+='<div class="fg"><label>Return %</label><input class="inp" id="edit-return" type="number" value="'+(inv.returnRate||0)+'" step="0.1"></div>';
   if(inv.type==='SIP'||inv.type==='ELSS'){h+='<div style="background:var(--bbg);border:1px solid var(--b);border-radius:10px;padding:12px;margin-top:6px"><div style="font-size:11px;font-weight:700;color:var(--b);margin-bottom:8px">🔄 SWP — Systematic Withdrawal Plan</div><div class="fr"><div class="fg"><label>Monthly Withdrawal (₹) <small style="color:var(--txt2)">(0 = off)</small></label><input class="inp" id="edit-swp" type="number" value="'+(inv.swpAmount||0)+'"></div><div class="fg"><label>SWP Start Date</label><input class="inp" id="edit-swp-start" type="date" value="'+(inv.swpStartDate||'')+'"></div></div><p style="font-size:9px;color:var(--txt2);margin-top:4px">💡 SWP withdraws a fixed amount monthly from this investment and records it as income.</p></div>';}
   if(inv.type==='Stocks'){h+='<div class="fr"><div class="fg"><label>NSE Symbol</label><div style="display:flex;gap:6px"><input class="inp" id="edit-symbol" value="'+(inv.nseSymbol||'')+'" oninput="this.value=this.value.toUpperCase()" style="flex:1"><button type="button" class="btn-sm" onclick="testSymbol(\'edit-symbol\',\'edit-sym-result\')" style="white-space:nowrap">🔍 Test</button></div><div id="edit-sym-result" style="font-size:9px;margin-top:3px"></div></div><div class="fg"><label>Sector</label><select class="inp" id="edit-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option '+(inv.sector===s?'selected':'')+'>'+s+'</option>'}).join('')+'</select></div></div>';h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="edit-qty" type="number" value="'+(inv.qty||0)+'"></div><div class="fg"><label>Avg Price</label><input class="inp" id="edit-avgprice" type="number" value="'+(inv.avgPrice||0)+'"></div></div>'}
@@ -2278,7 +2289,7 @@ function renderAddForm(){
   buildAddFields();
 }
 function selectInvType(type){selectedInvType=type;renderAddForm()}
-function resetAddForm(){selectedInvType='SIP';renderAddForm()}
+function resetAddForm(){selectedInvType='SIP';resetPendingLots();renderAddForm()}
 
 function buildAddFields(){
   var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var form=document.getElementById('add-form');
@@ -2295,10 +2306,10 @@ function buildAddFields(){
   h+='<div class="fg"><label>Current Value (₹)</label><input class="inp" id="add-current" type="number" placeholder="₹"></div>';
   if(t.id==='Stocks')h+='<div class="fg"><label>NSE Symbol <span style="font-size:9px;color:var(--txt2);font-weight:400">(type symbol, then Test)</span></label><div style="display:flex;gap:6px;align-items:flex-start"><input class="inp" id="add-symbol" placeholder="e.g. NIFTYBEES" style="flex:1" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn-sm" onclick="testSymbol(\'add-symbol\',\'add-sym-result\')" style="white-space:nowrap;margin-top:0">🔍 Test</button></div><div id="add-sym-result" style="font-size:9px;margin-top:3px"></div></div><div class="fr"><div class="fg"><div class="fg"><label>Sector</label><select class="inp" id="add-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div></div>';
   if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
-  if(t.hasMonthly){h+='<div class="fr"><div class="fg"><label>Monthly SIP (₹)</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';for(var d=1;d<=28;d++)h+='<option value="'+d+'">'+d+'th</option>';h+='</select></div></div>';h+='<div class="fr"><div class="fg"><label>Step-Up % <small style="color:var(--txt2);font-weight:400">(Annual, every 12 months)</small></label><input class="inp" id="add-stepup" type="number" value="10" placeholder="e.g. 10 = 10% more each year"></div><div class="fg"><label>Expected Return % / yr</label><input class="inp" id="add-return" type="number" placeholder="12"></div></div>';h+='<div class="fr"><div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start (Month 1)</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div><div class="fg"></div></div>';}
+  if(t.hasMonthly){if(t.hasMF){h+='<div class="fr"><div class="fg"><label>Total Units Held <span style="font-size:9px;color:var(--txt2);font-weight:400">(from broker/CAMS)</span></label><input class="inp" id="add-total-units" type="number" step="0.001" placeholder="e.g. 2456.789"></div><div class="fg"><label>Scheme Code <span style="font-size:9px;color:var(--txt2);font-weight:400">(auto-filled)</span></label><input class="inp" id="add-scheme-code" placeholder="e.g. 118989" readonly></div></div>';}h+='<div class="fr"><div class="fg"><label>Monthly SIP (₹)</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'">'+ordinal(d)+'</option>';h+='</select></div></div>';h+='<div class="fr"><div class="fg"><label>Step-Up % <small style="color:var(--txt2);font-weight:400">(Annual, every 12 months)</small></label><input class="inp" id="add-stepup" type="number" value="10" placeholder="e.g. 10 = 10% more each year"></div><div class="fg"></div></div>';h+='<div class="fr"><div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start (Month 1)</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div><div class="fg"></div></div>';}
   else h+='<div class="fr"><div class="fg"><label>Invested (₹)</label><input class="inp" id="add-invested" type="number"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="8"></div></div>';
   if(t.hasFD)h+='<div class="fr"><div class="fg"><label>Maturity</label><input class="inp" id="add-maturity" type="date"></div><div class="fg"><label>Interest %</label><input class="inp" id="add-fdrate" type="number" placeholder="7.5"></div></div>';
-  if(t.id==='Stocks')h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="add-qty" type="number"></div><div class="fg"><label>Avg Price</label><input class="inp" id="add-avgprice" type="number"></div></div>';
+  if(t.id==='Stocks'){h+='<div class="fr"><div class="fg"><label>Qty (this purchase)</label><input class="inp" id="add-qty" type="number" placeholder="e.g. 10"></div><div class="fg"><label>Buy Price (₹/share)</label><input class="inp" id="add-avgprice" type="number" placeholder="e.g. 1650"></div></div>';h+='<div style="background:var(--bbg);border:1px solid var(--bdr);border-radius:10px;padding:10px;margin-top:4px"><div style="font-size:10px;font-weight:700;color:var(--b);margin-bottom:6px">Previous Purchases <span style="font-size:9px;font-weight:400;color:var(--txt2)">(optional)</span></div><div id="lots-list" style="margin-bottom:6px"></div><div class="fr" style="gap:6px"><input class="inp" id="lot-date" type="date" style="flex:1"><input class="inp" id="lot-qty" type="number" style="flex:1" placeholder="Qty"><input class="inp" id="lot-price" type="number" style="flex:1" placeholder="Price"><button class="btn-sm" onclick="addLotRow()" style="white-space:nowrap">+ Add</button></div></div>';}
   form.innerHTML=h;
 }
 
@@ -2502,8 +2513,11 @@ function selectMF(i, version){
   if(!mfSearchResults || i >= mfSearchResults.length) return;
   var m = mfSearchResults[i];
   var name = m.schemeName || m.scheme_name || m.name || '';
+  var mfCode = m.schemeCode || m.scheme_code || '';
   var inp = document.getElementById('add-name');
   if(inp){ inp.value = name; inp.focus(); }
+  var sc = document.getElementById('add-scheme-code');
+  if(sc && mfCode) sc.value = mfCode;
   var dd = document.getElementById('mf-dd');
   if(dd) dd.classList.remove('open');
   clearTimeout(mfSearchTimer);
@@ -2543,6 +2557,53 @@ document.addEventListener('click',function(e){
   }
 });
 
+
+var pendingLots=[];
+function addLotRow(){
+  var date=document.getElementById('lot-date')?document.getElementById('lot-date').value:'';
+  var qty=parseFloat(document.getElementById('lot-qty')?document.getElementById('lot-qty').value:0)||0;
+  var price=parseFloat(document.getElementById('lot-price')?document.getElementById('lot-price').value:0)||0;
+  if(!date||!qty||!price){toast('Fill date, qty and price','err');return;}
+  pendingLots.push({id:uid(),date:date,qty:qty,price:price});
+  renderPendingLots();
+  ['lot-date','lot-qty','lot-price'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+}
+function removePendingLot(idx){pendingLots.splice(idx,1);renderPendingLots();}
+function renderPendingLots(){
+  var el=document.getElementById('lots-list');
+  if(!el)return;
+  if(!pendingLots.length){el.innerHTML='<div style="font-size:9px;color:var(--txt3)">No previous lots added yet</div>';return;}
+  el.innerHTML=pendingLots.map(function(l,i){
+    var t=l.qty*l.price;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--bdr);font-size:10px">'
+      +'<span style="color:var(--txt2)">'+l.date+'</span><b>'+l.qty+'</b> @ ₹'+l.price.toLocaleString('en-IN')
+      +' = ₹'+t.toLocaleString('en-IN')
+      +'<button onclick="removePendingLot('+i+')" style="background:none;border:none;color:var(--d);cursor:pointer;margin-left:auto">×</button>'
+      +'</div>';
+  }).join('');
+}
+function resetPendingLots(){pendingLots=[];var el=document.getElementById('lots-list');if(el)el.innerHTML='';}
+function editAddLot(){
+  var inv=S.investments.find(function(i){return i.id===editingId;});
+  if(!inv)return;
+  var date=document.getElementById('edit-lot-date')?document.getElementById('edit-lot-date').value:'';
+  var qty=parseFloat(document.getElementById('edit-lot-qty')?document.getElementById('edit-lot-qty').value:0)||0;
+  var price=parseFloat(document.getElementById('edit-lot-price')?document.getElementById('edit-lot-price').value:0)||0;
+  if(!date||!qty||!price){var msg=document.getElementById('edit-lot-msg');if(msg)msg.innerHTML='<span style="color:var(--d)">Fill date, qty and price</span>';return;}
+  if(!inv.lots)inv.lots=[];
+  inv.lots.push({id:uid(),date:date,qty:qty,price:price});
+  inv.lots.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+  syncInvFromLots(inv);
+  saveS().then(function(){openEditInv(editingId);toast('✅ Lot added');});
+}
+function editRemoveLot(invId,lotId){
+  var inv=S.investments.find(function(i){return i.id===invId;});
+  if(!inv||!inv.lots)return;
+  if(!confirm('Remove this purchase lot?'))return;
+  inv.lots=inv.lots.filter(function(l){return l.id!==lotId;});
+  syncInvFromLots(inv);
+  saveS().then(function(){openEditInv(invId);toast('✅ Lot removed');});
+}
 function addInvestment(){
   var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var name=document.getElementById('add-name').value.trim();if(!name){toast('Enter name','err');return}
   var started=document.getElementById('add-started').value||'';var currentVal=parseFloat(document.getElementById('add-current').value)||0;
@@ -2560,7 +2621,9 @@ function addInvestment(){
   var nseSymbol=document.getElementById('add-symbol')?document.getElementById('add-symbol').value:'';
   var sector=document.getElementById('add-sector')?document.getElementById('add-sector').value:'';
   if(t.id==='Stocks'&&!nseSymbol){var look=stockLookup(name);if(look){nseSymbol=look.sym;if(!sector)sector=look.sector}}
-  var inv={id:uid(),type:selectedInvType,label:name,platform:platform,bucket:t.bucket,invested:invested||currentVal,value:currentVal||invested,monthly:monthly,dueDate:dueDate,stepUp:stepUp,stepUpFrom:stepUpFrom||0,returnRate:t.hasFD?fdRate:returnRate,returns:0,owner:owner,started:started,maturityDate:maturityDate,qty:qty,avgPrice:avgPrice,nseSymbol:nseSymbol,sector:sector,livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,createdAt:Date.now()};
+  var inv={id:uid(),type:selectedInvType,label:name,platform:platform,bucket:t.bucket,invested:invested||currentVal,value:currentVal||invested,monthly:monthly,dueDate:dueDate,stepUp:stepUp,stepUpFrom:stepUpFrom||0,returnRate:t.hasFD?fdRate:returnRate,returns:0,owner:owner,started:started,maturityDate:maturityDate,qty:qty,avgPrice:avgPrice,nseSymbol:nseSymbol,sector:sector,livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:[],schemeCode:'',totalUnits:0,currentNAV:0,createdAt:Date.now()};
+  if(selectedInvType==='Stocks'){var allLots=pendingLots.slice();if(qty>0&&avgPrice>0)allLots.push({id:uid(),date:started||new Date().toISOString().slice(0,10),qty:qty,price:avgPrice});if(allLots.length>0){allLots.sort(function(a,b){return new Date(a.date)-new Date(b.date)});inv.lots=allLots;syncInvFromLots(inv);}resetPendingLots();}
+  if(inv.type==='SIP'||inv.type==='ELSS'){var scEl=document.getElementById('add-scheme-code');var tuEl=document.getElementById('add-total-units');if(scEl&&scEl.value)inv.schemeCode=scEl.value;if(tuEl&&tuEl.value)inv.totalUnits=parseFloat(tuEl.value)||0;}
   S.investments.push(inv);
   saveS().then(function(){renderAll();showSuccess('🎉','Added',name,{'Type':t.label,'Value':fmtFull(inv.value)});resetAddForm()});
 }
@@ -2603,13 +2666,13 @@ function closeIncModal(){document.getElementById('inc-modal').classList.remove('
 function rReminders(){var rems=filterByMember(S.reminders);var el=document.getElementById('rem-list');var empty=document.getElementById('rem-empty');if(!rems.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';el.innerHTML=rems.map(function(r){
     var freqLabel=r.frequency==='monthly'?'Monthly':r.frequency==='quarterly'?'Quarterly':'Yearly';
     return '<div class="rem-item"><div class="rem-ic" style="background:var(--wbg)">'+remIcon(r.remType)+'</div>'
-      +'<div class="rem-body"><h4>'+r.label+'</h4><p>'+remLabel(r.remType)+' · Due '+r.dueDate+'th · '+freqLabel+'</p></div>'
+      +'<div class="rem-body"><h4>'+r.label+'</h4><p>'+remLabel(r.remType)+' · Due '+ordinal(parseInt(r.dueDate))+' · '+freqLabel+'</p></div>'
       +'<div class="rem-r" style="color:var(--d)"><div class="rv">'+fmtFull(r.amount)+'</div></div>'
       +'<div class="rem-actions"><button onclick="openRemModal(\''+r.id+'\')">✏️</button><button onclick="deleteRem(\''+r.id+'\')">🗑️</button></div></div>';
   }).join('')}
 function openRemModal(editId){
   var existing=editId?(S.reminders||[]).find(function(r){return r.id===editId}):null;
-  var dateOpts='';for(var d=1;d<=28;d++)dateOpts+='<option value="'+d+'" '+(existing&&existing.dueDate==d?'selected':d===5?'selected':'')+'> '+d+'th</option>';
+  var dateOpts='';for(var d=1;d<=31;d++)dateOpts+='<option value="'+d+'" '+(existing&&existing.dueDate==d?'selected':d===5?'selected':'')+'> '+ordinal(d)+'</option>';
   var h='<div class="fg"><label>Description</label><input class="inp" id="rem-label" placeholder="e.g. HDFC Credit Card" value="'+(existing?existing.label:'')+'"></div>';
   h+='<div class="fr"><div class="fg"><label>Type</label><select class="inp" id="rem-type">'+REMINDER_TYPES.map(function(t){return '<option value="'+t.id+'" '+(existing&&existing.remType===t.id?'selected':'')+'>'+t.icon+' '+t.label+'</option>'}).join('')+'</select></div>';
   h+='<div class="fg"><label>Amount (₹)</label><input class="inp" id="rem-amount" type="number" placeholder="₹" value="'+(existing?existing.amount:'')+'"></div></div>';
@@ -2667,9 +2730,10 @@ function deleteIns(id){if(confirm('Delete?')){S.insurance=S.insurance.filter(fun
 function closeInsModal(){document.getElementById('ins-modal').classList.remove('open')}
 
 // ===== DIVIDENDS =====
-function rDividends(){var divs=S.dividends||[];var el=document.getElementById('div-list');var empty=document.getElementById('div-empty');var summary=document.getElementById('div-summary');if(!divs.length){el.innerHTML='';empty.style.display='block';summary.innerHTML='';return}empty.style.display='none';var total=divs.reduce(function(s,d){return s+(d.totalDiv||0)},0);summary.innerHTML='<div class="sg"><div class="st"><div class="lbl">TOTAL</div><div class="val" style="color:var(--g)">'+fmt(total)+'</div></div></div>';el.innerHTML='<table class="div-tbl"><thead><tr><th>Stock</th><th>Qty</th><th>FY</th><th>DPS</th><th>Total</th><th></th></tr></thead><tbody>'+divs.map(function(d){return '<tr><td>'+d.stock+'</td><td>'+d.qty+'</td><td>'+d.fy+'</td><td>₹'+d.dps+'</td><td class="div-total">'+fmtFull(d.totalDiv)+'</td><td><button class="btn-sm" onclick="deleteDividend(\''+d.id+'\')">🗑️</button></td></tr>'}).join('')+'</tbody></table>'}
+function calcDivTotal(d){if(!d.date)return d.totalDiv||0;var inv=S.investments.find(function(i){return i.label===d.stock||(i.nseSymbol&&d.sym&&i.nseSymbol===d.sym)});if(!inv)return d.qty*d.dps;return getQtyOnDate(inv,d.date)*d.dps;}
+function rDividends(){var divs=S.dividends||[];var el=document.getElementById('div-list');var empty=document.getElementById('div-empty');var summary=document.getElementById('div-summary');if(!divs.length){el.innerHTML='';empty.style.display='block';summary.innerHTML='';return}empty.style.display='none';var total=divs.reduce(function(s,d){return s+calcDivTotal(d)},0);summary.innerHTML='<div class="sg"><div class="st"><div class="lbl">TOTAL</div><div class="val" style="color:var(--g)">'+fmt(total)+'</div></div></div>';el.innerHTML='<table class="div-tbl"><thead><tr><th>Stock</th><th>Qty</th><th>FY</th><th>DPS</th><th>Total</th><th></th></tr></thead><tbody>'+divs.map(function(d){return '<tr><td>'+d.stock+'</td><td>'+d.qty+'</td><td>'+d.fy+'</td><td>₹'+d.dps+'</td><td class="div-total">'+fmtFull(d.totalDiv)+'</td><td><button class="btn-sm" onclick="deleteDividend(\''+d.id+'\')">🗑️</button></td></tr>'}).join('')+'</tbody></table>'}
 function openDivModal(){var stocks=S.investments.filter(function(i){return i.type==='Stocks'});document.getElementById('dvm-form').innerHTML='<div class="fg"><label>Stock</label><select class="inp" id="div-stock"><option value="">Select</option>'+stocks.map(function(s){return '<option>'+s.label+'</option>'}).join('')+'</select></div><div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="div-qty" type="number"></div><div class="fg"><label>FY</label><select class="inp" id="div-fy">'+FY_LIST.map(function(f){return '<option>'+f+'</option>'}).join('')+'</select></div></div><div class="fr"><div class="fg"><label>DPS (₹)</label><input class="inp" id="div-dps" type="number" step="0.01"></div><div class="fg"><label>Total</label><input class="inp" id="div-total" readonly></div></div>';document.getElementById('div-modal').classList.add('open');document.getElementById('div-dps').addEventListener('input',function(){var q=parseFloat(document.getElementById('div-qty').value)||0,d=parseFloat(this.value)||0;document.getElementById('div-total').value='₹'+(q*d).toFixed(2)})}
-function saveDividend(){var s=document.getElementById('div-stock').value,q=parseFloat(document.getElementById('div-qty').value)||0,f=document.getElementById('div-fy').value,d=parseFloat(document.getElementById('div-dps').value)||0;if(!s||!q||!d){toast('Fill fields','err');return}S.dividends.push({id:uid(),stock:s,qty:q,fy:f,dps:d,totalDiv:q*d,createdAt:Date.now()});saveS().then(function(){renderAll();closeDivModal();toast('✅ Saved')})}
+function saveDividend(){var s=document.getElementById('div-stock').value;var date=document.getElementById('div-date')?document.getElementById('div-date').value:'';var dps=parseFloat(document.getElementById('div-dps').value)||0;if(!s||!dps){toast('Fill stock and DPS','err');return;}var inv=S.investments.find(function(i){return i.label===s;});var qty=inv&&date?getQtyOnDate(inv,date):(inv?getInvQty(inv):0);var sym=inv?inv.nseSymbol:'';S.dividends.push({id:uid(),stock:s,sym:sym,date:date||new Date().toISOString().slice(0,10),dps:dps,qty:qty,totalDiv:qty*dps,fy:'FY'+new Date(date||Date.now()).getFullYear(),createdAt:Date.now()});saveS().then(function(){renderAll();closeDivModal();toast('✅ Saved — '+fmtFull(qty*dps));});}
 function deleteDividend(id){S.dividends=(S.dividends||[]).filter(function(d){return d.id!==id});saveS().then(function(){renderAll()})}
 function closeDivModal(){document.getElementById('div-modal').classList.remove('open')}
 
@@ -2937,8 +3001,8 @@ function renderScreener(){
     return true;
   });
   filtered.sort(function(a,b){
-    var aV=a.liveValue||a.value,bV=b.liveValue||b.value;
-    var aR=a.invested>0?((aV-a.invested)/a.invested*100):0,bR=b.invested>0?((bV-b.invested)/b.invested*100):0;
+    var aV=getInvValue(a),bV=getInvValue(b);var aInv=getInvInvested(a),bInv=getInvInvested(b);
+    var aR=aInv>0?((aV-aInv)/aInv*100):0,bR=bInv>0?((bV-bInv)/bInv*100):0;
     if(sortF==='value-desc')return bV-aV;if(sortF==='value-asc')return aV-bV;
     if(sortF==='returns-desc')return bR-aR;if(sortF==='returns-asc')return aR-bR;
     if(sortF==='name-asc')return a.label.localeCompare(b.label);return 0;
@@ -3123,7 +3187,7 @@ function botAnswer(query){
   if(q.match(/allocation|asset.*mix|diversif/)){var bk={};inv.forEach(function(i){var b=i.bucket||invBucket(i.type);bk[b]=(bk[b]||0)+(i.liveValue||i.value)});var data={};Object.entries(bk).forEach(function(e){data[e[0]]=fmtFull(e[1])+' ('+(nw>0?(e[1]/nw*100).toFixed(1):0)+'%)'});return{text:'Asset allocation:',data:data}}
   if(q.match(/sector/)){var stocks=inv.filter(function(i){return i.type==='Stocks'&&i.sector});if(!stocks.length)return{text:"No stocks with sectors.",data:null};var st=stocks.reduce(function(s,i){return s+(i.liveValue||i.value)},0);var secs={};stocks.forEach(function(i){secs[i.sector]=(secs[i.sector]||0)+(i.liveValue||i.value)});var sd={};Object.entries(secs).sort(function(a,b){return b[1]-a[1]}).forEach(function(e){sd[e[0]]=fmtFull(e[1])+' ('+(st>0?(e[1]/st*100).toFixed(1):0)+'%)'});return{text:'Sectors:',data:sd}}
   if(q.match(/dividend/)){var divs=S.dividends||[];if(!divs.length)return{text:"No dividends.",data:null};return{text:'Total: '+fmtFull(divs.reduce(function(s,d){return s+d.totalDiv},0)),data:null}}
-  if(q.match(/next.*sip|sip.*due/)){var sips=inv.filter(function(i){return i.monthly>0&&i.dueDate});if(!sips.length)return{text:"No SIPs.",data:null};var sipD={};sips.slice(0,5).forEach(function(s){sipD[s.label]=fmtFull(s.monthly)+' on '+s.dueDate+'th'});return{text:'SIP payments:',data:sipD}}
+  if(q.match(/next.*sip|sip.*due/)){var sips=inv.filter(function(i){return i.monthly>0&&i.dueDate});if(!sips.length)return{text:"No SIPs.",data:null};var sipD={};sips.slice(0,5).forEach(function(s){sipD[s.label]=fmtFull(s.monthly)+' on '+ordinal(parseInt(s.dueDate))});return{text:'SIP payments:',data:sipD}}
   if(q.match(/insurance.*gap|insurance.*score|am i.*insur/)){var iS=calcInsuranceScore();return{text:'Insurance Score: '+iS.score+'/100 — '+iS.grade,data:null}}
   if(q.match(/expense|spending|how much.*spend/)){if(!exps.length)return{text:"No expenses.",data:null};return{text:'Monthly: '+fmtFull(mExp),data:null}}
   if(q.match(/savings.*rate|saving/)){if(mInc<=0)return{text:"Add income first.",data:null};var sr=((mInc-mExp)/mInc*100);return{text:'Savings: '+sr.toFixed(1)+'%'+(sr>=30?' 🎉':sr>=20?' 👍':' Try 20%+'),data:{'Income':fmtFull(mInc),'Expenses':fmtFull(mExp),'Savings':fmtFull(mInc-mExp),'Rate':sr.toFixed(1)+'%'}}}
@@ -3139,7 +3203,7 @@ function botAnswer(query){
   if(q.match(/tax|ltcg|stcg|capital gain/)){if(!inv.length)return{text:"No investments for tax.",data:null};var tST=0,tLT=0,tTx=0;inv.forEach(function(i){var val=i.liveValue||i.value;var gain=val-i.invested;if(gain<=0)return;var hd=i.started?Math.floor((Date.now()-new Date(i.started))/(1e3*60*60*24)):0;var rules=getTaxRules(i.type,hd);if(rules.isExempt||rules.isSlab)return;if(rules.isFlat){tTx+=gain*rules.stRate/100}else if(rules.isLong){tLT+=gain;tTx+=Math.max(0,gain-(rules.ltExempt||0))*rules.ltRate/100}else{tST+=gain;tTx+=gain*rules.stRate/100}});return{text:'Tax estimate:',data:{'STCG':fmtFull(tST),'LTCG':fmtFull(tLT),'Est. Tax':fmtFull(tTx)}}}
   if(q.match(/exit|sell.*signal|should.*sell/)){var signals=getExitSignals(inv);if(!signals.length)return{text:"🟢 No exit signals!",data:null};var exD={};signals.slice(0,5).forEach(function(s){exD[s.icon+' '+s.inv.label]=s.reason});return{text:signals.length+' signal(s):',data:exD}}
   if(q.match(/tip|suggest|improve|advice|recommend/)){var tips=[];if(!inv.length)tips.push('Start investing!');var insT=(S.insurance||[]).filter(function(p){return p.status==='active'}).map(function(p){return p.insType});if(!insT.includes('term_life'))tips.push('Get term insurance.');if(!insT.includes('health'))tips.push('Get health insurance.');if(!S.goals||!S.goals.length)tips.push('Set financial goals.');tips.push('Increase SIPs 10% yearly.');var tD={};tips.forEach(function(t,i){tD['💡 '+(i+1)]=t});return{text:'Tips:',data:tD}}
-  if(q.match(/remind|bill|due.*pay/)){var rems=S.reminders||[];if(!rems.length)return{text:"No reminders.",data:null};var rd={};rems.forEach(function(r){rd[remIcon(r.remType)+' '+r.label]=fmtFull(r.amount)+' · '+r.dueDate+'th'});return{text:'Reminders:',data:rd}}
+  if(q.match(/remind|bill|due.*pay/)){var rems=S.reminders||[];if(!rems.length)return{text:"No reminders.",data:null};var rd={};rems.forEach(function(r){rd[remIcon(r.remType)+' '+r.label]=fmtFull(r.amount)+' · '+ordinal(parseInt(r.dueDate))});return{text:'Reminders:',data:rd}}
   if(q.match(/thank/))return{text:"You're welcome! 😊",data:null};
   return{text:BOT_FALLBACK,data:null};
 }
