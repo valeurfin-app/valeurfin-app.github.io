@@ -1283,13 +1283,14 @@ function wipeAllData(){
 // ── SIGN OUT ──────────────────────────────────────────────────────────────
 function signOut(){
   if(!confirm('Sign out? Your data stays safe on this device.'))return;
-  // Write a signedOut marker — boot() checks this to show Welcome Back screen
   try{localStorage.setItem('vf_signed_out','1')}catch(e){}
-  // Hide dashboard, show welcome back screen
+  // Hide all UI elements
+  var els=['sidebar','content','topbar'];
+  els.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  // Show welcome back screen
   var wb=document.getElementById('welcome-back-screen');
   var wbName=document.getElementById('wb-username');
   if(wbName)wbName.textContent='Welcome back, '+(S.user.name||'there')+' 👋';
-  document.getElementById('app').style.display='none';
   if(wb)wb.classList.remove('hidden');
 }
 
