@@ -1025,21 +1025,22 @@ function saveS(){
   if(!S){saveInProgress=false;return Promise.resolve()}
   var json=JSON.stringify(S);
   var hash=simpleHash(json);
-  // ALWAYS write to fast synchronous stores on every call
-  try{localStorage.setItem(LS_KEY,json)}catch(e){}
-  try{sessionStorage.setItem(SS_KEY,json)}catch(e){}
+  // ALWAYS write to fast synchronous stores
+  var lsOk=false,ssOk=false;
+  try{localStorage.setItem(LS_KEY,json);lsOk=true}catch(e){console.warn('[VF] LS write failed:',e)}
+  try{sessionStorage.setItem(SS_KEY,json);ssOk=true}catch(e){}
   try{saveToCookie(S)}catch(e){}
-  // Skip IDB write only if data truly unchanged AND IDB was already written
+  console.log('[VF] saveS: LS='+lsOk+' SS='+ssOk+' IDB_written='+idbWritten+' hash_same='+(hash===lastSaveHash)+' name='+(S&&S.user&&S.user.name));
   if(hash===lastSaveHash&&idbWritten){saveInProgress=false;return Promise.resolve()}
   lastSaveHash=hash;
   return new Promise(function(res){
-    if(!DB){saveInProgress=false;res();return}
+    if(!DB){console.warn('[VF] No IDB — LS only');saveInProgress=false;res();return}
     try{
       var tx=DB.transaction(STORE_NAME,'readwrite');
       tx.objectStore(STORE_NAME).put({id:'main',data:S,updated:Date.now()});
-      tx.oncomplete=function(){idbWritten=true;saveInProgress=false;res()};
-      tx.onerror=function(){saveInProgress=false;res()};
-    }catch(e){saveInProgress=false;res()}
+      tx.oncomplete=function(){idbWritten=true;saveInProgress=false;console.log('[VF] IDB write OK');res()};
+      tx.onerror=function(e){console.error('[VF] IDB write FAILED:',e);saveInProgress=false;res()};
+    }catch(e){console.error('[VF] IDB tx error:',e);saveInProgress=false;res()}
   });
 }
 
@@ -1059,9 +1060,15 @@ function loadS(){
 }
 
 function loadFromLocal(){
-  try{var ls=localStorage.getItem(LS_KEY);if(ls){var p=JSON.parse(ls);if(p&&p.user&&p.user.name&&p.investments)return p}}catch(e){}
-  try{var ss=sessionStorage.getItem(SS_KEY);if(ss){var p2=JSON.parse(ss);if(p2&&p2.user&&p2.user.name&&p2.investments)return p2}}catch(e){}
-  var ck=loadFromCookie();if(ck)return ck;
+  try{
+    var ls=localStorage.getItem(LS_KEY);
+    console.log('[VF] LS has data:',!!ls,'length:',ls?ls.length:0);
+    if(ls){var p=JSON.parse(ls);if(p&&p.user&&p.user.name&&p.investments){console.log('[VF] LS loaded: user='+p.user.name+' investments='+p.investments.length);return p}
+    else console.warn('[VF] LS data invalid:',p&&p.user?'no name':'no user');}
+  }catch(e){console.error('[VF] LS read error:',e)}
+  try{var ss=sessionStorage.getItem(SS_KEY);if(ss){var p2=JSON.parse(ss);if(p2&&p2.user&&p2.user.name&&p2.investments){console.log('[VF] SS loaded');return p2}}}catch(e){}
+  var ck=loadFromCookie();if(ck){console.log('[VF] Cookie loaded');return ck;}
+  console.warn('[VF] loadFromLocal: ALL sources empty');
   return null;
 }
 
@@ -1394,9 +1401,11 @@ function processMonth(){
 
 // ===== BOOT =====
 async function boot(){
-  try{await openDB()}catch(e){DB=null}
+  console.log('[VF] boot() started');
+  try{await openDB();console.log('[VF] IDB opened:',!!DB)}catch(e){DB=null;console.warn('[VF] IDB failed:',e)}
   var data=null;
-  try{data=await loadS()}catch(e){}
+  try{data=await loadS()}catch(e){console.warn('[VF] loadS error:',e)}
+  console.log('[VF] loadS result:',data?'found user='+data.user.name:'NULL');
   // Retry after 600ms — IDB sometimes isn't ready on first attempt (PWA cold start)
   if(!data||!data.user||!data.user.name){
     await new Promise(function(r){setTimeout(r,600)});
@@ -1433,11 +1442,16 @@ async function boot(){
   // Sync all stores
   var j=JSON.stringify(S);try{localStorage.setItem(LS_KEY,j)}catch(e){}try{sessionStorage.setItem(SS_KEY,j)}catch(e){}saveToCookie(S);
   if(S.user.hasPin){
+    // Hide onboarding, show lock screen
+    var ob2=document.getElementById('onboard');if(ob2)ob2.classList.add('hidden');
     showLock();setupPinInputs('lk-pin-');
     [1,2,3,4].forEach(function(i){document.getElementById('lk-pin-'+i).addEventListener('input',function(){if(i===4&&this.value)setTimeout(checkLockPin,100)})});
     return;
   }
-  S.lastOpened=Date.now();checkAutoProcess();await saveS();initApp();
+  S.lastOpened=Date.now();checkAutoProcess();await saveS();
+  // Hide onboarding overlay — it starts visible, must be hidden when data exists
+  var ob=document.getElementById('onboard');if(ob)ob.classList.add('hidden');
+  initApp();
 }
 
 // === END PART 3 of 7 ===
@@ -2789,49 +2803,4 @@ function rSwpSummary(inv){
     + '<div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700">'
     + '<span>Total monthly withdrawal</span>'
     + '<span style="color:var(--b)">-₹'+Math.round(total).toLocaleString('en-IN')+'/mo</span>'
-    + '</div>';
-  }
-}
-
-function initApp(){
-  applyTheme();
-  renderAll();
-  rMarket();
-  generateAlerts();
-
-  var hasStocks=S.investments.some(function(i){return i.type==='Stocks'&&i.nseSymbol});
-  if(hasStocks&&(!priceLastFetched||Date.now()-priceLastFetched>30*60*1000)){
-    setTimeout(fetchLivePrices,2000);
-  }
-
-  rSecurity();
-  toast('👋 Welcome, '+(S.user.name||'User')+'!');
-
-  // Backup reminder every 7 days
-  if(S.createdAt&&Date.now()-S.createdAt>7*24*60*60*1000){
-    var lastExp=null;try{lastExp=localStorage.getItem('vf_last_export')}catch(e){}
-    if(!lastExp||Date.now()-parseInt(lastExp)>7*24*60*60*1000){
-      setTimeout(function(){toast('💾 Export your data regularly!','warn')},5000);
-    }
-  }
-
-  // Track exports — wrap exportData to record last export timestamp
-  var origExport=exportData;
-  exportData=function(){
-    origExport();
-    try{localStorage.setItem('vf_last_export',Date.now().toString());}catch(e){}
-  };
-}
-
-document.addEventListener('DOMContentLoaded',boot);
-
-// ===== SERVICE WORKER REGISTRATION =====
-if('serviceWorker' in navigator){
-  window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
-  });
-}
-
-</script>
-</body>
-</html>
+    + '
