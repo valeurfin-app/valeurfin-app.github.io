@@ -692,8 +692,8 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="tb-left"><h1 id="pg-title">Dashboard</h1><span class="tb-date" id="tb-month">Month 0</span><span style="font-size:9px;background:linear-gradient(135deg,var(--p),#0984E3);color:#fff;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:6px;vertical-align:middle">✨ AI</span></div>
 <div class="tb-right">
 <button class="tb-btn voice-btn" onclick="toggleVoice()" id="voice-btn" title="Voice">🎤</button>
-<button class="tb-btn" onclick="autoOrManualProcess()" title="Process Month">⏩</button>
-<button class="tb-btn" onclick="fetchLivePrices()" title="Refresh Prices">🔄</button>
+<!-- Process Month removed — SIPs auto-process on due date -->
+<button class="tb-btn" onclick="refreshAll()" title="Refresh Prices & Process SIPs">🔄</button>
 <div style="position:relative"><button class="tb-btn" onclick="toggleAlerts()" title="Alerts">🔔</button><div class="alert-badge" id="alert-badge">0</div></div>
 <button class="tb-btn" onclick="toggleTheme()" id="thb" title="Theme">🌙</button>
 <button class="tb-btn" onclick="exportData()" title="Export">📤</button>
@@ -1855,53 +1855,98 @@ function rFamily(){var el=document.getElementById('family-list');el.innerHTML='<
 function openAddFamilyMember(){var n=prompt('Name:');if(!n)return;var r=prompt('Relation:');if(!r)return;S.family.push({id:uid(),name:n.trim(),relation:r,age:''});saveS().then(function(){renderAll();toast('✅ Added')})}
 function removeFamily(id){if(!confirm('Remove?'))return;S.family=S.family.filter(function(f){return f.id!==id});saveS().then(function(){renderAll()})}
 
-// ===== AUTO PROCESS =====
-function checkAutoProcess(){if(!S.lastProcessed)return;var days=(Date.now()-S.lastProcessed)/(1e3*60*60*24);if(days>=30){var months=Math.floor(days/30);for(var i=0;i<months;i++)processMonthSilent();toast('⚡ Auto-processed '+months+' month(s)')}}
+// ===== DATE-AWARE SIP PROCESSING =====
+// Replaces manual "Process Month" — SIPs auto-add on their due date, once per calendar month
 
-// ===== MONTH PROCESSING =====
-var lastProcessClick=0;
-function autoOrManualProcess(){
-  if(!S.investments.length){toast('Add investments first','warn');return}
-  var now=Date.now();if(now-lastProcessClick<2000){toast('⏳ Wait...','warn');return}lastProcessClick=now;
-  var sip=S.investments.filter(function(i){return i.monthly>0}).reduce(function(s,i){return s+i.monthly},0);
-  if(!confirm('Process Month '+(S.currentMonth+1)+'?\n\nSIP: ₹'+sip.toLocaleString('en-IN')+'\nInvestments: '+S.investments.length))return;
-  processMonth();
-}
+function checkAndProcessSIPs(){
+  if(!S.investments||!S.investments.length) return;
+  var today = new Date();
+  var todayDay = today.getDate();                          // e.g. 10
+  var currentYM = today.getFullYear()+'-'                  // e.g. "2026-04"
+    + String(today.getMonth()+1).padStart(2,'0');
+  var tC=0, tR=0, processed=0;
+  var month = S.currentMonth;
 
-function processMonthSilent(){
-  var month=S.currentMonth,tC=0,tR=0;
   S.investments.forEach(function(inv){
-    if(inv.monthly>0){var m=inv.monthly;var suf=inv.stepUpFrom||0;if(inv.stepUp&&month>suf&&(month-suf)%12===0){m=m*(1+inv.stepUp/100);inv.monthly=Math.round(m)}inv.invested+=m;inv.value+=m;tC+=m;S.transactions.push({id:uid(),date:mN(month),type:'credit',label:inv.label,amount:m,icon:invIcon(inv.type)})}
-    // SWP Processing — withdraw monthly amount if SWP is active
-    if(inv.swpAmount>0&&inv.value>0){
+    // ── SIP / monthly investments ─────────────────────────────────────────
+    if(inv.monthly>0 && inv.dueDate){
+      var due = parseInt(inv.dueDate);
+
+      // Duplicate guard: skip if already processed for this calendar month
+      if(inv.lastSIPMonth === currentYM) return;
+
+      // Only process if today's date >= due date this month
+      // Edge case: due date > days in month (e.g. 31st in Feb) → use last day
+      var daysInMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+      var effectiveDue = Math.min(due, daysInMonth);
+      if(todayDay < effectiveDue) return;
+
+      // Step-up: annual increment
+      var suf = inv.stepUpFrom||0;
+      if(inv.stepUp && month>suf && (month-suf)%12===0){
+        inv.monthly = Math.round(inv.monthly*(1+inv.stepUp/100));
+      }
+
+      var m = inv.monthly;
+      inv.invested += m;
+      inv.value    += m;
+      inv.lastSIPMonth = currentYM;  // mark as processed for this month
+      tC += m;
+      S.transactions.push({
+        id:uid(), date:today.toISOString().slice(0,10),
+        type:'credit', label:inv.label, amount:m, icon:invIcon(inv.type)
+      });
+      processed++;
+    }
+
+    // ── SWP Processing (date-aware too) ───────────────────────────────────
+    if(inv.swpAmount>0 && inv.value>0){
+      // Only process SWP once per month (reuse lastSIPMonth won't work for SWP-only)
+      // Use a separate guard
+      if(inv.lastSWPMonth === currentYM) return;
       var swpOk=true;
       if(inv.swpStartDate){var swpStart=new Date(inv.swpStartDate);swpOk=Date.now()>=swpStart.getTime();}
       if(swpOk){
-        var swpAmt=Math.min(inv.swpAmount,inv.value*0.9); // cap at 90% of current value
+        var swpAmt=Math.min(inv.swpAmount,inv.value*0.9);
         inv.value=Math.max(0,inv.value-swpAmt);
-        // Auto-record as income entry
+        inv.lastSWPMonth=currentYM;
         var swpIncLabel='SWP: '+inv.label;
         var existingSwpInc=S.income.find(function(ic){return ic.swpRef===inv.id});
         if(existingSwpInc){existingSwpInc.amount=swpAmt;}
-        else{S.income.push({id:uid(),label:swpIncLabel,category:'dividends',amount:swpAmt,frequency:'monthly',owner:inv.owner||'self',swpRef:inv.id,createdAt:Date.now()});}
-        S.transactions.push({id:uid(),date:mN(month),type:'credit',label:swpIncLabel,amount:swpAmt,icon:'🔄'});
+        else{S.income.push({id:uid(),label:swpIncLabel,category:'dividends',amount:swpAmt,
+          frequency:'monthly',owner:inv.owner||'self',swpRef:inv.id,createdAt:Date.now()});}
+        S.transactions.push({id:uid(),date:today.toISOString().slice(0,10),
+          type:'credit',label:swpIncLabel,amount:swpAmt,icon:'??'});
       }
     }
-    var base=inv.returnRate||0;
-    var vol=inv.type==='Crypto'?8:inv.type==='Stocks'?3:inv.type==='Gold'?2:inv.type==='FD'||inv.type==='RD'||inv.type==='PPF'?.2:1.5;
-    var mR=(base/12/100)+(Math.random()-.5)*vol/100;var rAmt=inv.value*mR;inv.value+=rAmt;inv.returns=(inv.returns||0)+rAmt;tR+=rAmt;
   });
-  if(S.transactions.length>500)S.transactions=S.transactions.slice(-500);
-  S.totalContrib+=tC;S.totalReturns+=tR;
-  var nw=S.investments.reduce(function(s,i){return s+i.value},0);
-  S.snapshots.push({month:month,nw:nw,contrib:tC,returns:tR});
-  S.currentMonth++;S.lastProcessed=Date.now();
+
+  if(S.transactions.length>500) S.transactions=S.transactions.slice(-500);
+  S.totalContrib += tC;
+
+  // Record snapshot if anything was processed
+  if(tC>0){
+    var nw=S.investments.reduce(function(s,i){return s+getInvValue(i)},0);
+    S.snapshots.push({month:month, nw:nw, contrib:tC, returns:tR,
+      date:today.toISOString().slice(0,10)});
+    S.currentMonth++;
+  }
+
+  S.lastProcessed = Date.now();
+  if(processed>0){
+    saveS().then(function(){
+      renderAll();
+      generateAlerts();
+      toast('✅ '+processed+' SIP(s) processed for '+currentYM);
+    });
+  }
 }
 
-function processMonth(){
-  processMonthSilent();var last=S.snapshots[S.snapshots.length-1];
-  saveS().then(function(){renderAll();generateAlerts();showSuccess('✅','Month Processed',mNFull(S.currentMonth-1),{'Month':mN(S.currentMonth-1),'Invested':fmt(last.contrib),'Returns':fS(last.returns),'Net Worth':fmt(last.nw)})});
-}
+// Keep processMonthSilent as a no-op alias for safety (nothing should call it now)
+function processMonthSilent(){ checkAndProcessSIPs(); }
+function processMonth(){ checkAndProcessSIPs(); }
+function checkAutoProcess(){ checkAndProcessSIPs(); }
+function autoOrManualProcess(){ checkAndProcessSIPs(); }
 
 // ===== BOOT =====
 function ordinal(n){var s=n%100;if(s>=11&&s<=13)return n+'th';switch(n%10){case 1:return n+'st';case 2:return n+'nd';case 3:return n+'rd';default:return n+'th';}}
@@ -2805,6 +2850,10 @@ async function fetchStockPrice(sym){
   return null;
 }
 
+async function refreshAll(){
+  await fetchLivePrices();
+  checkAndProcessSIPs();
+}
 async function fetchLivePrices(){
   var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol});
   if(!stocks.length){toast('No stocks with NSE symbols','warn');return}
