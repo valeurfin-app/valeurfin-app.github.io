@@ -1,15 +1,18 @@
 {
-  "name": "ValeurFin — Wealth Advisory",
+  "name": "ValeurFin \u2014 Wealth Advisory",
   "short_name": "ValeurFin",
-  "description": "India's Privacy-First Wealth Dashboard. Track investments, expenses, insurance and more — 100% on your device.",
-  "start_url": "./index.html",
+  "description": "India's Privacy-First Wealth Dashboard. 100% on your device.",
+  "start_url": "./valeurfin-mobile.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "any",
+  "orientation": "portrait",
   "background_color": "#0f0f23",
   "theme_color": "#0f0f23",
   "lang": "en-IN",
-  "categories": ["finance", "productivity"],
+  "categories": [
+    "finance",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "logo.png",
@@ -22,23 +25,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "Open your wealth dashboard",
-      "url": "./index.html",
-      "icons": [{ "src": "logo.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Add Investment",
-      "short_name": "Add",
-      "description": "Add a new investment",
-      "url": "./index.html#add",
-      "icons": [{ "src": "logo.png", "sizes": "192x192" }]
     }
   ],
   "prefer_related_applications": false,
