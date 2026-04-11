@@ -500,7 +500,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== TOP BAR ===== -->
 <div class="topbar">
-<div class="tb-left"><img src="logo.png" alt="V"><h1>ValeurFin</h1></div>
+<div class="tb-left"><img src="logo.png" alt="V"><h1>ValeurFin</h1><span style="font-size:clamp(8px,2vw,10px);background:linear-gradient(135deg,var(--p),#0984E3);color:#fff;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:5px">✨ AI</span></div>
 <div class="tb-right">
 <button class="tb-btn voice-btn" onclick="toggleVoice()" id="voice-btn">🎤</button>
 <button class="tb-btn" onclick="autoOrManualProcess()">⏩</button>
@@ -595,13 +595,14 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="more-item" onclick="goMore('pg-remind')"><span class="mi-ic">⏰</span>Reminders</div>
 <div class="more-item" onclick="goMore('pg-goals')"><span class="mi-ic">🎯</span>Goals</div>
 <div class="more-item" onclick="goMore('pg-ins')"><span class="mi-ic">🛡️</span>Insurance</div>
-<div class="more-item" onclick="goMore('pg-bot')"><span class="mi-ic">🤖</span>ValeurBot</div>
+<div class="more-item" onclick="goMore('pg-bot')"><span class="mi-ic">🤖</span>ValeurBot<span style="font-size:7px;background:var(--p);color:#fff;padding:1px 4px;border-radius:3px;margin-left:2px">AI</span></div>
 <div class="more-item" onclick="goMore('pg-kpi')"><span class="mi-ic">📐</span>KPIs</div>
 <div class="more-item" onclick="goMore('pg-div')"><span class="mi-ic">💰</span>Dividends</div>
 <div class="more-item" onclick="goMore('pg-whatif')"><span class="mi-ic">🔮</span>What-If</div>
 <div class="more-item" onclick="goMore('pg-log')"><span class="mi-ic">📋</span>Log</div>
 <div class="more-item" onclick="goMore('pg-tax')"><span class="mi-ic">🧮</span>Tax</div>
 <div class="more-item" onclick="goMore('pg-exit')"><span class="mi-ic">🚪</span>Exit Signals</div>
+<div class="more-item" onclick="goMore('pg-screener')"><span class="mi-ic">🔍</span>Screener</div>
 <div class="more-item" onclick="goMore('pg-family')"><span class="mi-ic">👨‍👩‍👧‍👦</span>Family</div>
 <div class="more-item" onclick="goMore('pg-security')"><span class="mi-ic">🔒</span>Security</div>
 <div class="more-item" onclick="goMore('pg-about')"><span class="mi-ic">💎</span>About</div>
@@ -745,6 +746,45 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 </div>
 </div>
 
+<!-- SCREENER -->
+<div class="pg" id="pg-screener">
+<button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
+<div class="cd">
+<h3>🔍 Screener <span class="cd-badge">Portfolio</span></h3>
+<p class="m-sub">Filter and analyse your holdings</p>
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+  <select class="inp" id="scr-type-m" onchange="renderScreenerM()" style="flex:1;min-width:100px;font-size:clamp(11px,3vw,13px)">
+    <option value="all">All Types</option>
+    <option value="SIP">SIP</option>
+    <option value="Stocks">Stocks</option>
+    <option value="ELSS">ELSS</option>
+    <option value="FD">FD</option>
+    <option value="RD">RD</option>
+    <option value="PPF">PPF</option>
+    <option value="NPS">NPS</option>
+    <option value="Gold">Gold</option>
+    <option value="Crypto">Crypto</option>
+  </select>
+  <select class="inp" id="scr-cue-m" onchange="renderScreenerM()" style="flex:1;min-width:100px;font-size:clamp(11px,3vw,13px)">
+    <option value="all">All Signals</option>
+    <option value="hold">🟢 Hold</option>
+    <option value="review">🟡 Review</option>
+    <option value="sell">🔴 Sell</option>
+  </select>
+  <select class="inp" id="scr-sort-m" onchange="renderScreenerM()" style="flex:1;min-width:120px;font-size:clamp(11px,3vw,13px)">
+    <option value="value-desc">Value ↓</option>
+    <option value="value-asc">Value ↑</option>
+    <option value="returns-desc">Returns ↓</option>
+    <option value="returns-asc">Returns ↑</option>
+    <option value="name-asc">Name A-Z</option>
+  </select>
+</div>
+<div id="scr-summary-m" style="margin-bottom:8px"></div>
+<div id="scr-list-m"></div>
+<div id="scr-empty-m" style="display:none;text-align:center;padding:24px;color:var(--txt3);font-size:clamp(11px,3vw,13px)">No investments match the filter</div>
+</div>
+</div>
+
 <!-- ABOUT -->
 <div class="pg" id="pg-about">
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
@@ -827,17 +867,436 @@ var CRYPTO_EXCHANGES=['WazirX','CoinDCX','CoinSwitch','Binance','ZebPay','Other'
 var FY_LIST=['FY23','FY24','FY25','FY26'];
 
 var STOCK_DB=[
-  {name:'Reliance Industries',sym:'RELIANCE',sector:'Energy'},{name:'TCS',sym:'TCS',sector:'IT'},{name:'HDFC Bank',sym:'HDFCBANK',sector:'Banking'},
-  {name:'Infosys',sym:'INFY',sector:'IT'},{name:'ICICI Bank',sym:'ICICIBANK',sector:'Banking'},{name:'ITC',sym:'ITC',sector:'FMCG'},
-  {name:'SBI',sym:'SBIN',sector:'Banking'},{name:'Bharti Airtel',sym:'BHARTIARTL',sector:'Telecom'},{name:'Bajaj Finance',sym:'BAJFINANCE',sector:'Banking'},
-  {name:'Larsen & Toubro',sym:'LT',sector:'Infra'},{name:'HCL Technologies',sym:'HCLTECH',sector:'IT'},{name:'Axis Bank',sym:'AXISBANK',sector:'Banking'},
-  {name:'Maruti Suzuki',sym:'MARUTI',sector:'Auto'},{name:'Sun Pharma',sym:'SUNPHARMA',sector:'Pharma'},{name:'Titan Company',sym:'TITAN',sector:'FMCG'},
-  {name:'Wipro',sym:'WIPRO',sector:'IT'},{name:'NTPC',sym:'NTPC',sector:'Energy'},{name:'Tata Motors',sym:'TATAMOTORS',sector:'Auto'},
-  {name:'JSW Steel',sym:'JSWSTEEL',sector:'Metals'},{name:'Cipla',sym:'CIPLA',sector:'Pharma'},{name:'Tata Steel',sym:'TATASTEEL',sector:'Metals'},
-  {name:'Zomato',sym:'ZOMATO',sector:'IT'},{name:'DLF',sym:'DLF',sector:'Realty'},{name:'Bharat Electronics',sym:'BEL',sector:'Defence'},
-  {name:'HAL',sym:'HAL',sector:'Defence'},{name:'Tata Power',sym:'TATAPOWER',sector:'Energy'},{name:'LTIMindtree',sym:'LTIM',sector:'IT'},
-  {name:'Bajaj Auto',sym:'BAJAJ-AUTO',sector:'Auto'},{name:'Nifty BeES',sym:'NIFTYBEES',sector:'Others'}
-];
+  {name:'Reliance Industries',sym:'RELIANCE',sector:'Energy'},
+  {name:'TCS',sym:'TCS',sector:'IT'},
+  {name:'HDFC Bank',sym:'HDFCBANK',sector:'Banking'},
+  {name:'Infosys',sym:'INFY',sector:'IT'},
+  {name:'ICICI Bank',sym:'ICICIBANK',sector:'Banking'},
+  {name:'Hindustan Unilever',sym:'HINDUNILVR',sector:'FMCG'},
+  {name:'ITC',sym:'ITC',sector:'FMCG'},
+  {name:'SBI',sym:'SBIN',sector:'Banking'},
+  {name:'Bharti Airtel',sym:'BHARTIARTL',sector:'Telecom'},
+  {name:'Kotak Mahindra Bank',sym:'KOTAKBANK',sector:'Banking'},
+  {name:'Bajaj Finance',sym:'BAJFINANCE',sector:'Banking'},
+  {name:'Larsen & Toubro',sym:'LT',sector:'Infra'},
+  {name:'Asian Paints',sym:'ASIANPAINT',sector:'Chemicals'},
+  {name:'HCL Technologies',sym:'HCLTECH',sector:'IT'},
+  {name:'Axis Bank',sym:'AXISBANK',sector:'Banking'},
+  {name:'Maruti Suzuki',sym:'MARUTI',sector:'Auto'},
+  {name:'Sun Pharma',sym:'SUNPHARMA',sector:'Pharma'},
+  {name:'Titan Company',sym:'TITAN',sector:'FMCG'},
+  {name:'Wipro',sym:'WIPRO',sector:'IT'},
+  {name:'NTPC',sym:'NTPC',sector:'Energy'},
+  {name:'Tata Motors',sym:'TATAMOTORS',sector:'Auto'},
+  {name:'JSW Steel',sym:'JSWSTEEL',sector:'Metals'},
+  {name:'Coal India',sym:'COALINDIA',sector:'Energy'},
+  {name:'Adani Enterprises',sym:'ADANIENT',sector:'Others'},
+  {name:'Adani Ports',sym:'ADANIPORTS',sector:'Infra'},
+  {name:'Cipla',sym:'CIPLA',sector:'Pharma'},
+  {name:'Dr Reddys',sym:'DRREDDY',sector:'Pharma'},
+  {name:'BPCL',sym:'BPCL',sector:'Energy'},
+  {name:'Eicher Motors',sym:'EICHERMOT',sector:'Auto'},
+  {name:'Britannia',sym:'BRITANNIA',sector:'FMCG'},
+  {name:'Hindalco',sym:'HINDALCO',sector:'Metals'},
+  {name:'Tata Steel',sym:'TATASTEEL',sector:'Metals'},
+  {name:'Apollo Hospitals',sym:'APOLLOHOSP',sector:'Pharma'},
+  {name:'Hero MotoCorp',sym:'HEROMOTOCO',sector:'Auto'},
+  {name:'ONGC',sym:'ONGC',sector:'Energy'},
+  {name:'Tata Consumer',sym:'TATACONSUM',sector:'FMCG'},
+  {name:'M&M',sym:'M&M',sector:'Auto'},
+  {name:'HDFC Life',sym:'HDFCLIFE',sector:'Banking'},
+  {name:'Zomato',sym:'ZOMATO',sector:'IT'},
+  {name:'Trent',sym:'TRENT',sector:'FMCG'},
+  {name:'Avenue Supermarts',sym:'DMART',sector:'FMCG'},
+  {name:'DLF',sym:'DLF',sector:'Realty'},
+  {name:'Godrej Properties',sym:'GODREJPROP',sector:'Realty'},
+  {name:'Bharat Electronics',sym:'BEL',sector:'Defence'},
+  {name:'HAL',sym:'HAL',sector:'Defence'},
+  {name:'Tata Power',sym:'TATAPOWER',sector:'Energy'},
+  {name:'LTIMindtree',sym:'LTIM',sector:'IT'},
+  {name:'Bajaj Auto',sym:'BAJAJ-AUTO',sector:'Auto'},
+  {name:'TVS Motor',sym:'TVSMOTOR',sector:'Auto'},
+  {name:'SBI Life Insurance',sym:'SBILIFE',sector:'Banking'},
+  {name:'Adani Green Energy',sym:'ADANIGREEN',sector:'Energy'},
+  {name:'Adani Total Gas',sym:'ATGL',sector:'Energy'},
+  {name:'Adani Transmission',sym:'ADANITRANS',sector:'Energy'},
+  {name:'Adani Wilmar',sym:'AWL',sector:'FMCG'},
+  {name:'Ambuja Cements',sym:'AMBUJACEMENT',sector:'Infra'},
+  {name:'ACC',sym:'ACC',sector:'Infra'},
+  {name:'Bajaj Finserv',sym:'BAJAJFINSV',sector:'Banking'},
+  {name:'Bank of Baroda',sym:'BANKBARODA',sector:'Banking'},
+  {name:'Berger Paints',sym:'BERGEPAINT',sector:'Chemicals'},
+  {name:'Bharat Forge',sym:'BHARATFORG',sector:'Auto'},
+  {name:'Bosch',sym:'BOSCHLTD',sector:'Auto'},
+  {name:'Canara Bank',sym:'CANBK',sector:'Banking'},
+  {name:'Cholamandalam Investment',sym:'CHOLAFIN',sector:'Banking'},
+  {name:'Colgate Palmolive',sym:'COLPAL',sector:'FMCG'},
+  {name:'Dabur India',sym:'DABUR',sector:'FMCG'},
+  {name:'GAIL',sym:'GAIL',sector:'Energy'},
+  {name:'Godrej Consumer',sym:'GODREJCP',sector:'FMCG'},
+  {name:'Havells India',sym:'HAVELLS',sector:'Others'},
+  {name:'ICICI Prudential Life',sym:'ICICIPRULI',sector:'Banking'},
+  {name:'Indian Oil Corporation',sym:'IOC',sector:'Energy'},
+  {name:'IndusInd Bank',sym:'INDUSINDBK',sector:'Banking'},
+  {name:'Interglobe Aviation',sym:'INDIGO',sector:'Others'},
+  {name:'Jindal Steel & Power',sym:'JINDALSTEL',sector:'Metals'},
+  {name:'Marico',sym:'MARICO',sector:'FMCG'},
+  {name:'Muthoot Finance',sym:'MUTHOOTFIN',sector:'Banking'},
+  {name:'NMDC',sym:'NMDC',sector:'Metals'},
+  {name:'NHPC',sym:'NHPC',sector:'Energy'},
+  {name:'Page Industries',sym:'PAGEIND',sector:'FMCG'},
+  {name:'Pidilite Industries',sym:'PIDILITIND',sector:'Chemicals'},
+  {name:'PI Industries',sym:'PIIND',sector:'Chemicals'},
+  {name:'Power Grid',sym:'POWERGRID',sector:'Energy'},
+  {name:'Procter & Gamble',sym:'PGHH',sector:'FMCG'},
+  {name:'Punjab National Bank',sym:'PNB',sector:'Banking'},
+  {name:'Shree Cement',sym:'SHREECEM',sector:'Infra'},
+  {name:'Siemens India',sym:'SIEMENS',sector:'Others'},
+  {name:'SRF',sym:'SRF',sector:'Chemicals'},
+  {name:'Torrent Pharmaceuticals',sym:'TORNTPHARM',sector:'Pharma'},
+  {name:'Torrent Power',sym:'TORNTPOWER',sector:'Energy'},
+  {name:'UltraTech Cement',sym:'ULTRACEMCO',sector:'Infra'},
+  {name:'United Spirits',sym:'UNITDSPR',sector:'FMCG'},
+  {name:'Varun Beverages',sym:'VBL',sector:'FMCG'},
+  {name:'Vedanta',sym:'VEDL',sector:'Metals'},
+  {name:'Voltas',sym:'VOLTAS',sector:'Others'},
+  {name:'Zydus Lifesciences',sym:'ZYDUSLIFE',sector:'Pharma'},
+  {name:'Aarti Industries',sym:'AARTIIND',sector:'Chemicals'},
+  {name:'ABB India',sym:'ABB',sector:'Others'},
+  {name:'Alkem Laboratories',sym:'ALKEM',sector:'Pharma'},
+  {name:'Angel One',sym:'ANGELONE',sector:'Banking'},
+  {name:'Ashok Leyland',sym:'ASHOKLEY',sector:'Auto'},
+  {name:'Astral',sym:'ASTRAL',sector:'Chemicals'},
+  {name:'AU Small Finance Bank',sym:'AUBANK',sector:'Banking'},
+  {name:'Bata India',sym:'BATAINDIA',sector:'FMCG'},
+  {name:'Bharat Dynamics',sym:'BDL',sector:'Defence'},
+  {name:'Bharat Heavy Electricals',sym:'BHEL',sector:'Others'},
+  {name:'BEML',sym:'BEML',sector:'Defence'},
+  {name:'Blue Dart Express',sym:'BLUEDART',sector:'Others'},
+  {name:'Blue Star',sym:'BLUESTARCO',sector:'Others'},
+  {name:'Brigade Enterprises',sym:'BRIGADE',sector:'Realty'},
+  {name:'BSE',sym:'BSE',sector:'Banking'},
+  {name:'Can Fin Homes',sym:'CANFINHOME',sector:'Banking'},
+  {name:'Carborundum Universal',sym:'CARBORUNIV',sector:'Others'},
+  {name:'Castrol India',sym:'CASTROLIND',sector:'Energy'},
+  {name:'Central Depository Services',sym:'CDSL',sector:'Banking'},
+  {name:'Century Textiles',sym:'CENTURYTEX',sector:'Others'},
+  {name:'CESC',sym:'CESC',sector:'Energy'},
+  {name:'City Union Bank',sym:'CUB',sector:'Banking'},
+  {name:'Coforge',sym:'COFORGE',sector:'IT'},
+  {name:'Cummins India',sym:'CUMMINSIND',sector:'Auto'},
+  {name:'Cyient',sym:'CYIENT',sector:'IT'},
+  {name:'Dalmia Bharat',sym:'DALBHARAT',sector:'Infra'},
+  {name:'Data Patterns',sym:'DATAPATTNS',sector:'Defence'},
+  {name:'Deepak Nitrite',sym:'DEEPAKNTR',sector:'Chemicals'},
+  {name:'Emami',sym:'EMAMILTD',sector:'FMCG'},
+  {name:'Endurance Technologies',sym:'ENDURANCE',sector:'Auto'},
+  {name:'Exide Industries',sym:'EXIDEIND',sector:'Auto'},
+  {name:'Federal Bank',sym:'FEDERALBNK',sector:'Banking'},
+  {name:'Finolex Cables',sym:'FINCABLES',sector:'Others'},
+  {name:'Fortis Healthcare',sym:'FORTIS',sector:'Pharma'},
+  {name:'Galaxy Surfactants',sym:'GALAXYSURF',sector:'Chemicals'},
+  {name:'GLAND Pharma',sym:'GLAND',sector:'Pharma'},
+  {name:'Glaxo Smithkline Pharma',sym:'GLAXO',sector:'Pharma'},
+  {name:'GNFC',sym:'GNFC',sector:'Chemicals'},
+  {name:'Godrej Agrovet',sym:'GODREJAGRO',sector:'FMCG'},
+  {name:'Grindwell Norton',sym:'GRINDWELL',sector:'Others'},
+  {name:'Gujarat Fluorochemicals',sym:'FLUOROCHEM',sector:'Chemicals'},
+  {name:'Gujarat Gas',sym:'GUJGASLTD',sector:'Energy'},
+  {name:'Gujarat State Petronet',sym:'GSPL',sector:'Energy'},
+  {name:'Happiest Minds',sym:'HAPPSTMNDS',sector:'IT'},
+  {name:'Hatsun Agro',sym:'HATSUN',sector:'FMCG'},
+  {name:'HEG',sym:'HEG',sector:'Metals'},
+  {name:'Home First Finance',sym:'HOMEFIRST',sector:'Banking'},
+  {name:'HUDCO',sym:'HUDCO',sector:'Banking'},
+  {name:'IDFC First Bank',sym:'IDFCFIRSTB',sector:'Banking'},
+  {name:'IIFL Finance',sym:'IIFL',sector:'Banking'},
+  {name:'Indian Bank',sym:'INDIANB',sector:'Banking'},
+  {name:'Indiamart Intermesh',sym:'INDIAMART',sector:'IT'},
+  {name:'IndiaGrid Trust',sym:'INDIGRID',sector:'Energy'},
+  {name:'Indian Energy Exchange',sym:'IEX',sector:'Energy'},
+  {name:'Indian Hotels',sym:'INDHOTEL',sector:'Others'},
+  {name:'IRCTC',sym:'IRCTC',sector:'Others'},
+  {name:'IRFC',sym:'IRFC',sector:'Banking'},
+  {name:'ITI',sym:'ITI',sector:'Defence'},
+  {name:'J K Cement',sym:'JKCEMENT',sector:'Infra'},
+  {name:'Jio Financial Services',sym:'JIOFIN',sector:'Banking'},
+  {name:'JSW Energy',sym:'JSWENERGY',sector:'Energy'},
+  {name:'Jubilant Foodworks',sym:'JUBLFOOD',sector:'FMCG'},
+  {name:'Jubilant Pharmova',sym:'JUBLPHARMA',sector:'Pharma'},
+  {name:'Just Dial',sym:'JUSTDIAL',sector:'IT'},
+  {name:'Kajaria Ceramics',sym:'KAJARIACER',sector:'Others'},
+  {name:'Kalpataru Projects',sym:'KPITTECH',sector:'Infra'},
+  {name:'KPR Mill',sym:'KPRMILL',sector:'Others'},
+  {name:'L&T Finance',sym:'L&TFH',sector:'Banking'},
+  {name:'Laurus Labs',sym:'LAURUSLABS',sector:'Pharma'},
+  {name:'Lupin',sym:'LUPIN',sector:'Pharma'},
+  {name:'Macrotech Developers',sym:'LODHA',sector:'Realty'},
+  {name:'Manappuram Finance',sym:'MANAPPURAM',sector:'Banking'},
+  {name:'Max Healthcare',sym:'MAXHEALTH',sector:'Pharma'},
+  {name:'MCX',sym:'MCX',sector:'Banking'},
+  {name:'Metro Brands',sym:'METROBRAND',sector:'FMCG'},
+  {name:'Mphasis',sym:'MPHASIS',sector:'IT'},
+  {name:'MRF',sym:'MRF',sector:'Auto'},
+  {name:'Navin Fluorine',sym:'NAVINFLUOR',sector:'Chemicals'},
+  {name:'Nuvoco Vistas',sym:'NUVOCO',sector:'Infra'},
+  {name:'Oberoi Realty',sym:'OBEROIRLTY',sector:'Realty'},
+  {name:'Oil India',sym:'OIL',sector:'Energy'},
+  {name:'Oracle Financial',sym:'OFSS',sector:'IT'},
+  {name:'Orient Electric',sym:'ORIENTELEC',sector:'Others'},
+  {name:'Patanjali Foods',sym:'PATANJALI',sector:'FMCG'},
+  {name:'PC Jeweller',sym:'PCJEWELLER',sector:'FMCG'},
+  {name:'Piramal Enterprises',sym:'PEL',sector:'Pharma'},
+  {name:'Polycab India',sym:'POLYCAB',sector:'Others'},
+  {name:'Power Finance Corporation',sym:'PFC',sector:'Banking'},
+  {name:'Prestige Estates',sym:'PRESTIGE',sector:'Realty'},
+  {name:'Pricol',sym:'PRICOLLTD',sector:'Auto'},
+  {name:'Quess Corp',sym:'QUESS',sector:'Others'},
+  {name:'Rain Industries',sym:'RAIN',sector:'Chemicals'},
+  {name:'Raymond',sym:'RAYMOND',sector:'Others'},
+  {name:'REC',sym:'RECLTD',sector:'Banking'},
+  {name:'Relaxo Footwears',sym:'RELAXO',sector:'FMCG'},
+  {name:'Route Mobile',sym:'ROUTE',sector:'IT'},
+  {name:'RVNL',sym:'RVNL',sector:'Infra'},
+  {name:'SAIL',sym:'SAIL',sector:'Metals'},
+  {name:'Sapphire Foods',sym:'SAPPHIRE',sector:'FMCG'},
+  {name:'Schaeffler India',sym:'SCHAEFFLER',sector:'Auto'},
+  {name:'Sequent Scientific',sym:'SEQUENT',sector:'Pharma'},
+  {name:'SJVN',sym:'SJVN',sector:'Energy'},
+  {name:'SKF India',sym:'SKFINDIA',sector:'Auto'},
+  {name:'Solar Industries',sym:'SOLARINDS',sector:'Defence'},
+  {name:'Sona BLW Precision',sym:'SONACOMS',sector:'Auto'},
+  {name:'Sterlite Technologies',sym:'STLTECH',sector:'Telecom'},
+  {name:'Stylam Industries',sym:'STYLAM',sector:'Others'},
+  {name:'Sudarshan Chemical',sym:'SUDARSCHEM',sector:'Chemicals'},
+  {name:'Sundaram Finance',sym:'SUNDARMFIN',sector:'Banking'},
+  {name:'Supreme Industries',sym:'SUPREMEIND',sector:'Chemicals'},
+  {name:'Suzlon Energy',sym:'SUZLON',sector:'Energy'},
+  {name:'Syngene International',sym:'SYNGENE',sector:'Pharma'},
+  {name:'Tata Chemicals',sym:'TATACHEM',sector:'Chemicals'},
+  {name:'Tata Elxsi',sym:'TATAELXSI',sector:'IT'},
+  {name:'Tata Investment',sym:'TATAINVEST',sector:'Banking'},
+  {name:'Tata Technologies',sym:'TATATECH',sector:'IT'},
+  {name:'TeamLease Services',sym:'TEAMLEASE',sector:'Others'},
+  {name:'Thermax',sym:'THERMAX',sector:'Others'},
+  {name:'Timken India',sym:'TIMKEN',sector:'Auto'},
+  {name:'Tube Investments',sym:'TIINDIA',sector:'Auto'},
+  {name:'UCO Bank',sym:'UCOBANK',sector:'Banking'},
+  {name:'UNO Minda',sym:'UNOMINDA',sector:'Auto'},
+  {name:'Union Bank',sym:'UNIONBANK',sector:'Banking'},
+  {name:'V-Guard Industries',sym:'VGUARD',sector:'Others'},
+  {name:'Vijaya Diagnostics',sym:'VIJAYA',sector:'Pharma'},
+  {name:'Vinati Organics',sym:'VINATIORGA',sector:'Chemicals'},
+  {name:'Welspun Corp',sym:'WELCORP',sector:'Metals'},
+  {name:'Westlife Foodworld',sym:'WESTLIFE',sector:'FMCG'},
+  {name:'Zee Entertainment',sym:'ZEEL',sector:'Others'},
+  {name:'Aavas Financiers',sym:'AAVAS',sector:'Banking'},
+  {name:'Aether Industries',sym:'AETHER',sector:'Chemicals'},
+  {name:'Alkyl Amines',sym:'ALKYLAMINE',sector:'Chemicals'},
+  {name:'Alembic Pharma',sym:'APLLTD',sector:'Pharma'},
+  {name:'Amara Raja Energy',sym:'AMARAJABAT',sector:'Auto'},
+  {name:'Apcotex Industries',sym:'APCOTEXIND',sector:'Chemicals'},
+  {name:'Apollo Tyres',sym:'APOLLOTYRE',sector:'Auto'},
+  {name:'Aravind Eye Hospitals',sym:'ARAVIND',sector:'Pharma'},
+  {name:'Archean Chemical',sym:'ACI',sector:'Chemicals'},
+  {name:'Aster DM Healthcare',sym:'ASTERDM',sector:'Pharma'},
+  {name:'Bajaj Holdings',sym:'BAJAJHLDNG',sector:'Banking'},
+  {name:'Balaji Amines',sym:'BALAMINES',sector:'Chemicals'},
+  {name:'Balkrishna Industries',sym:'BALKRISIND',sector:'Auto'},
+  {name:'Bandhan Bank',sym:'BANDHANBNK',sector:'Banking'},
+  {name:'Bank of India',sym:'BANKINDIA',sector:'Banking'},
+  {name:'Bank of Maharashtra',sym:'MAHABANK',sector:'Banking'},
+  {name:'BASF India',sym:'BASF',sector:'Chemicals'},
+  {name:'Bengal & Assam Company',sym:'BENGALASS',sector:'Others'},
+  {name:'Birla Soft',sym:'BSOFT',sector:'IT'},
+  {name:'Bombay Dyeing',sym:'BOMBDYEING',sector:'Others'},
+  {name:'Capri Global Capital',sym:'CGCL',sector:'Banking'},
+  {name:'Carysil',sym:'CARYSIL',sector:'Others'},
+  {name:'Ceat',sym:'CEATLTD',sector:'Auto'},
+  {name:'Central Bank',sym:'CENTRALBK',sector:'Banking'},
+  {name:'Chambal Fertilizers',sym:'CHAMBLFERT',sector:'Chemicals'},
+  {name:'Chennai Petroleum',sym:'CHENNPETRO',sector:'Energy'},
+  {name:'Cochin Shipyard',sym:'COCHINSHIP',sector:'Defence'},
+  {name:'Computer Age Management',sym:'CAMS',sector:'Banking'},
+  {name:'Container Corporation',sym:'CONCOR',sector:'Infra'},
+  {name:'Control Print',sym:'CONTROLPR',sector:'Others'},
+  {name:'Cosmo First',sym:'COSMOFIRST',sector:'Chemicals'},
+  {name:'Credit Access Grameen',sym:'CREDITACC',sector:'Banking'},
+  {name:'DCB Bank',sym:'DCBBANK',sector:'Banking'},
+  {name:'DCM Shriram',sym:'DCMSHRIRAM',sector:'Chemicals'},
+  {name:'Deepak Fertilizers',sym:'DEEPAKFERT',sector:'Chemicals'},
+  {name:'Delta Corp',sym:'DELTACORP',sector:'Others'},
+  {name:'Dhani Services',sym:'DHANI',sector:'Banking'},
+  {name:'Dhanuka Agritech',sym:'DHANUKA',sector:'Chemicals'},
+  {name:'Dish TV',sym:'DISHTV',sector:'Telecom'},
+  {name:'Dixon Technologies',sym:'DIXON',sector:'IT'},
+  {name:'Easy Trip Planners',sym:'EASEMYTRIP',sector:'Others'},
+  {name:'Edelweiss Financial',sym:'EDELWEISS',sector:'Banking'},
+  {name:'EIH',sym:'EIHOTEL',sector:'Others'},
+  {name:'Elgi Equipments',sym:'ELGIEQUIP',sector:'Others'},
+  {name:'Equitas Small Finance',sym:'EQUITASBNK',sector:'Banking'},
+  {name:'Ester Industries',sym:'ESTER',sector:'Chemicals'},
+  {name:'Ethos',sym:'ETHOSLTD',sector:'FMCG'},
+  {name:'Everest Industries',sym:'EVERESTIND',sector:'Infra'},
+  {name:'Five-Star Business Finance',sym:'FIVESTAR',sector:'Banking'},
+  {name:'Flemingo Travel Retail',sym:'FLEMINGO',sector:'Others'},
+  {name:'Foseeco India',sym:'FOSECO',sector:'Metals'},
+  {name:'GE Shipping',sym:'GESHIP',sector:'Others'},
+  {name:'Gillette India',sym:'GILLETTE',sector:'FMCG'},
+  {name:'GRSE',sym:'GRSE',sector:'Defence'},
+  {name:'Gujarat Ambuja Exports',sym:'GUJAMBEXPO',sector:'FMCG'},
+  {name:'Harsco India',sym:'HARSCO',sector:'Others'},
+  {name:'Heidelberg Cement',sym:'HEIDELBERG',sector:'Infra'},
+  {name:'Hikal',sym:'HIKAL',sector:'Chemicals'},
+  {name:'Himadri Speciality Chemical',sym:'HSCL',sector:'Chemicals'},
+  {name:'Honda India Power',sym:'HONDAPOWER',sector:'Auto'},
+  {name:'HPL Electric',sym:'HPL',sector:'Others'},
+  {name:'HSIL',sym:'HSIL',sector:'Others'},
+  {name:'IFCI',sym:'IFCI',sector:'Banking'},
+  {name:'IIFL Wealth',sym:'IIFLWAM',sector:'Banking'},
+  {name:'India Cements',sym:'INDIACEM',sector:'Infra'},
+  {name:'Indian Overseas Bank',sym:'IOB',sector:'Banking'},
+  {name:'Indiabulls Housing',sym:'IBULHSGFIN',sector:'Banking'},
+  {name:'Indo Count Industries',sym:'ICIL',sector:'Others'},
+  {name:'Indoco Remedies',sym:'INDOCO',sector:'Pharma'},
+  {name:'Inox Wind',sym:'INOXWIND',sector:'Energy'},
+  {name:'IPCA Laboratories',sym:'IPCALAB',sector:'Pharma'},
+  {name:'ITD Cementation',sym:'ITDCEM',sector:'Infra'},
+  {name:'IVP',sym:'IVP',sector:'Others'},
+  {name:'JB Chemicals',sym:'JBCHEPHARM',sector:'Pharma'},
+  {name:'JK Paper',sym:'JKPAPER',sector:'Others'},
+  {name:'JM Financial',sym:'JMFINANCIL',sector:'Banking'},
+  {name:'JSW Infrastructure',sym:'JSWINFRA',sector:'Infra'},
+  {name:'Jupiter Wagons',sym:'JWL',sector:'Infra'},
+  {name:'KEI Industries',sym:'KEI',sector:'Others'},
+  {name:'Kansai Nerolac Paints',sym:'KANSAINER',sector:'Chemicals'},
+  {name:'Karnataka Bank',sym:'KTKBANK',sector:'Banking'},
+  {name:'Kennametal India',sym:'KENNAMET',sector:'Others'},
+  {name:'KFIN Technologies',sym:'KFINTECH',sector:'Banking'},
+  {name:'Kirloskar Brothers',sym:'KIRLOSBROS',sector:'Others'},
+  {name:'Kirloskar Oil Engines',sym:'KIRLOSENG',sector:'Others'},
+  {name:'KSB',sym:'KSB',sector:'Others'},
+  {name:'Laxmi Organic Industries',sym:'LXCHEM',sector:'Chemicals'},
+  {name:'Lakshmi Machine Works',sym:'LAXMIMACH',sector:'Others'},
+  {name:'LTTS',sym:'LTTS',sector:'IT'},
+  {name:'Mahindra CIE Automotive',sym:'MAHINDCIE',sector:'Auto'},
+  {name:'Mahindra Lifespaces',sym:'MAHLIFE',sector:'Realty'},
+  {name:'Maharashtra Seamless',sym:'MAHSEAMLES',sector:'Metals'},
+  {name:'Man Infraconstruction',sym:'MANINFRA',sector:'Infra'},
+  {name:'Mastek',sym:'MASTEK',sector:'IT'},
+  {name:'Mayur Uniquoters',sym:'MAYURUNIQ',sector:'Others'},
+  {name:'Medplus Health Services',sym:'MEDPLUS',sector:'Pharma'},
+  {name:'Mishra Dhatu Nigam',sym:'MIDHANI',sector:'Defence'},
+  {name:'MMTC',sym:'MMTC',sector:'Others'},
+  {name:'Motherson Sumi Wiring',sym:'MSUMI',sector:'Auto'},
+  {name:'Mtar Technologies',sym:'MTAR',sector:'Defence'},
+  {name:'Natco Pharma',sym:'NATCOPHARM',sector:'Pharma'},
+  {name:'NCC',sym:'NCC',sector:'Infra'},
+  {name:'Nestle India',sym:'NESTLEIND',sector:'FMCG'},
+  {name:'Newgen Software',sym:'NEWGEN',sector:'IT'},
+  {name:'Nippon Life AMC',sym:'NAM-INDIA',sector:'Banking'},
+  {name:'NOCIL',sym:'NOCIL',sector:'Chemicals'},
+  {name:'NLC India',sym:'NLCINDIA',sector:'Energy'},
+  {name:'Olectra Greentech',sym:'OLECTRA',sector:'Auto'},
+  {name:'Orient Paper',sym:'ORIENTPPR',sector:'Others'},
+  {name:'Panacea Biotec',sym:'PANACEABIO',sector:'Pharma'},
+  {name:'Paradeep Phosphates',sym:'PARADEEP',sector:'Chemicals'},
+  {name:'Paras Defence',sym:'PARAS',sector:'Defence'},
+  {name:'PB Fintech',sym:'POLICYBZR',sector:'Banking'},
+  {name:'Pearl Global Industries',sym:'PGIL',sector:'Others'},
+  {name:'PNB Housing Finance',sym:'PNBHOUSING',sector:'Banking'},
+  {name:'Praj Industries',sym:'PRAJIND',sector:'Energy'},
+  {name:'Prince Pipes',sym:'PRINCEPIPE',sector:'Others'},
+  {name:'PSP Projects',sym:'PSPPROJECT',sector:'Infra'},
+  {name:'PTC India',sym:'PTC',sector:'Energy'},
+  {name:'Punjab & Sind Bank',sym:'PSB',sector:'Banking'},
+  {name:'Radico Khaitan',sym:'RADICO',sector:'FMCG'},
+  {name:'Ratnamani Metals',sym:'RATNAMANI',sector:'Metals'},
+  {name:'RHI Magnesita India',sym:'RHIM',sector:'Metals'},
+  {name:'Rico Auto Industries',sym:'RICOAUTO',sector:'Auto'},
+  {name:'Rites',sym:'RITES',sector:'Infra'},
+  {name:'Rossari Biotech',sym:'ROSSARI',sector:'Chemicals'},
+  {name:'Rupa & Company',sym:'RUPA',sector:'FMCG'},
+  {name:'RPG Life Sciences',sym:'RPGLIFE',sector:'Pharma'},
+  {name:'S Chand',sym:'SCHAND',sector:'Others'},
+  {name:'Saregama India',sym:'SAREGAMA',sector:'Others'},
+  {name:'Sarla Performance Fibers',sym:'SARLAPOLY',sector:'Others'},
+  {name:'SBI Cards',sym:'SBICARD',sector:'Banking'},
+  {name:'SEPC',sym:'SEPC',sector:'Infra'},
+  {name:'Sharda Cropchem',sym:'SHARDACROP',sector:'Chemicals'},
+  {name:'Shilpa Medicare',sym:'SHILPAMED',sector:'Pharma'},
+  {name:'Shipping Corporation',sym:'SCI',sector:'Others'},
+  {name:'Shyam Metalics',sym:'SHYAMMETL',sector:'Metals'},
+  {name:'Small Industries Dev Bank',sym:'SIDBI',sector:'Banking'},
+  {name:'Sobha',sym:'SOBHA',sector:'Realty'},
+  {name:'Solara Active Pharma',sym:'SOLARA',sector:'Pharma'},
+  {name:'Somany Ceramics',sym:'SOMANYCERA',sector:'Others'},
+  {name:'Star Cement',sym:'STARCEMENT',sector:'Infra'},
+  {name:'Sterling Wilson',sym:'SWSOLAR',sector:'Energy'},
+  {name:'Suven Pharmaceuticals',sym:'SUVEN',sector:'Pharma'},
+  {name:'Swan Energy',sym:'SWANENERGY',sector:'Energy'},
+  {name:'Tata Communications',sym:'TATACOMM',sector:'Telecom'},
+  {name:'Tata Metaliks',sym:'TATAMETALI',sector:'Metals'},
+  {name:'Tata Teleservices',sym:'TTML',sector:'Telecom'},
+  {name:'TCI Express',sym:'TCIEXP',sector:'Others'},
+  {name:'TD Power Systems',sym:'TDPOWERSYS',sector:'Others'},
+  {name:'Techno Electric',sym:'TECHNOELEC',sector:'Energy'},
+  {name:'Texmaco Rail',sym:'TEXRAIL',sector:'Infra'},
+  {name:'Thyrocare Technologies',sym:'THYROCARE',sector:'Pharma'},
+  {name:'Titagarh Rail Systems',sym:'TITAGARH',sector:'Infra'},
+  {name:'Transport Corporation',sym:'TCI',sector:'Others'},
+  {name:'TTK Prestige',sym:'TTKPRESTIG',sector:'FMCG'},
+  {name:'Ujjivan Financial',sym:'UJJIVAN',sector:'Banking'},
+  {name:'United Breweries',sym:'UBL',sector:'FMCG'},
+  {name:'Usha Martin',sym:'USHAMART',sector:'Metals'},
+  {name:'VA Tech Wabag',sym:'WABAG',sector:'Others'},
+  {name:'Vardhman Textiles',sym:'VTL',sector:'Others'},
+  {name:'Vascon Engineers',sym:'VASCONEQ',sector:'Infra'},
+  {name:'VST Industries',sym:'VSTIND',sector:'FMCG'},
+  {name:'VIP Industries',sym:'VIPIND',sector:'FMCG'},
+  {name:'WNS Holdings',sym:'WNS',sector:'IT'},
+  {name:'Xchanging Technology',sym:'XCHANGING',sector:'IT'},
+  {name:'Yes Bank',sym:'YESBANK',sector:'Banking'},
+  {name:'Nifty BeES',sym:'NIFTYBEES',sector:'Others'},
+  {name:'Nifty Next 50 ETF',sym:'JUNIORBEES',sector:'Others'},
+  {name:'Bank BeES',sym:'BANKBEES',sector:'Banking'},
+  {name:'Gold BeES',sym:'GOLDBEES',sector:'Others'},
+  {name:'Kotak Nifty ETF',sym:'KOTAKNIFTY',sector:'Others'},
+  {name:'SBI Nifty 50 ETF',sym:'SETFNIF50',sector:'Others'},
+  {name:'HDFC Nifty 50 ETF',sym:'HDFCNIFTY',sector:'Others'},
+  {name:'Nippon ETF Nifty 50',sym:'NETF',sector:'Others'},
+  {name:'UTI Nifty 50 ETF',sym:'UTINIFTETF',sector:'Others'},
+  {name:'ICICI Pru Nifty ETF',sym:'ICICINIFTY',sector:'Others'},
+  {name:'Kotak Nifty Bank ETF',sym:'KOTAKBKETF',sector:'Banking'},
+  {name:'Mirae Nifty 50 ETF',sym:'MAFANG',sector:'Others'},
+  {name:'Nasdaq 100 ETF',sym:'MOM100',sector:'IT'},
+  {name:'Motilal Oswal Nasdaq 100',sym:'MON100',sector:'IT'},
+  {name:'Hang Seng BeES',sym:'HNGSNGBEES',sector:'Others'},
+  {name:'Nippon ETF Nifty IT',sym:'ITBEES',sector:'IT'},
+  {name:'Nippon ETF Infra',sym:'INFRABEES',sector:'Infra'},
+  {name:'Nippon ETF Consumption',sym:'CONSUMBEES',sector:'FMCG'},
+  {name:'Nippon ETF Pharma',sym:'PHARMABEES',sector:'Pharma'},
+  {name:'Nippon ETF Dividend',sym:'DIVOPPBEES',sector:'Others'},
+  {name:'CPSE ETF',sym:'CPSEETF',sector:'Others'},
+  {name:'Bharat 22 ETF',sym:'BHARAT22ETF',sector:'Others'},
+  {name:'PSU Bank BeES',sym:'PSUBNKBEES',sector:'Banking'},
+  {name:'Nippon ETF Nifty 100',sym:'NV20BEES',sector:'Others'},
+  {name:'SBI ETF Sensex',sym:'SENSEXETF',sector:'Others'},
+  {name:'HDFC Sensex ETF',sym:'HDFCSENSEX',sector:'Others'},
+  {name:'Nifty Midcap 150 ETF',sym:'NM150BEES',sector:'Others'},
+  {name:'Kotak Sensex ETF',sym:'KOTAKSENSEX',sector:'Others'},
+  {name:'Edelweiss Nifty 100 ETF',sym:'EBBETF0430',sector:'Others'},
+  {name:'Silver ETF',sym:'SILVERETF',sector:'Others'},
+  {name:'Nippon Silver ETF',sym:'SILVERBEES',sector:'Others'},
+  {name:'Kotak Gold ETF',sym:'KOTAKGOLD',sector:'Others'},
+  {name:'SBI Gold ETF',sym:'SBIETS',sector:'Others'},
+  {name:'HDFC Gold ETF',sym:'HDFCGOLD',sector:'Others'},
+  {name:'UTI Gold ETF',sym:'UTIGOLD',sector:'Others'},
+  {name:'Axis Gold ETF',sym:'AXISGOLD',sector:'Others'},
+  {name:'ICICI Gold ETF',sym:'ICICIGOLD',sector:'Others'},
+  {name:'Quantum Gold ETF',sym:'QGOLDHALF',sector:'Others'},
+  {name:'Nifty PSE ETF',sym:'NIFTYPSETF',sector:'Others'}
+]
 
 // ===== STATE =====
 var S=null,DB=null,currentMember='all',editingId=null,editingType=null,alertList=[];
@@ -919,7 +1378,7 @@ function applyTheme(){document.documentElement.setAttribute('data-theme',S.theme
 
 // ===== NAVIGATION =====
 function goNav(tab){var map={home:'pg-home',inv:'pg-inv',exp:'pg-exp',add:'pg-add',more:'pg-more'};document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active')});document.getElementById(map[tab]).classList.add('active');document.querySelectorAll('.bnav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('nav-'+tab).classList.add('on');if(tab==='add')renderAddSubForms()}
-function goMore(pgId){document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active')});document.getElementById(pgId).classList.add('active');document.querySelectorAll('.bnav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('nav-more').classList.add('on');if(pgId==='pg-tax')renderTaxM();if(pgId==='pg-exit')renderExitM()}
+function goMore(pgId){document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active')});document.getElementById(pgId).classList.add('active');document.querySelectorAll('.bnav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('nav-more').classList.add('on');if(pgId==='pg-tax')renderTaxM();if(pgId==='pg-exit')renderExitM();if(pgId==='pg-screener')renderScreenerM()}
 
 // ===== FAMILY =====
 function switchMember(val){currentMember=val;renderAll()}
@@ -1198,7 +1657,7 @@ function rHomeTips(nw,invested,returns,mExp,mInc,inv){
   if(!S.expenses.length)tips.push({ic:'💸',t:'Track expenses.'});
   if(!S.income.length)tips.push({ic:'💰',t:'Add income.'});
   var el=document.getElementById('home-tips');
-  if(tips.length)el.innerHTML='<div class="tip-card"><div class="tc-head">🤖 Insights</div>'+tips.slice(0,4).map(function(t){return '<div class="tip-item"><span class="ti-ic">'+t.ic+'</span><span>'+t.t+'</span></div>'}).join('')+'</div>';
+  if(tips.length)el.innerHTML='<div class="tip-card"><div class="tc-head">✨ AI Insights</div>'+tips.slice(0,4).map(function(t){return '<div class="tip-item"><span class="ti-ic">'+t.ic+'</span><span>'+t.t+'</span></div>'}).join('')+'</div>';
   else el.innerHTML='';
 }
 function rHomeMarket(){var el=document.getElementById('home-market');var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.livePrice});if(!stocks.length){el.innerHTML='<div style="text-align:center;font-size:9px;color:var(--txt3);padding:8px"><button class="btn-sm" onclick="fetchLivePrices()">🔄 Fetch</button></div>';return}el.innerHTML=stocks.sort(function(a,b){return(b.dayChangePct||0)-(a.dayChangePct||0)}).slice(0,4).map(function(s){var up=(s.dayChangePct||0)>=0;return '<div class="mp-stock-row"><span class="ms-name">'+s.label+'</span><span class="ms-price">₹'+s.livePrice.toFixed(2)+'</span><span class="ms-chg" style="color:'+(up?'var(--g)':'var(--d)')+'">'+(up?'+':'')+(s.dayChangePct||0).toFixed(1)+'%</span></div>'}).join('')}
@@ -1212,7 +1671,7 @@ function rInv(){var inv=filterByMember(S.investments);var el=document.getElement
   var types=[];inv.forEach(function(i){if(types.indexOf(i.type)===-1)types.push(i.type)});
   document.getElementById('inv-pills').innerHTML='<button class="pill on" onclick="filterInvM(this,\'all\')">All</button>'+types.map(function(t){return '<button class="pill" onclick="filterInvM(this,\''+t+'\')">'+invIcon(t)+' '+t+'</button>'}).join('');
   el.innerHTML=inv.map(function(i){var val=i.liveValue||i.value;var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;var liveUp=(i.dayChangePct||0)>=0;var ti=getTaxInfo(i);var ec=getExitCue(i,val,ret,retP);
-    return '<div class="inv-card" data-type="'+i.type+'"><div class="inv-top"><div class="inv-ic" style="background:'+(BUCKET_COLORS[i.bucket]||'#636E72')+'20;color:'+(BUCKET_COLORS[i.bucket]||'#636E72')+'">'+invIcon(i.type)+'</div><div class="inv-info"><h4>'+i.label+'</h4><p>'+i.type+(i.nseSymbol?' · '+i.nseSymbol:'')+(i.platform?' · '+i.platform:'')+'</p></div></div><div class="inv-grid"><div class="ig-k">Invested</div><div class="ig-v">'+fmt(i.invested)+'</div><div class="ig-k">Current</div><div class="ig-v">'+fmt(val)+'</div><div class="ig-k">Returns</div><div class="ig-v" style="color:'+(ret>=0?'var(--g)':'var(--d)')+'">'+fS(ret)+' ('+pct(retP)+')</div>'+(i.livePrice?'<div class="ig-k">Live</div><div class="ig-v"><span class="live-badge '+(liveUp?'up':'dn')+'">₹'+i.livePrice.toFixed(2)+'</span></div>':'')+'<div class="ig-k">Tax</div><div class="ig-v"><span class="tax-badge '+ti.badge+'">'+ti.label+'</span></div><div class="ig-k">Signal</div><div class="ig-v"><span class="exit-cue '+ec.cls+'">'+ec.icon+' '+ec.label+'</span></div></div><div class="inv-actions"><button onclick="openEditInv(\''+i.id+'\')">✏️</button><button onclick="quickDeleteInv(\''+i.id+'\')">🗑️</button></div></div>'}).join('')}
+    return '<div class="inv-card" data-type="'+i.type+'"><div class="inv-top"><div class="inv-ic" style="background:'+(BUCKET_COLORS[i.bucket]||'#636E72')+'20;color:'+(BUCKET_COLORS[i.bucket]||'#636E72')+'">'+invIcon(i.type)+'</div><div class="inv-info"><h4>'+i.label+'</h4><p>'+i.type+(i.nseSymbol?' · '+i.nseSymbol:'')+(i.platform?' · '+i.platform:'')+'</p></div></div><div class="inv-grid"><div class="ig-k">Invested</div><div class="ig-v">'+fmt(i.invested)+'</div><div class="ig-k">Current</div><div class="ig-v">'+fmt(val)+'</div><div class="ig-k">Returns</div><div class="ig-v" style="color:'+(ret>=0?'var(--g)':'var(--d)')+'">'+fS(ret)+' ('+pct(retP)+')</div>'+(i.livePrice?'<div class="ig-k">Live</div><div class="ig-v"><span class="live-badge '+(liveUp?'up':'dn')+'">₹'+i.livePrice.toFixed(2)+'</span></div>':'')+'<div class="ig-k">Tax</div><div class="ig-v"><span class="tax-badge '+ti.badge+'">'+ti.label+'</span></div><div class="ig-k">Signal</div><div class="ig-v"><span class="exit-cue '+ec.cls+'">'+ec.icon+' '+ec.label+'</span></div></div><div class="inv-actions"><button onclick="openEditInv(\''+i.id+'\')">✏️</button><button onclick="quickDeleteInv(\''+i.id+'\')">🗑️</button>'+(i.type==='Stocks'&&i.nseSymbol?'<a href="https://www.screener.in/company/'+i.nseSymbol+'/" target="_blank" style="text-decoration:none;font-size:clamp(14px,4vw,18px)" title="Screener.in">📊</a>&nbsp;<a href="https://tickertape.in/stocks/'+i.nseSymbol+'-NSE/" target="_blank" style="text-decoration:none;font-size:clamp(14px,4vw,18px)" title="Tickertape">📈</a>':'')+'</div></div>'}).join('')}
 function filterInvM(btn,type){document.querySelectorAll('#inv-pills .pill').forEach(function(p){p.classList.remove('on')});btn.classList.add('on');document.querySelectorAll('.inv-card').forEach(function(c){c.style.display=type==='all'?'':c.getAttribute('data-type')===type?'':'none'})}
 
 // ===== EDIT INVESTMENT =====
@@ -1222,7 +1681,7 @@ function openEditInv(id){var inv=S.investments.find(function(i){return i.id===id
   h+='<div class="fr"><div class="fg"><label>Invested</label><input class="inp" id="edit-invested" type="number" value="'+Math.round(inv.invested)+'"></div><div class="fg"><label>Current</label><input class="inp" id="edit-value" type="number" value="'+Math.round(inv.liveValue||inv.value)+'"></div></div>';
   h+='<div class="fg"><label>Started</label><input class="inp" id="edit-started" type="date" value="'+(inv.started||'')+'"></div>';
   h+='<div class="fg"><label>Return %</label><input class="inp" id="edit-return" type="number" value="'+(inv.returnRate||0)+'"></div>';
-  if(inv.type==='Stocks'){h+='<div class="fr"><div class="fg"><label>Symbol</label><input class="inp" id="edit-symbol" value="'+(inv.nseSymbol||'')+'"></div><div class="fg"><label>Sector</label><select class="inp" id="edit-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option '+(inv.sector===s?'selected':'')+'>'+s+'</option>'}).join('')+'</select></div></div>';h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="edit-qty" type="number" value="'+(inv.qty||0)+'"></div><div class="fg"><label>Avg Price</label><input class="inp" id="edit-avgprice" type="number" value="'+(inv.avgPrice||0)+'"></div></div>'}
+  if(inv.type==='Stocks'){h+='<div class="fg"><label>NSE Symbol</label><div style="display:flex;gap:5px"><input class="inp" id="edit-symbol" value="'+(inv.nseSymbol||'')+'" oninput="this.value=this.value.toUpperCase()" style="flex:1"><button type="button" class="btn-sm" onclick="testSymbol(\'edit-symbol\',\'edit-sym-result\')" style="white-space:nowrap">🔍</button></div><div id="edit-sym-result" style="font-size:9px;margin-top:3px"></div></div><div class="fg"><label>Sector</label><select class="inp" id="edit-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option '+(inv.sector===s?'selected':'')+'>'+s+'</option>'}).join('')+'</select></div></div>';h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="edit-qty" type="number" value="'+(inv.qty||0)+'"></div><div class="fg"><label>Avg Price</label><input class="inp" id="edit-avgprice" type="number" value="'+(inv.avgPrice||0)+'"></div></div>'}
   if(inv.type==='FD'||inv.type==='RD')h+='<div class="fg"><label>Maturity</label><input class="inp" id="edit-maturity" type="date" value="'+(inv.maturityDate||'')+'"></div>';
   h+='<div class="fr"><div class="fg"><label>Target %</label><input class="inp" id="edit-target" type="number" value="'+(inv.targetReturn||'')+'"></div><div class="fg"><label>Stop Loss %</label><input class="inp" id="edit-stoploss" type="number" value="'+(inv.stopLoss||'')+'"></div></div>';
   document.getElementById('em-form').innerHTML=h;document.getElementById('em-del-confirm').style.display='none';document.getElementById('edit-modal').classList.add('open')}
@@ -1263,7 +1722,7 @@ function buildAddFields(){var t=INV_TYPES.find(function(x){return x.id===selecte
   h+='><div class="dd" id="'+(t.hasMF?'mf-dd':'stock-dd')+'"></div></div></div>';
   h+='<div class="fr"><div class="fg"><label>Platform</label><select class="inp" id="add-platform"><option value="">Select</option>'+(t.id==='Crypto'?CRYPTO_EXCHANGES:t.id==='FD'||t.id==='RD'||t.id==='PPF'?BANKS:PLATFORMS).map(function(p){return '<option>'+p+'</option>'}).join('')+'</select></div><div class="fg"><label>Started</label><input class="inp" id="add-started" type="date"></div></div>';
   h+='<div class="fg"><label>Current (₹)</label><input class="inp" id="add-current" type="number"></div>';
-  if(t.id==='Stocks')h+='<div class="fr"><div class="fg"><label>Symbol</label><input class="inp" id="add-symbol"></div><div class="fg"><label>Sector</label><select class="inp" id="add-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div></div>';
+  if(t.id==='Stocks')h+='<div class="fg"><label>NSE Symbol</label><div style="display:flex;gap:5px"><input class="inp" id="add-symbol" placeholder="e.g. NIFTYBEES" style="flex:1" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn-sm" onclick="testSymbol(\'add-symbol\',\'add-sym-result\')">🔍</button></div><div id="add-sym-result" style="font-size:9px;margin-top:3px"></div></div><div class="fg"><label>Sector</label><select class="inp" id="add-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div></div>';
   if(t.hasMonthly){h+='<div class="fr"><div class="fg"><label>Monthly</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due</label><select class="inp" id="add-due">';for(var d=1;d<=28;d++)h+='<option value="'+d+'">'+d+'th</option>';h+='</select></div></div><div class="fr"><div class="fg"><label>Step-Up %</label><input class="inp" id="add-stepup" type="number" value="10"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="12"></div></div>'}
   else h+='<div class="fr"><div class="fg"><label>Invested</label><input class="inp" id="add-invested" type="number"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="8"></div></div>';
   if(t.hasFD)h+='<div class="fr"><div class="fg"><label>Maturity</label><input class="inp" id="add-maturity" type="date"></div><div class="fg"><label>Rate %</label><input class="inp" id="add-fdrate" type="number" placeholder="7.5"></div></div>';
@@ -1475,7 +1934,24 @@ function selectMF(i, version){
   if(dd) dd.classList.remove('open');
   clearTimeout(mfSearchTimer);
 }
-function searchStock(q){var dd=document.getElementById('stock-dd');if(q.length<2){dd.classList.remove('open');return}var f=STOCK_DB.filter(function(s){return s.name.toLowerCase().includes(q.toLowerCase())||s.sym.toLowerCase().includes(q.toLowerCase())}).slice(0,10);if(f.length){dd.innerHTML=f.map(function(s){return '<div class="dd-i" onclick="selectStock(\''+s.name+'\',\''+s.sym+'\',\''+s.sector+'\')"><b>'+s.name+'</b><small>'+s.sym+'</small></div>'}).join('');dd.classList.add('open')}else dd.classList.remove('open')}
+function searchStock(q){
+  var dd=document.getElementById('stock-dd');
+  if(q.length<2){dd.classList.remove('open');return}
+  var ql=q.toLowerCase();
+  var f=STOCK_DB.filter(function(s){
+    return s.name.toLowerCase().includes(ql)||s.sym.toLowerCase().includes(ql);
+  }).slice(0,12);
+  var html='';
+  if(f.length){
+    html+=f.map(function(s){
+      return '<div class="dd-i" onclick="selectStock(\''+s.name+'\',\''+s.sym+'\',\''+s.sector+'\')"><b>'+s.name+'</b><small style="color:var(--txt3)">'+s.sym+' · '+s.sector+'</small></div>';
+    }).join('');
+  }
+  // Always show manual entry option at bottom
+  html+='<div class="dd-i" style="border-top:1px solid var(--bdr);color:var(--txt3);font-size:10px" onclick="selectStock(\''+q+'\',\''+q.toUpperCase()+'\',\'Others\')">✏️ Use "<b>'+q+'</b>" as custom stock/ETF</div>';
+  dd.innerHTML=html;
+  dd.classList.add('open');
+}
 function searchStock(q){var dd=document.getElementById('stock-dd');if(q.length<2){dd.classList.remove('open');return}var f=STOCK_DB.filter(function(s){return s.name.toLowerCase().includes(q.toLowerCase())||s.sym.toLowerCase().includes(q.toLowerCase())}).slice(0,8);if(f.length){dd.innerHTML=f.map(function(s){return '<div class="dd-i" onclick="selectStock(\''+s.name+'\',\''+s.sym+'\',\''+s.sector+'\')"><b>'+s.name+'</b><small>'+s.sym+'</small></div>'}).join('');dd.classList.add('open')}else dd.classList.remove('open')}
 function selectStock(name,sym,sector){document.getElementById('add-name').value=name;document.getElementById('stock-dd').classList.remove('open');var es=document.getElementById('add-symbol');if(es)es.value=sym;var esc=document.getElementById('add-sector');if(esc)esc.value=sector}
 
@@ -1551,21 +2027,76 @@ function rKPI(){var inv=filterByMember(S.investments);var el=document.getElement
 // ====================================================
 
 // ===== LIVE PRICES =====
+// ── Test Symbol — validate NSE/BSE symbol before saving ─────────────────
+async function testSymbol(inputId, resultId){
+  var symEl=document.getElementById(inputId);
+  var resEl=document.getElementById(resultId);
+  if(!symEl||!resEl)return;
+  var sym=symEl.value.trim().toUpperCase();
+  if(!sym){resEl.innerHTML='<span style="color:var(--w)">Enter a symbol first</span>';return}
+  resEl.innerHTML='<span style="color:var(--txt2)">🔍 Testing '+sym+'...</span>';
+  var data=await fetchStockPrice(sym);
+  if(data&&data.price>0){
+    resEl.innerHTML='<span style="color:var(--g)">✅ '+sym+' found on '+data.exchange
+      +' — ₹'+data.price.toFixed(2)
+      +(data.changePct>=0?' <span style="color:var(--g)">▲':'<span style="color:var(--d)">▼')
+      +Math.abs(data.changePct).toFixed(2)+'%</span></span>';
+    symEl.value=sym; // normalise to uppercase
+  } else {
+    resEl.innerHTML='<span style="color:var(--d)">❌ '+sym+' not found on NSE or BSE.'
+      +' Try adding .NS or .BO suffix, or check the symbol on NSE India.</span>';
+  }
+}
+
 async function fetchStockPrice(sym){
-  for(var p=0;p<CORS_PROXIES.length;p++){
-    try{var url=CORS_PROXIES[(activeProxy+p)%CORS_PROXIES.length]+encodeURIComponent(yahooURL(sym));
-      var resp=await fetch(url,{signal:AbortSignal.timeout(8000)});if(!resp.ok)continue;var d=await resp.json();
-      var meta=d&&d.chart&&d.chart.result&&d.chart.result[0]&&d.chart.result[0].meta;
-      if(meta){activeProxy=(activeProxy+p)%CORS_PROXIES.length;return{price:meta.regularMarketPrice||0,prevClose:meta.chartPreviousClose||0,fiftyTwoHigh:meta.fiftyTwoWeekHigh||0,fiftyTwoLow:meta.fiftyTwoWeekLow||0,change:(meta.regularMarketPrice||0)-(meta.chartPreviousClose||0),changePct:meta.chartPreviousClose?((meta.regularMarketPrice-meta.chartPreviousClose)/meta.chartPreviousClose*100):0}}
-    }catch(e){continue}}return null}
+  var suffixes=['.NS','.BO'];
+  for(var si=0;si<suffixes.length;si++){
+    var fullSym=sym+suffixes[si];
+    for(var p=0;p<CORS_PROXIES.length;p++){
+      try{
+        var url=CORS_PROXIES[(activeProxy+p)%CORS_PROXIES.length]
+          +encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+fullSym+'?range=1d&interval=1d');
+        var resp=await fetch(url,{signal:AbortSignal.timeout(8000)});
+        if(!resp.ok)continue;
+        var d=await resp.json();
+        var meta=d&&d.chart&&d.chart.result&&d.chart.result[0]&&d.chart.result[0].meta;
+        if(meta&&meta.regularMarketPrice>0){
+          activeProxy=(activeProxy+p)%CORS_PROXIES.length;
+          return{price:meta.regularMarketPrice||0,prevClose:meta.chartPreviousClose||0,
+            fiftyTwoHigh:meta.fiftyTwoWeekHigh||0,fiftyTwoLow:meta.fiftyTwoWeekLow||0,
+            change:(meta.regularMarketPrice||0)-(meta.chartPreviousClose||0),
+            changePct:meta.chartPreviousClose?((meta.regularMarketPrice-meta.chartPreviousClose)/meta.chartPreviousClose*100):0,
+            exchange:suffixes[si]==='.NS'?'NSE':'BSE'};
+        }
+      }catch(e){continue}
+    }
+  }
+  return null;
+}
 
 async function fetchLivePrices(){
   var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol});
-  if(!stocks.length){fireNotif('⚠️','No stocks','');return}fireNotif('🔄','Fetching','');var fetched=0;
-  for(var idx=0;idx<stocks.length;idx++){var inv=stocks[idx];var data=await fetchStockPrice(inv.nseSymbol);
-    if(data&&inv.qty&&data.price){inv.livePrice=data.price;inv.liveValue=inv.qty*data.price;inv.dayChange=data.change;inv.dayChangePct=data.changePct;inv.fiftyTwoHigh=data.fiftyTwoHigh;inv.fiftyTwoLow=data.fiftyTwoLow;fetched++}
-    await new Promise(function(r){setTimeout(r,300)})}
-  priceLastFetched=new Date();if(fetched>0){saveS();renderAll();rMarketM();generateAlerts();fireNotif('✅',fetched+' updated','')}else fireNotif('⚠️','Failed','')}
+  if(!stocks.length){fireNotif('⚠️','No stocks','Add stocks with NSE symbols');return}
+  fireNotif('🔄','Fetching prices','');var fetched=0;
+  for(var idx=0;idx<stocks.length;idx++){
+    var inv=stocks[idx];var data=await fetchStockPrice(inv.nseSymbol);
+    if(data&&data.price){
+      inv.livePrice=data.price;
+      if(inv.qty&&inv.qty>0){
+        inv.liveValue=inv.qty*data.price;
+      } else if(inv.avgPrice&&inv.avgPrice>0){
+        inv.liveValue=inv.invested*(data.price/inv.avgPrice);
+      }
+      inv.dayChange=data.change;inv.dayChangePct=data.changePct;
+      inv.fiftyTwoHigh=data.fiftyTwoHigh;inv.fiftyTwoLow=data.fiftyTwoLow;
+      fetched++;
+    }
+    await new Promise(function(r){setTimeout(r,300)});
+  }
+  priceLastFetched=new Date();
+  if(fetched>0){saveS();renderAll();rMarketM();generateAlerts();fireNotif('✅',fetched+' prices updated','')}
+  else fireNotif('⚠️','Could not fetch','Check symbols or try again');
+}
 
 // ===== MARKET PULSE =====
 function rMarketM(){
@@ -1706,6 +2237,64 @@ function toggleVoiceChat(){var btn=document.getElementById('chat-voice-btn-m');i
 function stopVoice(btn){isListening=false;if(btn){btn.classList.remove('listening');btn.textContent='🎤'}if(voiceRecognition){try{voiceRecognition.stop()}catch(e){}voiceRecognition=null}}
 
 // ===== INIT =====
+function renderScreenerM(){
+  var inv=filterByMember(S.investments);
+  var typeF=document.getElementById('scr-type-m').value;
+  var cueF=document.getElementById('scr-cue-m').value;
+  var sortF=document.getElementById('scr-sort-m').value;
+  var filtered=inv.filter(function(i){
+    if(typeF!=='all'&&i.type!==typeF)return false;
+    if(cueF!=='all'){var val=i.liveValue||i.value;var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);if(cueF!==cue.level)return false}
+    return true;
+  });
+  filtered.sort(function(a,b){
+    var aV=a.liveValue||a.value,bV=b.liveValue||b.value;
+    var aR=a.invested>0?((aV-a.invested)/a.invested*100):0,bR=b.invested>0?((bV-b.invested)/b.invested*100):0;
+    if(sortF==='value-desc')return bV-aV;if(sortF==='value-asc')return aV-bV;
+    if(sortF==='returns-desc')return bR-aR;if(sortF==='returns-asc')return aR-bR;
+    if(sortF==='name-asc')return a.label.localeCompare(b.label);return 0;
+  });
+  var el=document.getElementById('scr-list-m');
+  var empty=document.getElementById('scr-empty-m');
+  var summary=document.getElementById('scr-summary-m');
+  if(!filtered.length){if(el)el.innerHTML='';if(empty)empty.style.display='block';if(summary)summary.innerHTML='';return}
+  if(empty)empty.style.display='none';
+  var tI=0,tV=0;
+  if(el)el.innerHTML=filtered.map(function(i){
+    var val=i.liveValue||i.value;var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;
+    var ti=getTaxInfo(i);var ec=getExitCue(i,val,ret,retP);
+    var hd=i.started?Math.floor((Date.now()-new Date(i.started))/(1e3*60*60*24)):0;
+    var hs=hd>365?Math.floor(hd/365)+'y':hd>30?Math.floor(hd/30)+'m':hd+'d';
+    tI+=i.invested;tV+=val;
+    var extLinks=i.type==='Stocks'&&i.nseSymbol
+      ?'<a href="https://www.screener.in/company/'+i.nseSymbol+'/" target="_blank" style="text-decoration:none;font-size:14px" title="Screener.in">📊</a> '
+       +'<a href="https://tickertape.in/stocks/'+i.nseSymbol+'-NSE/" target="_blank" style="text-decoration:none;font-size:14px" title="Tickertape">📈</a>'
+      :'';
+    return '<div class="inv-card" style="margin-bottom:6px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+      +'<div><b style="font-size:clamp(12px,3.3vw,15px)">'+invIcon(i.type)+' '+i.label+'</b>'
+      +'<div style="font-size:clamp(9px,2.5vw,11px);color:var(--txt3);margin-top:1px">'+i.type+(i.nseSymbol?' · '+i.nseSymbol:'')+'</div></div>'
+      +'<div style="text-align:right">'
+      +'<div style="font-size:clamp(12px,3.3vw,15px);font-weight:700;color:'+(ret>=0?'var(--g)':'var(--d)')+'">'+pct(retP)+'</div>'
+      +'<div style="font-size:clamp(9px,2.5vw,11px);color:var(--txt3)">'+hs+' · <span class="tax-badge '+ti.badge+'">'+ti.label+'</span></div>'
+      +'</div></div>'
+      +'<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:clamp(10px,2.8vw,12px)">'
+      +'<div><span style="color:var(--txt3)">Invested</span> <b>'+fmt(i.invested)+'</b></div>'
+      +'<div><span style="color:var(--txt3)">Current</span> <b>'+fmt(val)+'</b></div>'
+      +'<div><span class="exit-cue '+ec.cls+'">'+ec.icon+' '+ec.label+'</span></div>'
+      +'</div>'
+      +(extLinks?'<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bdr)">'+extLinks+'</div>':'')
+      +'</div>';
+  }).join('');
+  var tR=tV-tI;
+  if(summary)summary.innerHTML='<div class="sg" style="grid-template-columns:repeat(4,1fr);margin-bottom:0">'
+    +'<div class="st"><div class="lbl">Count</div><div class="val">'+filtered.length+'</div></div>'
+    +'<div class="st"><div class="lbl">Invested</div><div class="val">'+fmt(tI)+'</div></div>'
+    +'<div class="st"><div class="lbl">Current</div><div class="val">'+fmt(tV)+'</div></div>'
+    +'<div class="st"><div class="lbl">Returns</div><div class="val" style="color:'+(tR>=0?'var(--g)':'var(--d)')+'">'+fS(tR)+'</div></div>'
+    +'</div>';
+}
+
 function initApp(){
   applyTheme();renderAll();rMarketM();rBotPageM();generateAlerts();
   var hasStocks=S.investments.some(function(i){return i.type==='Stocks'&&i.nseSymbol});
