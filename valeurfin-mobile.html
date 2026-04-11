@@ -503,8 +503,8 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="tb-left"><img src="logo.png" alt="V"><h1>ValeurFin</h1><span style="font-size:clamp(8px,2vw,10px);background:linear-gradient(135deg,var(--p),#0984E3);color:#fff;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:5px">✨ AI</span></div>
 <div class="tb-right">
 <button class="tb-btn voice-btn" onclick="toggleVoice()" id="voice-btn">🎤</button>
-<button class="tb-btn" onclick="autoOrManualProcess()">⏩</button>
-<button class="tb-btn" onclick="fetchLivePrices()">🔄</button>
+<!-- SIPs auto-process on due date -->
+<button class="tb-btn" onclick="refreshAll()">🔄</button>
 <div style="position:relative"><button class="tb-btn" onclick="toggleAlerts()">🔔</button><div class="alert-badge" id="alert-badge">0</div></div>
 <button class="tb-btn" onclick="toggleTheme()" id="thb">🌙</button>
 </div>
@@ -551,7 +551,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="cd"><h3>📊 Holdings</h3><div id="home-holdings"></div></div>
 <div class="cd"><h3>🚪 Exit Cues</h3><div id="home-exit-cues"></div></div>
 <div class="cd"><h3>🔔 Alerts</h3><div id="home-alerts"></div></div>
-<button class="btn-proc" onclick="autoOrManualProcess()">⏩ Process Month</button>
+
 </div>
 
 <!-- INVESTMENTS -->
@@ -613,7 +613,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- MARKET -->
 <div class="pg" id="pg-market">
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
-<div style="display:flex;align-items:center;gap:4px;font-size:8px;color:var(--txt2);margin-bottom:6px"><span class="live-dot"></span><span id="mp-time-m">—</span><button class="btn-sm" onclick="fetchLivePrices()">🔄</button></div>
+<div style="display:flex;align-items:center;gap:4px;font-size:8px;color:var(--txt2);margin-bottom:6px"><span class="live-dot"></span><span id="mp-time-m">—</span><button class="btn-sm" onclick="refreshAll()">🔄</button></div>
 <div class="cd"><h3>📊 Portfolio <span class="cd-badge">LIVE</span></h3><div id="mp-portfolio-m"></div></div>
 <div class="cd"><h3>🔥 Gainers</h3><div id="mp-gainers-m"></div></div>
 <div class="cd"><h3>📉 Losers</h3><div id="mp-losers-m"></div></div>
@@ -1489,11 +1489,59 @@ function obFinish(withPin){var pin='';if(withPin){pin=[1,2,3,4].map(function(i){
   saveS().then(function(){document.getElementById('onboard').classList.add('hidden');applyTheme();initApp()})}
 
 // ===== MONTH PROCESSING =====
-function checkAutoProcess(){if(!S.lastProcessed)return;var days=(Date.now()-S.lastProcessed)/(1e3*60*60*24);if(days>=30){var months=Math.floor(days/30);for(var i=0;i<months;i++)processMonthSilent();fireNotif('⚡','Auto-processed',months+' month(s)')}}
+function checkAndProcessSIPs(){
+  if(!S.investments||!S.investments.length)return;
+  var today=new Date();
+  var todayDay=today.getDate();
+  var currentYM=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+  var tC=0,processed=0,month=S.currentMonth;
+  S.investments.forEach(function(inv){
+    if(inv.monthly>0&&inv.dueDate){
+      if(inv.lastSIPMonth===currentYM)return;
+      var due=parseInt(inv.dueDate);
+      var daysInMonth=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
+      var effectiveDue=Math.min(due,daysInMonth);
+      if(todayDay<effectiveDue)return;
+      var suf=inv.stepUpFrom||0;
+      if(inv.stepUp&&month>suf&&(month-suf)%12===0){inv.monthly=Math.round(inv.monthly*(1+inv.stepUp/100));}
+      var m=inv.monthly;
+      inv.invested+=m;inv.value+=m;inv.lastSIPMonth=currentYM;tC+=m;processed++;
+      S.transactions.push({id:uid(),date:today.toISOString().slice(0,10),type:'credit',label:inv.label,amount:m,icon:invIcon(inv.type)});
+    }
+    if(inv.swpAmount>0&&inv.value>0){
+      if(inv.lastSWPMonth===currentYM)return;
+      var swpOk=true;
+      if(inv.swpStartDate){swpOk=Date.now()>=new Date(inv.swpStartDate).getTime();}
+      if(swpOk){
+        var swpAmt=Math.min(inv.swpAmount,inv.value*0.9);
+        inv.value=Math.max(0,inv.value-swpAmt);
+        inv.lastSWPMonth=currentYM;
+        var swpIncLabel='SWP: '+inv.label;
+        var existingSwpInc=S.income.find(function(ic){return ic.swpRef===inv.id});
+        if(existingSwpInc){existingSwpInc.amount=swpAmt;}
+        else{S.income.push({id:uid(),label:swpIncLabel,category:'dividends',amount:swpAmt,frequency:'monthly',owner:inv.owner||'self',swpRef:inv.id,createdAt:Date.now()});}
+        S.transactions.push({id:uid(),date:today.toISOString().slice(0,10),type:'credit',label:swpIncLabel,amount:swpAmt,icon:'??'});
+      }
+    }
+  });
+  if(S.transactions.length>500)S.transactions=S.transactions.slice(-500);
+  S.totalContrib+=tC;
+  if(tC>0){
+    var nw=S.investments.reduce(function(s,i){return s+getInvValue(i)},0);
+    S.snapshots.push({month:month,nw:nw,contrib:tC,returns:0,date:today.toISOString().slice(0,10)});
+    S.currentMonth++;
+  }
+  S.lastProcessed=Date.now();
+  if(processed>0){saveS().then(function(){renderAll();generateAlerts();fireNotif('✅',processed+' SIP(s) processed',currentYM);});}
+}
+function checkAutoProcess(){checkAndProcessSIPs();}
+function processMonthSilent(){checkAndProcessSIPs();}
+function processMonth(){checkAndProcessSIPs();}
+function autoOrManualProcess(){checkAndProcessSIPs();}
 var lastProcessClick=0;
-function autoOrManualProcess(){if(!S.investments.length){fireNotif('⚠️','Add investments','');return}var now=Date.now();if(now-lastProcessClick<2000)return;lastProcessClick=now;if(!confirm('Process Month '+(S.currentMonth+1)+'?'))return;processMonth()}
-function processMonthSilent(){var month=S.currentMonth,tC=0,tR=0;S.investments.forEach(function(inv){if(inv.monthly>0){var m=inv.monthly;if(inv.stepUp&&month>0&&month%12===0){m=m*(1+inv.stepUp/100);inv.monthly=Math.round(m)}inv.invested+=m;inv.value+=m;tC+=m}var base=inv.returnRate||0;var vol=inv.type==='Crypto'?8:inv.type==='Stocks'?3:inv.type==='FD'||inv.type==='RD'||inv.type==='PPF'?.2:1.5;var mR=(base/12/100)+(Math.random()-.5)*vol/100;var rAmt=inv.value*mR;inv.value+=rAmt;inv.returns=(inv.returns||0)+rAmt;tR+=rAmt});if(S.transactions.length>500)S.transactions=S.transactions.slice(-500);S.totalContrib+=tC;S.totalReturns+=tR;var nw=S.investments.reduce(function(s,i){return s+i.value},0);S.snapshots.push({month:month,nw:nw,contrib:tC,returns:tR});S.currentMonth++;S.lastProcessed=Date.now()}
-function processMonth(){processMonthSilent();var last=S.snapshots[S.snapshots.length-1];saveS().then(function(){renderAll();generateAlerts();showSuccess('✅','Month Processed',mNFull(S.currentMonth-1),{'Month':mN(S.currentMonth-1),'Returns':fS(last.returns),'Net Worth':fmt(last.nw)})})}
+
+
+
 
 // ===== BOOT =====
 function ordinal(n){var s=n%100;if(s>=11&&s<=13)return n+'th';switch(n%10){case 1:return n+'st';case 2:return n+'nd';case 3:return n+'rd';default:return n+'th';}}
@@ -1672,7 +1720,7 @@ function rHomeTips(nw,invested,returns,mExp,mInc,inv){
   if(tips.length)el.innerHTML='<div class="tip-card"><div class="tc-head">✨ AI Insights</div>'+tips.slice(0,4).map(function(t){return '<div class="tip-item"><span class="ti-ic">'+t.ic+'</span><span>'+t.t+'</span></div>'}).join('')+'</div>';
   else el.innerHTML='';
 }
-function rHomeMarket(){var el=document.getElementById('home-market');var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.livePrice});if(!stocks.length){el.innerHTML='<div style="text-align:center;font-size:9px;color:var(--txt3);padding:8px"><button class="btn-sm" onclick="fetchLivePrices()">🔄 Fetch</button></div>';return}el.innerHTML=stocks.sort(function(a,b){return(b.dayChangePct||0)-(a.dayChangePct||0)}).slice(0,4).map(function(s){var up=(s.dayChangePct||0)>=0;return '<div class="mp-stock-row"><span class="ms-name">'+s.label+'</span><span class="ms-price">₹'+s.livePrice.toFixed(2)+'</span><span class="ms-chg" style="color:'+(up?'var(--g)':'var(--d)')+'">'+(up?'+':'')+(s.dayChangePct||0).toFixed(1)+'%</span></div>'}).join('')}
+function rHomeMarket(){var el=document.getElementById('home-market');var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.livePrice});if(!stocks.length){el.innerHTML='<div style="text-align:center;font-size:9px;color:var(--txt3);padding:8px"><button class="btn-sm" onclick="refreshAll()">🔄 Fetch</button></div>';return}el.innerHTML=stocks.sort(function(a,b){return(b.dayChangePct||0)-(a.dayChangePct||0)}).slice(0,4).map(function(s){var up=(s.dayChangePct||0)>=0;return '<div class="mp-stock-row"><span class="ms-name">'+s.label+'</span><span class="ms-price">₹'+s.livePrice.toFixed(2)+'</span><span class="ms-chg" style="color:'+(up?'var(--g)':'var(--d)')+'">'+(up?'+':'')+(s.dayChangePct||0).toFixed(1)+'%</span></div>'}).join('')}
 function rHomeExpBars(exps){var el=document.getElementById('home-exp-bars');if(!exps.length){el.innerHTML='<div style="text-align:center;font-size:9px;color:var(--txt3);padding:8px">No expenses</div>';return}var cats={};exps.forEach(function(e){var a=e.frequency==='monthly'?e.amount:e.frequency==='yearly'?e.amount/12:e.amount;cats[e.category]=(cats[e.category]||0)+a});var sorted=Object.entries(cats).sort(function(a,b){return b[1]-a[1]}).slice(0,6);var max=sorted[0]?sorted[0][1]:1;el.innerHTML=sorted.map(function(e){return '<div class="bar-row"><div class="bar-lbl">'+catIcon(e[0])+' '+catLabel(e[0])+'</div><div class="bar-track"><div class="bar-fill" style="background:'+catColor(e[0])+';--w:'+(e[1]/max*100).toFixed(0)+'%"></div></div><div class="bar-val">'+fmt(e[1])+'</div></div>'}).join('')}
 function rHomeHoldings(inv,nw){var el=document.getElementById('home-holdings');if(!inv.length){el.innerHTML='<div style="text-align:center;font-size:9px;color:var(--txt3);padding:8px">No holdings</div>';return}var sorted=inv.slice().sort(function(a,b){return(b.liveValue||b.value)-(a.liveValue||a.value)}).slice(0,6);var max=sorted[0]?(sorted[0].liveValue||sorted[0].value):1;el.innerHTML=sorted.map(function(i){var val=i.liveValue||i.value;var up=(val-i.invested)>=0;return '<div class="bar-row"><div class="bar-lbl">'+invIcon(i.type)+' '+i.label.substring(0,12)+'</div><div class="bar-track"><div class="bar-fill" style="background:'+(up?'var(--g)':'var(--d)')+';--w:'+(val/max*100).toFixed(0)+'%"></div></div><div class="bar-val">'+fmt(val)+'</div></div>'}).join('')}
 function rHomeExitCues(inv){var el=document.getElementById('home-exit-cues');if(!el)return;var signals=getExitSignals(inv);if(!signals.length){el.innerHTML='<div style="text-align:center;padding:6px;font-size:9px;color:var(--txt3)">🟢 All good</div>';return}el.innerHTML=signals.slice(0,4).map(function(s){return '<div class="alert-item" style="border-left:3px solid '+(s.level==='sell'?'var(--d)':'var(--w)')+'"><span class="a-ic">'+(s.level==='sell'?'🔴':'🟡')+'</span><div class="a-body"><b>'+s.inv.label+'</b><small>'+s.reason+'</small></div></div>'}).join('')}
@@ -2101,6 +2149,10 @@ async function fetchStockPrice(sym){
   return null;
 }
 
+async function refreshAll(){
+  await fetchLivePrices();
+  checkAndProcessSIPs();
+}
 async function fetchLivePrices(){
   var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol});
   if(!stocks.length){fireNotif('⚠️','No stocks','Add stocks with NSE symbols');return}
