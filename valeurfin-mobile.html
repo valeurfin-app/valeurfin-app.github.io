@@ -297,8 +297,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 .ob-inp{width:100%;padding:10px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:inherit;font-size:14px;outline:none}
 .ob-inp:focus{border-color:var(--p)}.ob-inp::placeholder{color:rgba(255,255,255,.2)}
 .ob-select{width:100%;padding:10px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:inherit;font-size:14px;outline:none;-webkit-appearance:none}
-.ob-select option{background:#1a1a35 !important;color:#fff !important}
-.ob-select:focus option{background:#1a1a35 !important;color:#fff !important}
+.ob-select option{background:#1a1a35;color:#fff}
 .ob-row{display:flex;gap:6px}.ob-row .ob-fg{flex:1}
 .ob-btn{width:100%;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
 .ob-btn-primary{background:linear-gradient(135deg,var(--p),#0984E3);color:#fff}
@@ -311,20 +310,9 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 .ob-family-list{margin-bottom:6px}
 .ob-fm{display:flex;align-items:center;gap:6px;padding:5px;background:rgba(255,255,255,.04);border-radius:6px;margin-bottom:3px;font-size:10px;color:#fff}
 .ob-fm button{background:none;border:none;color:rgba(255,255,255,.3);font-size:11px}
-.ob-add-member{display:flex;gap:4px;margin-top:4px;align-items:center}
-.ob-add-member input{flex:2;padding:8px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-family:inherit;font-size:12px;outline:none}
-.ob-add-member input::placeholder{color:rgba(255,255,255,.3)}
-.ob-add-member button{padding:8px 12px;background:var(--p);color:#fff;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:700;white-space:nowrap;flex-shrink:0}
-/* Custom relation picker — replaces native select which ignores CSS on mobile */
-.rel-picker{flex:1.5;position:relative;user-select:none}
-.rel-picker-btn{width:100%;padding:8px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:12px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:inherit}
-.rel-picker-btn.placeholder{color:rgba(255,255,255,.35)}
-.rel-picker-btn .arr{font-size:9px;opacity:.6}
-.rel-picker-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1a1a35;border:1.5px solid rgba(108,92,231,.5);border-radius:8px;z-index:50000;overflow:hidden;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
-.rel-picker-list.open{display:block}
-.rel-picker-opt{padding:10px 12px;color:#fff;font-size:12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);background:#1a1a35}
-.rel-picker-opt:last-child{border-bottom:none}
-.rel-picker-opt:hover,.rel-picker-opt:active{background:rgba(108,92,231,.3);color:#fff}
+.ob-add-member{display:flex;gap:4px;margin-top:4px}
+.ob-add-member input,.ob-add-member select{flex:1;padding:5px 7px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;font-family:inherit;font-size:10px;outline:none}
+.ob-add-member button{padding:5px 10px;background:var(--p);color:#fff;border:none;border-radius:6px;font-size:9px;cursor:pointer;font-family:inherit;font-weight:600}
 
 /* === MORE PAGE === */
 .more-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
@@ -398,29 +386,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 </div>
 <div id="ob-family-section" style="display:none">
 <div class="ob-family-list" id="ob-family-list"></div>
-<p style="font-size:9px;color:rgba(255,255,255,.4);margin:4px 0 4px">Enter name and select relation, then tap + Add</p>
-<div class="ob-add-member">
-<input id="ob-fm-name" placeholder="Member name">
-<div class="rel-picker" id="rel-picker">
-  <button type="button" class="rel-picker-btn placeholder" id="rel-picker-btn" onclick="toggleRelPicker()">
-    <span id="rel-picker-label">Relation</span><span class="arr">▼</span>
-  </button>
-  <div class="rel-picker-list" id="rel-picker-list">
-    <div class="rel-picker-opt" onclick="selectRelation('Spouse')">Spouse</div>
-    <div class="rel-picker-opt" onclick="selectRelation('Father')">Father</div>
-    <div class="rel-picker-opt" onclick="selectRelation('Mother')">Mother</div>
-    <div class="rel-picker-opt" onclick="selectRelation('Son')">Son</div>
-    <div class="rel-picker-opt" onclick="selectRelation('Daughter')">Daughter</div>
-    <div class="rel-picker-opt" onclick="selectRelation('Brother')">Brother</div>
-    <div class="rel-picker-opt" onclick="selectRelation('Sister')">Sister</div>
-    <div class="rel-picker-opt" onclick="selectRelation('Grandparent')">Grandparent</div>
-    <div class="rel-picker-opt" onclick="selectRelation('Other')">Other</div>
-  </div>
-</div>
-<!-- Hidden input stores the value — obAddMember reads this -->
-<input type="hidden" id="ob-fm-relation" value="">
-<button onclick="obAddMember()">+ Add</button>
-</div>
+<div class="ob-add-member"><input id="ob-fm-name" placeholder="Name"><select id="ob-fm-relation"><option value="">Relation</option><option>Spouse</option><option>Father</option><option>Mother</option><option>Son</option><option>Daughter</option><option>Other</option></select><button onclick="obAddMember()">+</button></div>
 </div>
 <div class="ob-err" id="ob-err-2"></div>
 <button class="ob-btn ob-btn-primary" onclick="obNext(2)">Continue →</button>
@@ -429,18 +395,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="ob-step" id="ob-step-3">
 <h2>Secure 🔒</h2><h3>Set 4-digit PIN</h3>
 <div class="pin-row"><input class="pin-dot" id="ob-pin-1" type="password" maxlength="1" inputmode="numeric"><input class="pin-dot" id="ob-pin-2" type="password" maxlength="1" inputmode="numeric"><input class="pin-dot" id="ob-pin-3" type="password" maxlength="1" inputmode="numeric"><input class="pin-dot" id="ob-pin-4" type="password" maxlength="1" inputmode="numeric"></div>
-<div class="ob-fg" style="margin-top:10px"><label>Security Question</label><select class="ob-select" id="ob-sec-q" onchange="obSecQChangeM(this)">
-  <option value="">— Select a question —</option>
-  <option value="mother" style="background:#1a1a35;color:#fff">What is your mother's maiden name?</option>
-  <option value="pet" style="background:#1a1a35;color:#fff">What was your first pet's name?</option>
-  <option value="city" style="background:#1a1a35;color:#fff">What city were you born in?</option>
-  <option value="school" style="background:#1a1a35;color:#fff">What was the name of your first school?</option>
-  <option value="movie" style="background:#1a1a35;color:#fff">What is your favourite movie?</option>
-  <option value="custom" style="background:#1a1a35;color:#fff">Write your own question...</option>
-</select>
-<div id="ob-custom-q-wrap-m" style="display:none;margin-top:6px">
-  <input class="ob-inp" id="ob-custom-q-m" placeholder="Type your security question">
-</div></div>
+<div class="ob-fg" style="margin-top:10px"><label>Security Question</label><select class="ob-inp" id="ob-sec-q" style="font-size:11px;padding:8px"><option value="">Select</option><option>Mother's maiden name?</option><option>First pet's name?</option><option>Birth city?</option><option>Favorite movie?</option></select></div>
 <div class="ob-fg"><label>Answer</label><input class="ob-inp" id="ob-sec-a" placeholder="For PIN recovery" style="font-size:12px"></div>
 <div class="ob-err" id="ob-err-3"></div>
 <button class="ob-btn ob-btn-primary" onclick="obFinish(true)">Set PIN & Launch →</button>
@@ -731,7 +686,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="cd">
 <div class="about-hero"><img src="logo.png" alt="V"><h2>ValeurFin</h2><p>Master Your Financial Story</p></div>
 <div class="about-features"><div>📊 Investments</div><div>📈 Live Market</div><div>💸 Expenses</div><div>🛡️ Insurance</div><div>🤖 AI Bot</div><div>🎯 Goals</div><div>🧮 Tax Calc</div><div>🚪 Exit Signals</div></div>
-<div class="about-founder"><div class="af-avatar">ST</div><div class="af-info"><h3>Siddharth Tiwari</h3><p>Founder · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="91e7f0fdf4e4e3f7f8ffbffcf0e2e5f4e3e8fee4e3f7f8fff0fff2f4e2d1f6fcf0f8fdbff2fefc">[email&#160;protected]</a></p></div></div>
+<div class="about-founder"><div class="af-avatar">ST</div><div class="af-info"><h3>Siddharth Tiwari</h3><p>Founder · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4b3d2a272e3e392d222565262a383f2e3932243e392d22252a25282e380b2c262a222765282426">[email&#160;protected]</a></p></div></div>
 <div class="about-disclaimer">⚠️ Educational tool. Not financial advice. Consult SEBI advisor.</div>
 <div style="text-align:center;margin-top:8px;font-size:8px;color:var(--txt3)">v4.0 · © 2026 ValeurFin Technologies</div>
 </div>
@@ -870,8 +825,8 @@ function fmt(n){if(n==null||isNaN(n))return'₹0';var a=Math.abs(n);if(a>=1e7)re
 function fmtFull(n){return'₹'+Math.round(n||0).toLocaleString('en-IN')}
 function fS(n){return(n>=0?'+':'')+fmt(n)}
 function pct(n){return(n>=0?'+':'')+n.toFixed(1)+'%'}
-function mN(m){var base=S&&S.createdAt?new Date(S.createdAt):new Date();return new Date(base.getFullYear(),base.getMonth()+m).toLocaleDateString('en-IN',{month:'short',year:'numeric'})}
-function mNFull(m){var base=S&&S.createdAt?new Date(S.createdAt):new Date();return new Date(base.getFullYear(),base.getMonth()+m).toLocaleDateString('en-IN',{month:'long',year:'numeric'})}
+function mN(m){return new Date(2026,3+m).toLocaleDateString('en-IN',{month:'short',year:'numeric'})}
+function mNFull(m){return new Date(2026,3+m).toLocaleDateString('en-IN',{month:'long',year:'numeric'})}
 function catIcon(id){var c=EXPENSE_CATS.find(function(x){return x.id===id});return c?c.icon:'📋'}
 function catLabel(id){var c=EXPENSE_CATS.find(function(x){return x.id===id});return c?c.label:id}
 function catColor(id){var c=EXPENSE_CATS.find(function(x){return x.id===id});return c?c.color:'#636E72'}
@@ -902,29 +857,8 @@ function goNav(tab){var map={home:'pg-home',inv:'pg-inv',exp:'pg-exp',add:'pg-ad
 function goMore(pgId){document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active')});document.getElementById(pgId).classList.add('active');document.querySelectorAll('.bnav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('nav-more').classList.add('on');if(pgId==='pg-tax')renderTaxM();if(pgId==='pg-exit')renderExitM()}
 
 // ===== FAMILY =====
-function switchMember(val){
-  currentMember=val||'all';
-  renderAll();
-}
-function renderFamilyDD(){
-  var dd=document.getElementById('family-dd');
-  var bar=document.getElementById('family-bar');
-  var ct=document.getElementById('content');
-  if(S.user.mode==='family'&&S.family.length>0){
-    bar.classList.add('show');
-    if(ct)ct.classList.add('with-family');
-    var saved=currentMember;
-    dd.innerHTML='<option value="all">👨‍👩‍👧‍👦 All Members</option>'
-      +'<option value="self">'+S.user.name+' (You)</option>'
-      +S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+' ('+f.relation+')</option>'}).join('');
-    dd.value=saved||'all';
-    if(dd.value!==saved){currentMember='all';dd.value='all';}
-  }else{
-    bar.classList.remove('show');
-    if(ct)ct.classList.remove('with-family');
-    currentMember='all';
-  }
-}
+function switchMember(val){currentMember=val;renderAll()}
+function renderFamilyDD(){var dd=document.getElementById('family-dd');var bar=document.getElementById('family-bar');var ct=document.getElementById('content');if(S.user.mode==='family'&&S.family.length>0){bar.classList.add('show');ct.classList.add('with-family');dd.innerHTML='<option value="all">👨‍👩‍👧‍👦 All</option><option value="self">'+S.user.name+'</option>'+S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('');dd.value=currentMember}else{bar.classList.remove('show');ct.classList.remove('with-family');currentMember='all'}}
 function rFamily(){var el=document.getElementById('family-list');el.innerHTML='<div class="exp-item"><div class="exp-ic" style="background:var(--pbg)">👤</div><div class="exp-body"><h4>'+S.user.name+' (You)</h4></div></div>'+S.family.map(function(f){return '<div class="exp-item"><div class="exp-ic" style="background:var(--gbg)">👤</div><div class="exp-body"><h4>'+f.name+'</h4><p>'+f.relation+'</p></div><div class="exp-actions"><button onclick="removeFamily(\''+f.id+'\')">🗑️</button></div></div>'}).join('')}
 function openAddFamilyMember(){var n=prompt('Name:');if(!n)return;var r=prompt('Relation:');if(!r)return;S.family.push({id:uid(),name:n.trim(),relation:r,age:''});saveS().then(function(){renderAll();fireNotif('✅','Added','')})}
 function removeFamily(id){if(!confirm('Remove?'))return;S.family=S.family.filter(function(f){return f.id!==id});saveS().then(function(){renderAll()})}
@@ -956,75 +890,9 @@ function obShowStep(n){obStep=n;document.querySelectorAll('.ob-step').forEach(fu
 function obNext(step){if(step===1){var name=document.getElementById('ob-name').value.trim();if(!name){document.getElementById('ob-err-1').textContent='Enter name';return}document.getElementById('ob-err-1').textContent='';obShowStep(2)}else if(step===2){if(!obMode){document.getElementById('ob-err-2').textContent='Select mode';return}document.getElementById('ob-err-2').textContent='';obShowStep(3)}}
 function obBack(step){obShowStep(step-1)}
 function obSelectMode(mode){obMode=mode;var i=document.getElementById('omc-individual'),f=document.getElementById('omc-family'),fs=document.getElementById('ob-family-section');if(i)i.classList.toggle('selected',mode==='individual');if(f)f.classList.toggle('selected',mode==='family');if(fs)fs.style.display=mode==='family'?'block':'none'}
-var _relPickerVal = '';
-
-function toggleRelPicker(){
-  var list = document.getElementById('rel-picker-list');
-  if(!list) return;
-  list.classList.toggle('open');
-  // Close when tapping outside
-  if(list.classList.contains('open')){
-    setTimeout(function(){
-      document.addEventListener('click', closeRelPickerOutside, {once:true});
-    }, 10);
-  }
-}
-
-function closeRelPickerOutside(e){
-  var picker = document.getElementById('rel-picker');
-  if(picker && !picker.contains(e.target)){
-    var list = document.getElementById('rel-picker-list');
-    if(list) list.classList.remove('open');
-  }
-}
-
-function selectRelation(val){
-  _relPickerVal = val;
-  // Update hidden input
-  var hidden = document.getElementById('ob-fm-relation');
-  if(hidden) hidden.value = val;
-  // Update button label
-  var label = document.getElementById('rel-picker-label');
-  if(label) label.textContent = val;
-  var btn = document.getElementById('rel-picker-btn');
-  if(btn) btn.classList.remove('placeholder');
-  // Close list
-  var list = document.getElementById('rel-picker-list');
-  if(list) list.classList.remove('open');
-  // Clear error border if any
-  if(btn) btn.style.border = '';
-}
-
-function obAddMember(){
-  var nEl=document.getElementById('ob-fm-name');
-  var rEl=document.getElementById('ob-fm-relation');
-  var n=(nEl?nEl.value:'').trim();
-  var r=rEl?rEl.value:'';
-  if(!n){if(nEl){nEl.style.border='1.5px solid #ff6b6b';nEl.placeholder='Enter name!';nEl.focus();}return;}
-  // Check custom picker value (hidden input) instead of native select
-  if(!r){
-    var pickerBtn=document.getElementById('rel-picker-btn');
-    if(pickerBtn){pickerBtn.style.border='1.5px solid #ff6b6b';}
-    fireNotif('⚠️','Select relation','Tap "Relation" and choose one');
-    return;
-  }
-  if(nEl){nEl.style.border='';nEl.placeholder='Member name';}
-  var pickerBtn2=document.getElementById('rel-picker-btn');
-  if(pickerBtn2)pickerBtn2.style.border='';
-  obMembers.push({id:uid(),name:n,relation:r,age:''});
-  if(nEl)nEl.value='';
-  if(rEl)rEl.value='';
-  obRenderMembers();
-  if(nEl)nEl.focus();
-}
+function obAddMember(){var n=document.getElementById('ob-fm-name').value.trim(),r=document.getElementById('ob-fm-relation').value;if(!n||!r)return;obMembers.push({id:uid(),name:n,relation:r,age:''});document.getElementById('ob-fm-name').value='';document.getElementById('ob-fm-relation').value='';obRenderMembers()}
 function obRemoveMember(id){obMembers=obMembers.filter(function(m){return m.id!==id});obRenderMembers()}
 function obRenderMembers(){document.getElementById('ob-family-list').innerHTML=obMembers.map(function(m){return '<div class="ob-fm"><span>'+m.name+' ('+m.relation+')</span><button onclick="obRemoveMember(\''+m.id+'\')">✕</button></div>'}).join('')||''}
-function obSecQChangeM(sel){
-  var wrap=document.getElementById('ob-custom-q-wrap-m');
-  if(sel.value==='custom'){if(wrap)wrap.style.display='block';}
-  else{if(wrap)wrap.style.display='none';}
-}
-
 function obFinish(withPin){var pin='';if(withPin){pin=[1,2,3,4].map(function(i){return document.getElementById('ob-pin-'+i).value}).join('');if(pin.length!==4||!/^\d{4}$/.test(pin)){document.getElementById('ob-err-3').textContent='Enter 4 digits';return}}
   S=defaultState();S.user.name=document.getElementById('ob-name').value.trim();S.user.age=document.getElementById('ob-age').value||'';S.user.gender=document.getElementById('ob-gender').value||'';S.user.location=document.getElementById('ob-location').value.trim()||'';S.user.mode=obMode;S.user.hasPin=withPin;S.user.pin=withPin?btoa(pin):'';
   var sq=document.getElementById('ob-sec-q'),sa=document.getElementById('ob-sec-a');S.user.securityQ=sq?sq.value:'';S.user.securityA=sa?(sa.value||'').trim():'';
@@ -1044,11 +912,7 @@ async function boot(){
   var data=null;
 
   try{data=await loadS()}catch(e){data=null}
-  // Retry after 600ms — IDB may not be ready on cold PWA start
-  if(!data||!data.user||!data.user.name){
-    await new Promise(function(r){setTimeout(r,600)});
-    try{data=await loadS()}catch(e){data=null}
-  }
+
   if(!data||!data.user||!data.user.name){
     try{var ls=localStorage.getItem('vf_backup');if(ls){data=JSON.parse(ls);if(!data||!data.user||!data.user.name)data=null}}catch(e){data=null}
   }
@@ -1059,7 +923,7 @@ async function boot(){
     data=loadFromCookie();if(data&&(!data.user||!data.user.name))data=null;
   }
   if(!data||!data.user||!data.user.name){
-    if(DB){await new Promise(function(r){setTimeout(r,200)});try{data=await loadS()}catch(e){data=null}if(data&&(!data.user||!data.user.name))data=null}
+    if(DB){await new Promise(function(r){setTimeout(r,600)});try{data=await loadS()}catch(e){data=null}if(data&&(!data.user||!data.user.name))data=null}
   }
 
   if(!data||!data.user||!data.user.name){
@@ -1264,213 +1128,8 @@ function buildAddFields(){var t=INV_TYPES.find(function(x){return x.id===selecte
   if(t.id==='Stocks')h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="add-qty" type="number"></div><div class="fg"><label>Avg Price</label><input class="inp" id="add-avgprice" type="number"></div></div>';
   form.innerHTML=h;
 }
-// MF Search — CORS-proxied, debounced, local fallback database
-// mfapi.in does NOT send CORS headers, so direct fetch is blocked
-// by all browsers. We route through the same CORS proxies used
-// for Yahoo Finance. Local fund DB handles offline/fallback.
-// ============================================================
-
-var mfSearchTimer   = null;
-var mfSearchVersion = 0;
-
-// Popular Indian mutual funds for instant offline search
-var LOCAL_MF_DB = [
-  // HDFC
-  {n:'HDFC Balanced Advantage Fund',c:'118989'},{n:'HDFC Flexi Cap Fund',c:'118985'},
-  {n:'HDFC Mid-Cap Opportunities Fund',c:'118990'},{n:'HDFC Small Cap Fund',c:'118994'},
-  {n:'HDFC Top 100 Fund',c:'118986'},{n:'HDFC ELSS Tax Saver Fund',c:'118988'},
-  {n:'HDFC Liquid Fund',c:'118997'},{n:'HDFC Short Term Debt Fund',c:'118998'},
-  {n:'HDFC Index Fund Nifty 50',c:'118983'},{n:'HDFC Nifty Next 50 Index Fund',c:'118984'},
-  // SBI
-  {n:'SBI Bluechip Fund',c:'120503'},{n:'SBI Flexi Cap Fund',c:'120506'},
-  {n:'SBI Small Cap Fund',c:'120509'},{n:'SBI Focused Equity Fund',c:'120504'},
-  {n:'SBI ELSS Tax Relief 96',c:'120507'},{n:'SBI Magnum Mid Cap Fund',c:'120508'},
-  {n:'SBI Nifty Index Fund',c:'120500'},{n:'SBI Liquid Fund',c:'120510'},
-  // ICICI
-  {n:'ICICI Prudential Balanced Advantage Fund',c:'120465'},{n:'ICICI Prudential Bluechip Fund',c:'120467'},
-  {n:'ICICI Prudential Flexi Cap Fund',c:'120468'},{n:'ICICI Prudential ELSS Tax Saver Fund',c:'120466'},
-  {n:'ICICI Prudential Value Discovery Fund',c:'120469'},{n:'ICICI Prudential Small Cap Fund',c:'120470'},
-  {n:'ICICI Prudential Nifty 50 Index Fund',c:'120463'},{n:'ICICI Prudential Liquid Fund',c:'120471'},
-  // Axis
-  {n:'Axis Bluechip Fund',c:'120620'},{n:'Axis Flexi Cap Fund',c:'120621'},
-  {n:'Axis Small Cap Fund',c:'120623'},{n:'Axis Mid Cap Fund',c:'120622'},
-  {n:'Axis ELSS Tax Saver Fund',c:'120624'},{n:'Axis Liquid Fund',c:'120625'},
-  {n:'Axis Focused 25 Fund',c:'120619'},{n:'Axis Long Term Equity Fund',c:'120626'},
-  // Kotak
-  {n:'Kotak Flexicap Fund',c:'120255'},{n:'Kotak Bluechip Fund',c:'120253'},
-  {n:'Kotak Small Cap Fund',c:'120257'},{n:'Kotak Emerging Equity Fund',c:'120254'},
-  {n:'Kotak ELSS Tax Saver Fund',c:'120256'},{n:'Kotak Liquid Fund',c:'120258'},
-  {n:'Kotak Nifty 50 Index Fund',c:'120252'},
-  // Nippon (erstwhile Reliance)
-  {n:'Nippon India Flexi Cap Fund',c:'119672'},{n:'Nippon India Small Cap Fund',c:'119674'},
-  {n:'Nippon India Bluechip Fund',c:'119670'},{n:'Nippon India Growth Fund',c:'119671'},
-  {n:'Nippon India ELSS Tax Saver Fund',c:'119673'},{n:'Nippon India Liquid Fund',c:'119675'},
-  {n:'Nippon India Index Fund Nifty 50',c:'119668'},
-  // Mirae
-  {n:'Mirae Asset Large Cap Fund',c:'118825'},{n:'Mirae Asset Flexi Cap Fund',c:'118826'},
-  {n:'Mirae Asset ELSS Tax Saver Fund',c:'118827'},{n:'Mirae Asset Nifty 50 Index Fund',c:'118824'},
-  {n:'Mirae Asset Emerging Bluechip Fund',c:'118828'},
-  // Parag Parikh
-  {n:'Parag Parikh Flexi Cap Fund',c:'122639'},{n:'Parag Parikh Tax Saver Fund',c:'122640'},
-  {n:'Parag Parikh Conservative Hybrid Fund',c:'122638'},
-  // DSP
-  {n:'DSP Flexi Cap Fund',c:'120175'},{n:'DSP Mid Cap Fund',c:'120176'},
-  {n:'DSP Small Cap Fund',c:'120178'},{n:'DSP ELSS Tax Saver Fund',c:'120177'},
-  {n:'DSP Nifty 50 Equal Weight Index Fund',c:'120174'},
-  // Aditya Birla (ABSL)
-  {n:'Aditya Birla SL Flexi Cap Fund',c:'119533'},{n:'Aditya Birla SL Frontline Equity Fund',c:'119530'},
-  {n:'Aditya Birla SL Small Cap Fund',c:'119535'},{n:'Aditya Birla SL Mid Cap Fund',c:'119534'},
-  {n:'Aditya Birla SL ELSS Tax Relief 96',c:'119536'},{n:'Aditya Birla SL Liquid Fund',c:'119537'},
-  {n:'Aditya Birla SL Nifty 50 Index Fund',c:'119528'},
-  // UTI
-  {n:'UTI Flexi Cap Fund',c:'120685'},{n:'UTI Nifty 50 Index Fund',c:'120683'},
-  {n:'UTI Nifty Next 50 Index Fund',c:'120684'},{n:'UTI ELSS Tax Saver Fund',c:'120686'},
-  {n:'UTI Small Cap Fund',c:'120687'},{n:'UTI Mid Cap Fund',c:'120688'},
-  // Franklin
-  {n:'Franklin India Flexi Cap Fund',c:'100035'},{n:'Franklin India ELSS Tax Shield Fund',c:'100038'},
-  {n:'Franklin India Prima Fund',c:'100036'},{n:'Franklin India Smaller Companies Fund',c:'100037'},
-  // Quant
-  {n:'Quant Small Cap Fund',c:'120843'},{n:'Quant Mid Cap Fund',c:'120844'},
-  {n:'Quant Flexi Cap Fund',c:'120845'},{n:'Quant ELSS Tax Saver Fund',c:'120846'},
-  {n:'Quant Active Fund',c:'120842'},
-  // Canara Robeco
-  {n:'Canara Robeco Emerging Equities Fund',c:'101271'},{n:'Canara Robeco Flexi Cap Fund',c:'101273'},
-  {n:'Canara Robeco Bluechip Equity Fund',c:'101270'},{n:'Canara Robeco ELSS Tax Saver Fund',c:'101272'},
-  // Tata
-  {n:'Tata Digital India Fund',c:'120849'},{n:'Tata Small Cap Fund',c:'120850'},
-  {n:'Tata Nifty 50 Index Fund',c:'120847'},{n:'Tata ELSS Tax Saver Fund',c:'120848'},
-  // PGIM
-  {n:'PGIM India Flexi Cap Fund',c:'120694'},{n:'PGIM India Mid Cap Opportunities Fund',c:'120695'},
-  {n:'PGIM India ELSS Tax Saver Fund',c:'120696'},
-  // Edelweiss
-  {n:'Edelweiss Mid Cap Fund',c:'135798'},{n:'Edelweiss Flexi Cap Fund',c:'135796'},
-  {n:'Edelweiss ELSS Tax Saver Fund',c:'135797'},
-  // Motilal Oswal
-  {n:'Motilal Oswal Nifty 50 Index Fund',c:'120841'},{n:'Motilal Oswal Nasdaq 100 FOF',c:'120840'},
-  {n:'Motilal Oswal Flexi Cap Fund',c:'120839'},{n:'Motilal Oswal Mid Cap Fund',c:'120838'},
-  // Bandhan (erstwhile IDFC)
-  {n:'Bandhan Flexi Cap Fund',c:'119009'},{n:'Bandhan Small Cap Fund',c:'119012'},
-  {n:'Bandhan ELSS Tax Saver Fund',c:'119010'},{n:'Bandhan Nifty 50 Index Fund',c:'119007'},
-];
-
-function searchLocalMF(q){
-  var lq = q.toLowerCase();
-  return LOCAL_MF_DB.filter(function(f){
-    return f.n.toLowerCase().indexOf(lq) !== -1;
-  }).slice(0, 12).map(function(f){
-    return {schemeName: f.n, schemeCode: f.c};
-  });
-}
-
-function searchMF(q){
-  var dd = document.getElementById('mf-dd');
-  if(!dd) return;
-  if(!q || q.length < 2){ dd.classList.remove('open'); return; }
-
-  // 1. Show local results INSTANTLY while API loads
-  var localResults = searchLocalMF(q);
-  mfSearchResults = localResults;
-  if(localResults.length){
-    dd.innerHTML = '<div style="padding:4px 10px;font-size:9px;color:var(--txt3);background:var(--bg)">📚 Local results — loading more from API...</div>'
-      + localResults.map(function(m, i){
-          return '<div class="dd-i" onclick="selectMF('+i+',mfSearchVersion)">'
-            + '<b style="font-size:11px;line-height:1.4">'+m.schemeName+'</b>'
-            + '<small style="color:var(--txt3)"> · Code: '+m.schemeCode+'</small>'
-            + '</div>';
-        }).join('');
-    dd.classList.add('open');
-  } else {
-    dd.innerHTML = '<div class="dd-i" style="color:var(--txt3);cursor:default">🔍 Searching...</div>';
-    dd.classList.add('open');
-  }
-
-  // 2. Fire API call through CORS proxy (debounced 450ms)
-  clearTimeout(mfSearchTimer);
-  var myVersion = ++mfSearchVersion;
-
-  mfSearchTimer = setTimeout(function(){
-    var mfUrl = 'https://api.mfapi.in/mf/search?q=' + encodeURIComponent(q);
-    // Try CORS proxies in order — same pattern as stock price fetching
-    var proxies = CORS_PROXIES.slice();
-    var tryProxy = function(idx){
-      if(idx >= proxies.length){
-        // All proxies failed — keep local results, update header message
-        if(myVersion !== mfSearchVersion) return;
-        var dd2 = document.getElementById('mf-dd');
-        if(!dd2) return;
-        var localR = searchLocalMF(q);
-        if(localR.length){
-          mfSearchResults = localR;
-          dd2.innerHTML = '<div style="padding:4px 10px;font-size:9px;color:var(--w);background:var(--wbg)">⚠️ API unavailable — showing local fund database</div>'
-            + localR.map(function(m,i){
-                return '<div class="dd-i" onclick="selectMF('+i+','+myVersion+')">'
-                  + '<b style="font-size:11px;line-height:1.4">'+m.schemeName+'</b>'
-                  + '<small style="color:var(--txt3)"> · Code: '+m.schemeCode+'</small>'
-                  + '</div>';
-              }).join('');
-          dd2.classList.add('open');
-        } else {
-          dd2.innerHTML = '<div class="dd-i" style="color:var(--w);cursor:default">'
-            + '⚠️ No results found. Type the fund name manually.</div>';
-          dd2.classList.add('open');
-        }
-        return;
-      }
-      var proxyUrl = proxies[idx] + encodeURIComponent(mfUrl);
-      fetch(proxyUrl, {
-        signal: AbortSignal.timeout ? AbortSignal.timeout(7000) : undefined
-      })
-      .then(function(r){
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        return r.json();
-      })
-      .then(function(data){
-        if(myVersion !== mfSearchVersion) return;
-        var dd2 = document.getElementById('mf-dd');
-        if(!dd2) return;
-        // mfapi returns array directly OR wrapped
-        var results = Array.isArray(data) ? data : (data.data || []);
-        if(!results.length){
-          // Keep local results if API has nothing
-          var localR = searchLocalMF(q);
-          if(!localR.length){
-            dd2.innerHTML = '<div class="dd-i" style="color:var(--txt3);cursor:default">No funds found for "'+q+'"</div>';
-          }
-          return;
-        }
-        mfSearchResults = results.slice(0, 15);
-        dd2.innerHTML = '<div style="padding:4px 10px;font-size:9px;color:var(--txt3);background:var(--bg)">🔍 '+mfSearchResults.length+' funds found</div>'
-          + mfSearchResults.map(function(m, i){
-              var name = m.schemeName || m.scheme_name || m.name || 'Fund';
-              var code = m.schemeCode || m.scheme_code || '';
-              return '<div class="dd-i" onclick="selectMF('+i+','+myVersion+')">'
-                + '<b style="font-size:11px;line-height:1.4">'+name+'</b>'
-                + (code ? '<small style="color:var(--txt3)"> · Code: '+code+'</small>' : '')
-                + '</div>';
-            }).join('');
-        dd2.classList.add('open');
-      })
-      .catch(function(){
-        // This proxy failed — try next one
-        tryProxy(idx + 1);
-      });
-    };
-    tryProxy(0);
-  }, 450);
-}
-
-function selectMF(i, version){
-  if(!mfSearchResults || i >= mfSearchResults.length) return;
-  var m = mfSearchResults[i];
-  var name = m.schemeName || m.scheme_name || m.name || '';
-  var inp = document.getElementById('add-name');
-  if(inp){ inp.value = name; inp.focus(); }
-  var dd = document.getElementById('mf-dd');
-  if(dd) dd.classList.remove('open');
-  clearTimeout(mfSearchTimer);
-}
-function searchStock(q){var dd=document.getElementById('stock-dd');if(q.length<2){dd.classList.remove('open');return}var f=STOCK_DB.filter(function(s){return s.name.toLowerCase().includes(q.toLowerCase())||s.sym.toLowerCase().includes(q.toLowerCase())}).slice(0,10);if(f.length){dd.innerHTML=f.map(function(s){return '<div class="dd-i" onclick="selectStock(\''+s.name+'\',\''+s.sym+'\',\''+s.sector+'\')"><b>'+s.name+'</b><small>'+s.sym+'</small></div>'}).join('');dd.classList.add('open')}else dd.classList.remove('open')}
-
+function searchMF(q){var dd=document.getElementById('mf-dd');if(q.length<3){dd.classList.remove('open');return}fetch('https://api.mfapi.in/mf/search?q='+encodeURIComponent(q)).then(function(r){return r.json()}).then(function(data){mfSearchResults=data.slice(0,8);if(mfSearchResults.length){dd.innerHTML=mfSearchResults.map(function(m,i){return '<div class="dd-i" onclick="selectMF('+i+')"><b>'+(m.schemeName||m.name||'Fund')+'</b></div>'}).join('');dd.classList.add('open')}else dd.classList.remove('open')}).catch(function(){dd.classList.remove('open')})}
+function selectMF(i){document.getElementById('add-name').value=mfSearchResults[i].schemeName||'';document.getElementById('mf-dd').classList.remove('open')}
 function searchStock(q){var dd=document.getElementById('stock-dd');if(q.length<2){dd.classList.remove('open');return}var f=STOCK_DB.filter(function(s){return s.name.toLowerCase().includes(q.toLowerCase())||s.sym.toLowerCase().includes(q.toLowerCase())}).slice(0,8);if(f.length){dd.innerHTML=f.map(function(s){return '<div class="dd-i" onclick="selectStock(\''+s.name+'\',\''+s.sym+'\',\''+s.sector+'\')"><b>'+s.name+'</b><small>'+s.sym+'</small></div>'}).join('');dd.classList.add('open')}else dd.classList.remove('open')}
 function selectStock(name,sym,sector){document.getElementById('add-name').value=name;document.getElementById('stock-dd').classList.remove('open');var es=document.getElementById('add-symbol');if(es)es.value=sym;var esc=document.getElementById('add-sector');if(esc)esc.value=sector}
 
@@ -1590,22 +1249,17 @@ function renderHeatmapM(){
     blockSize:'market_cap_basic',blockColor:'change',locale:'in',
     colorTheme:theme,hasTopBar:false,isDataSetEnabled:false,
     isZoomEnabled:true,hasSymbolTooltip:true,width:'100%',height:'350'};
-  // Build srcdoc WITHOUT putting </script> literally in a string
-  // Split the closing tag to prevent the HTML parser closing our script block
   var closingTag='<'+'/script>';
-  var srcdoc='<!DOCTYPE html><html><head>'
-    +'<style>*{margin:0;padding:0}body{overflow:hidden}<'+'/style><'+'/head><body>'
+  var srcdoc='<!DOCTYPE html><html><head><style>*{margin:0;padding:0}body{overflow:hidden}<'+'/style><'+'/head><body>'
     +'<div class="tradingview-widget-container" style="width:100%;height:350px">'
     +'<div class="tradingview-widget-container__widget"><'+'/div>'
-    +'<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js" async>'
-    +JSON.stringify(cfg)
-    +closingTag
+    +'<'+'script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js" async>'
+    +JSON.stringify(cfg)+closingTag
     +'<'+'/div><'+'/body><'+'/html>';
   var iframe=document.createElement('iframe');
   iframe.setAttribute('srcdoc',srcdoc);
   iframe.style.cssText='width:100%;height:360px;border:none;border-radius:8px';
   iframe.setAttribute('scrolling','no');
-  iframe.setAttribute('frameborder','0');
   el.appendChild(iframe);
   el.setAttribute('data-loaded','true');
 }
@@ -1624,72 +1278,17 @@ function getExitSignals(investments){var signals=[];investments.forEach(function
 function renderExitM(){var inv=filterByMember(S.investments);var signals=getExitSignals(inv);var el=document.getElementById('exit-list-m');var empty=document.getElementById('exit-empty-m');if(!inv.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';if(!signals.length){el.innerHTML='<div style="text-align:center;padding:12px;font-size:10px;color:var(--g)">🟢 All clear</div>';return}el.innerHTML=signals.map(function(s){return '<div class="exp-item" style="border-left:3px solid '+(s.level==='sell'?'var(--d)':'var(--w)')+'"><div class="exp-ic"><span class="exit-cue '+s.cls+'">'+s.icon+'</span></div><div class="exp-body"><h4>'+s.inv.label+'</h4><p>'+s.reason+'</p></div></div>'}).join('')}
 
 // ===== ALERTS =====
-function generateAlerts(){
-  alertList=[];
-  var today=new Date().getDate();
-  var now=Date.now();
-
-  S.investments.filter(function(i){return i.monthly>0&&i.dueDate}).forEach(function(i){
-    var due=parseInt(i.dueDate);var diff=due-today;var absDiff=Math.abs(diff);
-    var typeIcon=i.type==='RD'?'🏦':i.type==='PPF'?'🏛️':'📈';
-    if(diff>=0&&diff<=7){
-      var lbl=diff===0?'Today':diff===1?'Tomorrow':diff+'d';
-      alertList.push({icon:typeIcon,title:i.label+' Due',desc:fmt(i.monthly)+' — '+lbl,priority:diff===0?0:1});
-    }else if(diff<0&&absDiff<=3){
-      alertList.push({icon:'⚠️',title:i.label+' Overdue!',desc:fmt(i.monthly)+' — '+absDiff+'d ago',priority:0});
-    }
-  });
-  S.reminders.forEach(function(r){
-    var due=parseInt(r.dueDate);var diff=due-today;var absDiff=Math.abs(diff);
-    if(diff>=0&&diff<=7){
-      var lbl=diff===0?'Today':diff===1?'Tomorrow':diff+'d';
-      alertList.push({icon:remIcon(r.remType),title:r.label,desc:fmtFull(r.amount)+' — '+lbl,priority:diff===0?0:1});
-    }else if(diff<0&&absDiff<=3){
-      alertList.push({icon:'⚠️',title:r.label+' Overdue!',desc:fmtFull(r.amount),priority:0});
-    }
-  });
-  (S.insurance||[]).filter(function(p){return p.status==='active'&&p.premDueDate}).forEach(function(p){
-    var due=parseInt(p.premDueDate);var diff=due-today;
-    if(diff>=0&&diff<=7){alertList.push({icon:'🛡️',title:p.label+' Premium Due',desc:fmtFull(p.premium),priority:diff===0?0:1});}
-  });
-  S.investments.filter(function(i){return i.maturityDate}).forEach(function(i){
-    var days=Math.floor((new Date(i.maturityDate)-now)/(1e3*60*60*24));
-    if(days<0){alertList.push({icon:'⏰',title:i.label+' Matured',desc:'Action needed',priority:0});}
-    else if(days<=7){alertList.push({icon:'🏦',title:i.label+' Maturing',desc:days===0?'Today!':days+'d left',priority:0});}
-    else if(days<=30){alertList.push({icon:'🏦',title:i.label+' Maturing',desc:days+'d left',priority:2});}
-  });
-  S.investments.filter(function(i){return i.fiftyTwoHigh&&i.livePrice}).forEach(function(i){
-    if(i.livePrice>=i.fiftyTwoHigh*0.98)alertList.push({icon:'📈',title:i.label+' 52W High',desc:'₹'+i.livePrice.toFixed(0),priority:2});
-    if(i.fiftyTwoLow&&i.livePrice<=i.fiftyTwoLow*1.02)alertList.push({icon:'📉',title:i.label+' 52W Low',desc:'₹'+i.livePrice.toFixed(0),priority:2});
-  });
-  var exits=getExitSignals(S.investments);
-  exits.filter(function(s){return s.level==='sell'}).forEach(function(s){
-    alertList.push({icon:s.icon,title:s.inv.label,desc:s.reason,priority:0});
-  });
+function generateAlerts(){alertList=[];
+  S.investments.filter(function(i){return i.monthly>0&&i.dueDate}).forEach(function(i){var today=new Date().getDate();var due=parseInt(i.dueDate);if(Math.abs(today-due)<=3)alertList.push({icon:'📈',title:i.label+' SIP',desc:fmt(i.monthly)+' on '+due+'th'})});
+  S.reminders.forEach(function(r){var today=new Date().getDate();var due=parseInt(r.dueDate);if(Math.abs(today-due)<=5)alertList.push({icon:remIcon(r.remType),title:r.label,desc:fmtFull(r.amount)})});
+  S.investments.filter(function(i){return i.maturityDate}).forEach(function(i){var days=Math.floor((new Date(i.maturityDate)-Date.now())/(1e3*60*60*24));if(days<=30&&days>=0)alertList.push({icon:'🏦',title:i.label+' Maturing',desc:days+'d'})});
+  var exits=getExitSignals(S.investments);exits.filter(function(s){return s.level==='sell'}).forEach(function(s){alertList.push({icon:s.icon,title:s.inv.label,desc:s.reason})});
   var insT=(S.insurance||[]).filter(function(p){return p.status==='active'}).map(function(p){return p.insType});
-  if(!insT.includes('term_life'))alertList.push({icon:'🛡️',title:'No Term Insurance',desc:'Essential',priority:3});
-  if(!insT.includes('health'))alertList.push({icon:'❤️',title:'No Health Insurance',desc:'Get covered',priority:3});
-  alertList.sort(function(a,b){return (a.priority||2)-(b.priority||2);});
-  var badge=document.getElementById('alert-badge');
-  if(alertList.length){badge.textContent=alertList.length>9?'9+':alertList.length;badge.classList.add('show');}
-  else badge.classList.remove('show');
-}
+  if(!insT.includes('term_life'))alertList.push({icon:'🛡️',title:'No Term Insurance',desc:'Essential'});
+  if(!insT.includes('health'))alertList.push({icon:'❤️',title:'No Health Insurance',desc:'Get covered'});
+  var badge=document.getElementById('alert-badge');if(alertList.length){badge.textContent=alertList.length>9?'9+':alertList.length;badge.classList.add('show')}else badge.classList.remove('show')}
 function toggleAlerts(){document.getElementById('alert-panel').classList.toggle('open');var el=document.getElementById('alert-list');if(!alertList.length){el.innerHTML='<div class="alert-empty">✅ All clear</div>';return}el.innerHTML=alertList.map(function(a,i){return '<div class="alert-item"><span class="a-ic">'+a.icon+'</span><div class="a-body"><b>'+a.title+'</b><small>'+a.desc+'</small></div><button class="a-close" onclick="dismissAlert('+i+')">✕</button></div>'}).join('')}
-function dismissAlert(i){
-  alertList.splice(i,1);
-  var badge=document.getElementById('alert-badge');
-  if(alertList.length){badge.textContent=alertList.length>9?'9+':alertList.length;badge.classList.add('show');}
-  else badge.classList.remove('show');
-  var list=document.getElementById('alert-list');
-  if(list){
-    if(!alertList.length){list.innerHTML='<div class="alert-empty">✅ All clear</div>';return;}
-    list.innerHTML=alertList.map(function(a,idx){
-      return '<div class="alert-item"><span class="a-ic">'+a.icon+'</span>'
-        +'<div class="a-body"><b>'+a.title+'</b><small>'+a.desc+'</small></div>'
-        +'<button class="a-close" onclick="dismissAlert('+idx+')">✕</button></div>';
-    }).join('');
-  }
-}
+function dismissAlert(i){alertList.splice(i,1);toggleAlerts();var badge=document.getElementById('alert-badge');if(alertList.length)badge.textContent=alertList.length;else badge.classList.remove('show')}
 function clearAlerts(){alertList=[];document.getElementById('alert-list').innerHTML='<div class="alert-empty">✅ All clear</div>';document.getElementById('alert-badge').classList.remove('show')}
 
 // ===== BOT =====
@@ -1763,11 +1362,10 @@ function installApp(){
   });
 }
 window.addEventListener('appinstalled',function(){
-  fireNotif('🎉','Installed!','ValeurFin is now on your home screen!');
+  fireNotif('🎉','Installed!','ValeurFin is on your home screen!');
   var btn=document.getElementById('install-btn');if(btn)btn.style.display='none';
 });
 
-// ===== BOOT TRIGGER =====
 document.addEventListener('DOMContentLoaded', boot);
 
 </script>
