@@ -297,7 +297,8 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 .ob-inp{width:100%;padding:10px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:inherit;font-size:14px;outline:none}
 .ob-inp:focus{border-color:var(--p)}.ob-inp::placeholder{color:rgba(255,255,255,.2)}
 .ob-select{width:100%;padding:10px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:inherit;font-size:14px;outline:none;-webkit-appearance:none}
-.ob-select option{background:#1a1a35;color:#fff}
+.ob-select option{background:#1a1a35 !important;color:#fff !important}
+.ob-select:focus option{background:#1a1a35 !important;color:#fff !important}
 .ob-row{display:flex;gap:6px}.ob-row .ob-fg{flex:1}
 .ob-btn{width:100%;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
 .ob-btn-primary{background:linear-gradient(135deg,var(--p),#0984E3);color:#fff}
@@ -310,9 +311,20 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 .ob-family-list{margin-bottom:6px}
 .ob-fm{display:flex;align-items:center;gap:6px;padding:5px;background:rgba(255,255,255,.04);border-radius:6px;margin-bottom:3px;font-size:10px;color:#fff}
 .ob-fm button{background:none;border:none;color:rgba(255,255,255,.3);font-size:11px}
-.ob-add-member{display:flex;gap:4px;margin-top:4px}
-.ob-add-member input,.ob-add-member select{flex:1;padding:5px 7px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;font-family:inherit;font-size:10px;outline:none}
-.ob-add-member button{padding:5px 10px;background:var(--p);color:#fff;border:none;border-radius:6px;font-size:9px;cursor:pointer;font-family:inherit;font-weight:600}
+.ob-add-member{display:flex;gap:4px;margin-top:4px;align-items:center}
+.ob-add-member input{flex:2;padding:8px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-family:inherit;font-size:12px;outline:none}
+.ob-add-member input::placeholder{color:rgba(255,255,255,.3)}
+.ob-add-member button{padding:8px 12px;background:var(--p);color:#fff;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:700;white-space:nowrap;flex-shrink:0}
+/* Custom relation picker — replaces native select which ignores CSS on mobile */
+.rel-picker{flex:1.5;position:relative;user-select:none}
+.rel-picker-btn{width:100%;padding:8px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:12px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:inherit}
+.rel-picker-btn.placeholder{color:rgba(255,255,255,.35)}
+.rel-picker-btn .arr{font-size:9px;opacity:.6}
+.rel-picker-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1a1a35;border:1.5px solid rgba(108,92,231,.5);border-radius:8px;z-index:50000;overflow:hidden;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.rel-picker-list.open{display:block}
+.rel-picker-opt{padding:10px 12px;color:#fff;font-size:12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);background:#1a1a35}
+.rel-picker-opt:last-child{border-bottom:none}
+.rel-picker-opt:hover,.rel-picker-opt:active{background:rgba(108,92,231,.3);color:#fff}
 
 /* === MORE PAGE === */
 .more-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
@@ -386,7 +398,29 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 </div>
 <div id="ob-family-section" style="display:none">
 <div class="ob-family-list" id="ob-family-list"></div>
-<div class="ob-add-member"><input id="ob-fm-name" placeholder="Name"><select id="ob-fm-relation"><option value="">Relation</option><option>Spouse</option><option>Father</option><option>Mother</option><option>Son</option><option>Daughter</option><option>Other</option></select><button onclick="obAddMember()">+</button></div>
+<p style="font-size:9px;color:rgba(255,255,255,.4);margin:4px 0 4px">Enter name and select relation, then tap + Add</p>
+<div class="ob-add-member">
+<input id="ob-fm-name" placeholder="Member name">
+<div class="rel-picker" id="rel-picker">
+  <button type="button" class="rel-picker-btn placeholder" id="rel-picker-btn" onclick="toggleRelPicker()">
+    <span id="rel-picker-label">Relation</span><span class="arr">▼</span>
+  </button>
+  <div class="rel-picker-list" id="rel-picker-list">
+    <div class="rel-picker-opt" onclick="selectRelation('Spouse')">Spouse</div>
+    <div class="rel-picker-opt" onclick="selectRelation('Father')">Father</div>
+    <div class="rel-picker-opt" onclick="selectRelation('Mother')">Mother</div>
+    <div class="rel-picker-opt" onclick="selectRelation('Son')">Son</div>
+    <div class="rel-picker-opt" onclick="selectRelation('Daughter')">Daughter</div>
+    <div class="rel-picker-opt" onclick="selectRelation('Brother')">Brother</div>
+    <div class="rel-picker-opt" onclick="selectRelation('Sister')">Sister</div>
+    <div class="rel-picker-opt" onclick="selectRelation('Grandparent')">Grandparent</div>
+    <div class="rel-picker-opt" onclick="selectRelation('Other')">Other</div>
+  </div>
+</div>
+<!-- Hidden input stores the value — obAddMember reads this -->
+<input type="hidden" id="ob-fm-relation" value="">
+<button onclick="obAddMember()">+ Add</button>
+</div>
 </div>
 <div class="ob-err" id="ob-err-2"></div>
 <button class="ob-btn ob-btn-primary" onclick="obNext(2)">Continue →</button>
@@ -395,7 +429,18 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="ob-step" id="ob-step-3">
 <h2>Secure 🔒</h2><h3>Set 4-digit PIN</h3>
 <div class="pin-row"><input class="pin-dot" id="ob-pin-1" type="password" maxlength="1" inputmode="numeric"><input class="pin-dot" id="ob-pin-2" type="password" maxlength="1" inputmode="numeric"><input class="pin-dot" id="ob-pin-3" type="password" maxlength="1" inputmode="numeric"><input class="pin-dot" id="ob-pin-4" type="password" maxlength="1" inputmode="numeric"></div>
-<div class="ob-fg" style="margin-top:10px"><label>Security Question</label><select class="ob-inp" id="ob-sec-q" style="font-size:11px;padding:8px"><option value="">Select</option><option>Mother's maiden name?</option><option>First pet's name?</option><option>Birth city?</option><option>Favorite movie?</option></select></div>
+<div class="ob-fg" style="margin-top:10px"><label>Security Question</label><select class="ob-select" id="ob-sec-q" onchange="obSecQChangeM(this)">
+  <option value="">— Select a question —</option>
+  <option value="mother" style="background:#1a1a35;color:#fff">What is your mother's maiden name?</option>
+  <option value="pet" style="background:#1a1a35;color:#fff">What was your first pet's name?</option>
+  <option value="city" style="background:#1a1a35;color:#fff">What city were you born in?</option>
+  <option value="school" style="background:#1a1a35;color:#fff">What was the name of your first school?</option>
+  <option value="movie" style="background:#1a1a35;color:#fff">What is your favourite movie?</option>
+  <option value="custom" style="background:#1a1a35;color:#fff">Write your own question...</option>
+</select>
+<div id="ob-custom-q-wrap-m" style="display:none;margin-top:6px">
+  <input class="ob-inp" id="ob-custom-q-m" placeholder="Type your security question">
+</div></div>
 <div class="ob-fg"><label>Answer</label><input class="ob-inp" id="ob-sec-a" placeholder="For PIN recovery" style="font-size:12px"></div>
 <div class="ob-err" id="ob-err-3"></div>
 <button class="ob-btn ob-btn-primary" onclick="obFinish(true)">Set PIN & Launch →</button>
@@ -715,7 +760,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- === END MOBILE PART M2 of 5 — All HTML Complete === -->
 
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ====================================================
 // ValeurFin v4.0 Mobile — Complete Wealth Advisory
 // © 2026 ValeurFin Technologies — Siddharth Tiwari
@@ -911,15 +956,61 @@ function obShowStep(n){obStep=n;document.querySelectorAll('.ob-step').forEach(fu
 function obNext(step){if(step===1){var name=document.getElementById('ob-name').value.trim();if(!name){document.getElementById('ob-err-1').textContent='Enter name';return}document.getElementById('ob-err-1').textContent='';obShowStep(2)}else if(step===2){if(!obMode){document.getElementById('ob-err-2').textContent='Select mode';return}document.getElementById('ob-err-2').textContent='';obShowStep(3)}}
 function obBack(step){obShowStep(step-1)}
 function obSelectMode(mode){obMode=mode;var i=document.getElementById('omc-individual'),f=document.getElementById('omc-family'),fs=document.getElementById('ob-family-section');if(i)i.classList.toggle('selected',mode==='individual');if(f)f.classList.toggle('selected',mode==='family');if(fs)fs.style.display=mode==='family'?'block':'none'}
+var _relPickerVal = '';
+
+function toggleRelPicker(){
+  var list = document.getElementById('rel-picker-list');
+  if(!list) return;
+  list.classList.toggle('open');
+  // Close when tapping outside
+  if(list.classList.contains('open')){
+    setTimeout(function(){
+      document.addEventListener('click', closeRelPickerOutside, {once:true});
+    }, 10);
+  }
+}
+
+function closeRelPickerOutside(e){
+  var picker = document.getElementById('rel-picker');
+  if(picker && !picker.contains(e.target)){
+    var list = document.getElementById('rel-picker-list');
+    if(list) list.classList.remove('open');
+  }
+}
+
+function selectRelation(val){
+  _relPickerVal = val;
+  // Update hidden input
+  var hidden = document.getElementById('ob-fm-relation');
+  if(hidden) hidden.value = val;
+  // Update button label
+  var label = document.getElementById('rel-picker-label');
+  if(label) label.textContent = val;
+  var btn = document.getElementById('rel-picker-btn');
+  if(btn) btn.classList.remove('placeholder');
+  // Close list
+  var list = document.getElementById('rel-picker-list');
+  if(list) list.classList.remove('open');
+  // Clear error border if any
+  if(btn) btn.style.border = '';
+}
+
 function obAddMember(){
   var nEl=document.getElementById('ob-fm-name');
   var rEl=document.getElementById('ob-fm-relation');
   var n=(nEl?nEl.value:'').trim();
   var r=rEl?rEl.value:'';
-  if(!n){if(nEl){nEl.style.border='1px solid #ff6b6b';nEl.placeholder='Enter name!';nEl.focus();}return;}
-  if(!r){if(rEl){rEl.style.border='1px solid #ff6b6b';}fireNotif('⚠️','Select relation','Choose a relation first');return;}
-  if(nEl){nEl.style.border='';nEl.placeholder='Name';}
-  if(rEl)rEl.style.border='';
+  if(!n){if(nEl){nEl.style.border='1.5px solid #ff6b6b';nEl.placeholder='Enter name!';nEl.focus();}return;}
+  // Check custom picker value (hidden input) instead of native select
+  if(!r){
+    var pickerBtn=document.getElementById('rel-picker-btn');
+    if(pickerBtn){pickerBtn.style.border='1.5px solid #ff6b6b';}
+    fireNotif('⚠️','Select relation','Tap "Relation" and choose one');
+    return;
+  }
+  if(nEl){nEl.style.border='';nEl.placeholder='Member name';}
+  var pickerBtn2=document.getElementById('rel-picker-btn');
+  if(pickerBtn2)pickerBtn2.style.border='';
   obMembers.push({id:uid(),name:n,relation:r,age:''});
   if(nEl)nEl.value='';
   if(rEl)rEl.value='';
@@ -928,6 +1019,12 @@ function obAddMember(){
 }
 function obRemoveMember(id){obMembers=obMembers.filter(function(m){return m.id!==id});obRenderMembers()}
 function obRenderMembers(){document.getElementById('ob-family-list').innerHTML=obMembers.map(function(m){return '<div class="ob-fm"><span>'+m.name+' ('+m.relation+')</span><button onclick="obRemoveMember(\''+m.id+'\')">✕</button></div>'}).join('')||''}
+function obSecQChangeM(sel){
+  var wrap=document.getElementById('ob-custom-q-wrap-m');
+  if(sel.value==='custom'){if(wrap)wrap.style.display='block';}
+  else{if(wrap)wrap.style.display='none';}
+}
+
 function obFinish(withPin){var pin='';if(withPin){pin=[1,2,3,4].map(function(i){return document.getElementById('ob-pin-'+i).value}).join('');if(pin.length!==4||!/^\d{4}$/.test(pin)){document.getElementById('ob-err-3').textContent='Enter 4 digits';return}}
   S=defaultState();S.user.name=document.getElementById('ob-name').value.trim();S.user.age=document.getElementById('ob-age').value||'';S.user.gender=document.getElementById('ob-gender').value||'';S.user.location=document.getElementById('ob-location').value.trim()||'';S.user.mode=obMode;S.user.hasPin=withPin;S.user.pin=withPin?btoa(pin):'';
   var sq=document.getElementById('ob-sec-q'),sa=document.getElementById('ob-sec-a');S.user.securityQ=sq?sq.value:'';S.user.securityA=sa?(sa.value||'').trim():'';
