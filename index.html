@@ -2803,4 +2803,49 @@ function rSwpSummary(inv){
     + '<div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700">'
     + '<span>Total monthly withdrawal</span>'
     + '<span style="color:var(--b)">-₹'+Math.round(total).toLocaleString('en-IN')+'/mo</span>'
-    + '
+    + '</div>';
+  }
+}
+
+function initApp(){
+  applyTheme();
+  renderAll();
+  rMarket();
+  generateAlerts();
+
+  var hasStocks=S.investments.some(function(i){return i.type==='Stocks'&&i.nseSymbol});
+  if(hasStocks&&(!priceLastFetched||Date.now()-priceLastFetched>30*60*1000)){
+    setTimeout(fetchLivePrices,2000);
+  }
+
+  rSecurity();
+  toast('👋 Welcome, '+(S.user.name||'User')+'!');
+
+  // Backup reminder every 7 days
+  if(S.createdAt&&Date.now()-S.createdAt>7*24*60*60*1000){
+    var lastExp=null;try{lastExp=localStorage.getItem('vf_last_export')}catch(e){}
+    if(!lastExp||Date.now()-parseInt(lastExp)>7*24*60*60*1000){
+      setTimeout(function(){toast('💾 Export your data regularly!','warn')},5000);
+    }
+  }
+
+  // Track exports — wrap exportData to record last export timestamp
+  var origExport=exportData;
+  exportData=function(){
+    origExport();
+    try{localStorage.setItem('vf_last_export',Date.now().toString());}catch(e){}
+  };
+}
+
+document.addEventListener('DOMContentLoaded',boot);
+
+// ===== SERVICE WORKER REGISTRATION =====
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+
+</script>
+</body>
+</html>
