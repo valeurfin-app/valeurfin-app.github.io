@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ValeurFin — Process Flows & System Diagrams</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --purple: #6C5CE7;
+    --purple-l: #A29BFE;
+    --purple-bg: #F0EDFF;
+    --blue: #0984E3;
+    --blue-bg: #E3F2FD;
+    --green: #00B894;
+    --green-bg: #E8FFF5;
+    --gold: #F0A500;
+    --gold-bg: #FFF9E6;
+    --red: #D63031;
+    --red-bg: #FFE8E8;
+    --teal: #00CEC9;
+    --dark: #0F0F23;
+    --grey: #636E72;
+    --light: #F7F8FC;
+    --card: #FFFFFF;
+    --border: #E8ECF0;
+    --text: #1B2A4A;
+    --text2: #636E72;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--light);
+    color: var(--text);
+    padding: 40px 32px;
+  }
+
+  .doc-header {
+    text-align: center;
+    margin-bottom: 64px;
+    padding-bottom: 32px;
+    border-bottom: 3px solid var(--purple);
+  }
+  .doc-header h1 {
+    font-size: 40px;
+    font-weight: 700;
+    color: var(--purple);
+    letter-spacing: -1px;
+  }
+  .doc-header p {
+    font-size: 15px;
+    color: var(--grey);
+    margin-top: 8px;
+  }
+  .doc-header .meta {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--grey);
+  }
+  .meta-chip {
+    background: var(--purple-bg);
+    color: var(--purple);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  .toc {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 64px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .toc h2 { font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 20px; }
+  .toc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .toc-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text2);
+    text-decoration: none;
+    transition: background .15s;
+  }
+  .toc-item:hover { background: var(--purple-bg); color: var(--purple); }
+  .toc-num { font-size: 12px; font-weight: 700; color: var(--purple); min-width: 24px; }
+
+  .diagram-section {
+    margin-bottom: 72px;
+    page-break-inside: avoid;
+  }
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .section-num {
+    background: var(--purple);
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .section-header-text h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--dark);
+    letter-spacing: -0.3px;
+  }
+  .section-header-text p {
+    font-size: 13px;
+    color: var(--grey);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  .diagram-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 2px 16px rgba(0,0,0,.06);
+    overflow-x: auto;
+  }
+  .diagram-card svg {
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* SVG element styles */
+  .node-process { fill: #EDE9FF; stroke: #6C5CE7; stroke-width: 1.5; rx: 8; }
+  .node-decision { fill: #FFF9E6; stroke: #F0A500; stroke-width: 1.5; }
+  .node-start-end { fill: #6C5CE7; stroke: none; }
+  .node-data { fill: #E3F2FD; stroke: #0984E3; stroke-width: 1.5; }
+  .node-success { fill: #E8FFF5; stroke: #00B894; stroke-width: 1.5; }
+  .node-error { fill: #FFE8E8; stroke: #D63031; stroke-width: 1.5; }
+  .node-system { fill: #F0F4FF; stroke: #4A6CF7; stroke-width: 1.5; }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--grey);
+  }
+  .legend-box {
+    width: 20px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1.5px solid;
+  }
+
+  @media print {
+    body { padding: 20px; }
+    .diagram-section { page-break-before: always; }
+    .diagram-section:first-of-type { page-break-before: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <h1>ValeurFin — Process Flows & System Diagrams</h1>
+  <p>Visual documentation of all key processes, data flows, and system architecture</p>
+  <div class="meta">
+    <span class="meta-chip">v4.1</span>
+    <span class="meta-chip">14 Diagrams</span>
+    <span class="meta-chip">April 2026</span>
+    <span class="meta-chip">CONFIDENTIAL</span>
+  </div>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <div class="toc-grid">
+    <a href="#d1" class="toc-item"><span class="toc-num">1</span>App Architecture Overview</a>
+    <a href="#d2" class="toc-item"><span class="toc-num">2</span>Data Flow & State Management</a>
+    <a href="#d3" class="toc-item"><span class="toc-num">3</span>App Boot Sequence</a>
+    <a href="#d4" class="toc-item"><span class="toc-num">4</span>SIP Auto-Processing Flow</a>
+    <a href="#d5" class="toc-item"><span class="toc-num">5</span>Live Price Fetch Flow</a>
+    <a href="#d6" class="toc-item"><span class="toc-num">6</span>Add Investment Flow</a>
+    <a href="#d7" class="toc-item"><span class="toc-num">7</span>Lot-Based XIRR Calculation</a>
+    <a href="#d8" class="toc-item"><span class="toc-num">8</span>Date-Aware Dividend Calculation</a>
+    <a href="#d9" class="toc-item"><span class="toc-num">9</span>Alert Generation Flow</a>
+    <a href="#d10" class="toc-item"><span class="toc-num">10</span>Exit Signal Decision Tree</a>
+    <a href="#d11" class="toc-item"><span class="toc-num">11</span>Wealth Score Calculation</a>
+    <a href="#d12" class="toc-item"><span class="toc-num">12</span>Quad-Storage Fallback Chain</a>
+    <a href="#d13" class="toc-item"><span class="toc-num">13</span>User Journey Map</a>
+    <a href="#d14" class="toc-item"><span class="toc-num">14</span>ValeurBot Processing Flow</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM 1: APP ARCHITECTURE -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d1">
+  <div class="section-header">
+    <span class="section-num">Diagram 1</span>
+    <div class="section-header-text">
+      <h2>App Architecture Overview</h2>
+      <p>System components, deployment, storage layers, and external API integrations</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="900" height="560" viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#6C5CE7"/>
+        </marker>
+        <marker id="arr-grey" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#B2BEC3"/>
+        </marker>
+        <filter id="sh"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity=".08"/></filter>
+      </defs>
+
+      <!-- GitHub Pages box -->
+      <rect x="20" y="20" width="860" height="520" rx="16" fill="#F8F6FF" stroke="#6C5CE7" stroke-width="2" stroke-dasharray="8 4"/>
+      <text x="440" y="48" text-anchor="middle" font-size="13" font-weight="600" fill="#6C5CE7">GitHub Pages — Static Hosting (valeurfin-app.github.io/valeurfin)</text>
+
+      <!-- Desktop PWA -->
+      <rect x="50" y="70" width="360" height="200" rx="12" fill="white" stroke="#6C5CE7" stroke-width="1.5" filter="url(#sh)"/>
+      <rect x="50" y="70" width="360" height="36" rx="12" fill="#6C5CE7"/>
+      <rect x="50" y="94" width="360" height="12" rx="0" fill="#6C5CE7"/>
+      <text x="230" y="94" text-anchor="middle" font-size="13" font-weight="700" fill="white">DESKTOP PWA — index.html</text>
+      <text x="70" y="128" font-size="11" fill="#636E72">📊 22 pages (sidebar nav)</text>
+      <text x="70" y="148" font-size="11" fill="#636E72">⚙️ 208 functions (JS)</text>
+      <text x="70" y="168" font-size="11" fill="#636E72">🎨 Custom CSS design system</text>
+      <text x="70" y="188" font-size="11" fill="#636E72">🔄 Service Worker: valeurfin-v4c</text>
+      <text x="70" y="208" font-size="11" fill="#636E72">📱 manifest.json (installable)</text>
+      <text x="70" y="228" font-size="11" fill="#636E72">🌙 Dark + Light themes</text>
+      <text x="70" y="248" font-size="11" fill="#636E72">🎤 Voice input (Web Speech API)</text>
+
+      <!-- Mobile PWA -->
+      <rect x="490" y="70" width="360" height="200" rx="12" fill="white" stroke="#0984E3" stroke-width="1.5" filter="url(#sh)"/>
+      <rect x="490" y="70" width="360" height="36" rx="12" fill="#0984E3"/>
+      <rect x="490" y="94" width="360" height="12" rx="0" fill="#0984E3"/>
+      <text x="670" y="94" text-anchor="middle" font-size="13" font-weight="700" fill="white">MOBILE PWA — valeurfin-mobile.html</text>
+      <text x="510" y="128" font-size="11" fill="#636E72">📱 22 pages (bottom tab nav)</text>
+      <text x="510" y="148" font-size="11" fill="#636E72">📐 Fluid clamp() typography</text>
+      <text x="510" y="168" font-size="11" fill="#636E72">👆 44px min touch targets</text>
+      <text x="510" y="188" font-size="11" fill="#636E72">🔄 Service Worker: valeurfin-v4c</text>
+      <text x="510" y="208" font-size="11" fill="#636E72">📱 manifest-mobile.json</text>
+      <text x="510" y="228" font-size="11" fill="#636E72">🛡️ iOS safe-area-inset support</text>
+      <text x="510" y="248" font-size="11" fill="#636E72">📲 Native install prompt (Android)</text>
+
+      <!-- Shared State S -->
+      <rect x="310" y="300" width="280" height="80" rx="10" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5" filter="url(#sh)"/>
+      <text x="450" y="326" text-anchor="middle" font-size="13" font-weight="700" fill="#6C5CE7">Shared State Object — S</text>
+      <text x="450" y="346" text-anchor="middle" font-size="11" fill="#6C5CE7">investments · expenses · income</text>
+      <text x="450" y="362" text-anchor="middle" font-size="11" fill="#6C5CE7">goals · insurance · reminders · dividends</text>
+
+      <!-- Storage -->
+      <rect x="50" y="310" width="230" height="180" rx="10" fill="white" stroke="#00B894" stroke-width="1.5" filter="url(#sh)"/>
+      <rect x="50" y="310" width="230" height="32" rx="10" fill="#00B894"/>
+      <rect x="50" y="330" width="230" height="12" rx="0" fill="#00B894"/>
+      <text x="165" y="332" text-anchor="middle" font-size="12" font-weight="700" fill="white">ON-DEVICE STORAGE (Quad)</text>
+      <text x="70" y="362" font-size="11" fill="#00B894">① IndexedDB — primary (async)</text>
+      <text x="70" y="382" font-size="11" fill="#636E72">② localStorage — sync fallback</text>
+      <text x="70" y="402" font-size="11" fill="#636E72">③ sessionStorage — tab fallback</text>
+      <text x="70" y="422" font-size="11" fill="#636E72">④ Cookie — last resort (4KB)</text>
+      <rect x="70" y="436" width="190" height="28" rx="6" fill="#E8FFF5" stroke="#00B894" stroke-width="1"/>
+      <text x="165" y="455" text-anchor="middle" font-size="11" font-weight="600" fill="#00B894">Zero data leaves the device</text>
+
+      <!-- External APIs -->
+      <rect x="620" y="310" width="230" height="180" rx="10" fill="white" stroke="#F0A500" stroke-width="1.5" filter="url(#sh)"/>
+      <rect x="620" y="310" width="230" height="32" rx="10" fill="#F0A500"/>
+      <rect x="620" y="330" width="230" height="12" rx="0" fill="#F0A500"/>
+      <text x="735" y="332" text-anchor="middle" font-size="12" font-weight="700" fill="white">EXTERNAL APIs (Optional)</text>
+      <text x="640" y="362" font-size="11" fill="#636E72">📈 Yahoo Finance — live prices</text>
+      <text x="640" y="382" font-size="11" fill="#636E72">🏦 mfapi.in — MF search/NAV</text>
+      <text x="640" y="402" font-size="11" fill="#636E72">🔀 corsproxy.io — CORS proxy</text>
+      <text x="640" y="422" font-size="11" fill="#636E72">📺 TradingView — heatmap widget</text>
+      <text x="640" y="442" font-size="11" fill="#636E72">🤖 Google Gemini — AI (opt-in)</text>
+      <text x="640" y="462" font-size="11" fill="#636E72">🔤 Google Fonts — Inter font CDN</text>
+
+      <!-- Arrows desktop → state -->
+      <line x1="230" y1="270" x2="380" y2="305" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#arr)"/>
+      <!-- Arrows mobile → state -->
+      <line x1="670" y1="270" x2="510" y2="305" stroke="#0984E3" stroke-width="1.5" marker-end="url(#arr)"/>
+      <!-- State → storage -->
+      <line x1="350" y1="350" x2="280" y2="380" stroke="#00B894" stroke-width="1.5" marker-end="url(#arr)"/>
+      <!-- State → external -->
+      <line x1="550" y1="350" x2="620" y2="380" stroke="#F0A500" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <!-- Labels on arrows -->
+      <text x="295" y="330" font-size="10" fill="#6C5CE7" transform="rotate(-15,295,330)">reads/writes</text>
+      <text x="540" y="330" font-size="10" fill="#F0A500" transform="rotate(12,540,330)">fetches data</text>
+      <text x="295" y="365" font-size="10" fill="#00B894">persists S</text>
+    </svg>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-box" style="background:#EDE9FF;border-color:#6C5CE7"></div> Desktop PWA</div>
+      <div class="legend-item"><div class="legend-box" style="background:#E3F2FD;border-color:#0984E3"></div> Mobile PWA</div>
+      <div class="legend-item"><div class="legend-box" style="background:#E8FFF5;border-color:#00B894"></div> On-Device Storage</div>
+      <div class="legend-item"><div class="legend-box" style="background:#FFF9E6;border-color:#F0A500"></div> External APIs</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM 2: DATA FLOW -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d2">
+  <div class="section-header">
+    <span class="section-num">Diagram 2</span>
+    <div class="section-header-text">
+      <h2>Data Flow — State Management</h2>
+      <p>How user actions update the state object, trigger persistence, and refresh the UI</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="860" height="320" viewBox="0 0 860 320" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <defs>
+        <marker id="a2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6C5CE7"/></marker>
+        <marker id="a2g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#00B894"/></marker>
+        <marker id="a2b" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#0984E3"/></marker>
+      </defs>
+
+      <!-- Step boxes -->
+      <!-- User Action -->
+      <rect x="20" y="120" width="120" height="60" rx="10" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="80" y="147" text-anchor="middle" font-size="12" font-weight="600" fill="#6C5CE7">User</text>
+      <text x="80" y="163" text-anchor="middle" font-size="12" font-weight="600" fill="#6C5CE7">Action</text>
+      <text x="80" y="200" text-anchor="middle" font-size="10" fill="#636E72">Add investment</text>
+      <text x="80" y="214" text-anchor="middle" font-size="10" fill="#636E72">Edit expense etc.</text>
+
+      <!-- Event Handler -->
+      <rect x="180" y="120" width="130" height="60" rx="10" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="245" y="147" text-anchor="middle" font-size="12" font-weight="600" fill="#6C5CE7">Event</text>
+      <text x="245" y="163" text-anchor="middle" font-size="12" font-weight="600" fill="#6C5CE7">Handler</text>
+      <text x="245" y="200" text-anchor="middle" font-size="10" fill="#636E72">saveExpense()</text>
+      <text x="245" y="214" text-anchor="middle" font-size="10" fill="#636E72">addInvestment()</text>
+
+      <!-- S object -->
+      <rect x="350" y="100" width="130" height="100" rx="10" fill="#F0EDFF" stroke="#6C5CE7" stroke-width="2"/>
+      <text x="415" y="130" text-anchor="middle" font-size="14" font-weight="700" fill="#6C5CE7">S { }</text>
+      <text x="415" y="152" text-anchor="middle" font-size="10" fill="#6C5CE7">investments[]</text>
+      <text x="415" y="168" text-anchor="middle" font-size="10" fill="#6C5CE7">expenses[]</text>
+      <text x="415" y="184" text-anchor="middle" font-size="10" fill="#6C5CE7">income[] ...</text>
+
+      <!-- saveS() -->
+      <rect x="530" y="30" width="130" height="60" rx="10" fill="#E8FFF5" stroke="#00B894" stroke-width="1.5"/>
+      <text x="595" y="57" text-anchor="middle" font-size="12" font-weight="600" fill="#00B894">saveS()</text>
+      <text x="595" y="73" text-anchor="middle" font-size="10" fill="#636E72">hash check → write</text>
+
+      <!-- Storage layers -->
+      <rect x="700" y="20" width="140" height="80" rx="10" fill="#E8FFF5" stroke="#00B894" stroke-width="1.5"/>
+      <text x="770" y="44" text-anchor="middle" font-size="11" font-weight="600" fill="#00B894">Storage</text>
+      <text x="770" y="62" text-anchor="middle" font-size="10" fill="#636E72">IDB → localStorage</text>
+      <text x="770" y="78" text-anchor="middle" font-size="10" fill="#636E72">sessionStorage → Cookie</text>
+      <text x="770" y="94" text-anchor="middle" font-size="10" fill="#00B894">All 4 written</text>
+
+      <!-- renderAll() -->
+      <rect x="530" y="210" width="130" height="60" rx="10" fill="#E3F2FD" stroke="#0984E3" stroke-width="1.5"/>
+      <text x="595" y="237" text-anchor="middle" font-size="12" font-weight="600" fill="#0984E3">renderAll()</text>
+      <text x="595" y="253" text-anchor="middle" font-size="10" fill="#636E72">17 render functions</text>
+
+      <!-- UI -->
+      <rect x="700" y="200" width="140" height="80" rx="10" fill="#E3F2FD" stroke="#0984E3" stroke-width="1.5"/>
+      <text x="770" y="230" text-anchor="middle" font-size="12" font-weight="600" fill="#0984E3">UI Updated</text>
+      <text x="770" y="250" text-anchor="middle" font-size="10" fill="#636E72">Dashboard, Investments</text>
+      <text x="770" y="266" text-anchor="middle" font-size="10" fill="#636E72">Expenses, KPIs...</text>
+      <text x="770" y="282" text-anchor="middle" font-size="10" fill="#0984E3">Always in sync</text>
+
+      <!-- generateAlerts -->
+      <rect x="530" y="120" width="130" height="60" rx="10" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="595" y="144" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">generateAlerts()</text>
+      <text x="595" y="162" text-anchor="middle" font-size="10" fill="#636E72">Rebuilds alertList[]</text>
+      <text x="595" y="178" text-anchor="middle" font-size="10" fill="#636E72">Updates bell badge</text>
+
+      <!-- Arrows -->
+      <line x1="140" y1="150" x2="178" y2="150" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a2)"/>
+      <line x1="310" y1="150" x2="348" y2="150" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a2)"/>
+      <!-- S → saveS -->
+      <line x1="480" y1="120" x2="528" y2="80" stroke="#00B894" stroke-width="1.5" marker-end="url(#a2g)"/>
+      <!-- saveS → storage -->
+      <line x1="660" y1="60" x2="698" y2="60" stroke="#00B894" stroke-width="1.5" marker-end="url(#a2g)"/>
+      <!-- S → alerts -->
+      <line x1="480" y1="150" x2="528" y2="150" stroke="#F0A500" stroke-width="1.5" marker-end="url(#a2)"/>
+      <!-- S → renderAll -->
+      <line x1="480" y1="180" x2="528" y2="230" stroke="#0984E3" stroke-width="1.5" marker-end="url(#a2b)"/>
+      <!-- renderAll → UI -->
+      <line x1="660" y1="240" x2="698" y2="240" stroke="#0984E3" stroke-width="1.5" marker-end="url(#a2b)"/>
+
+      <!-- Arrow labels -->
+      <text x="155" y="143" font-size="9" fill="#6C5CE7">calls</text>
+      <text x="318" y="143" font-size="9" fill="#6C5CE7">mutates</text>
+      <text x="490" y="95" font-size="9" fill="#00B894">then</text>
+      <text x="490" y="145" font-size="9" fill="#F0A500">then</text>
+      <text x="490" y="205" font-size="9" fill="#0984E3">then</text>
+
+      <!-- Auto-save loop -->
+      <path d="M 770 100 Q 850 150 770 198" fill="none" stroke="#00B894" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#a2g)"/>
+      <text x="840" y="152" font-size="9" fill="#00B894" transform="rotate(90,840,152)">30s / beforeunload</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM 3: BOOT SEQUENCE -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d3">
+  <div class="section-header">
+    <span class="section-num">Diagram 3</span>
+    <div class="section-header-text">
+      <h2>App Boot Sequence</h2>
+      <p>Complete startup flow from DOMContentLoaded to app ready state</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="860" height="580" viewBox="0 0 860 580" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <defs>
+        <marker id="a3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6C5CE7"/></marker>
+        <marker id="a3r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#D63031"/></marker>
+        <marker id="a3g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#00B894"/></marker>
+      </defs>
+
+      <!-- Helper: process box centered at (cx, cy) width w height h -->
+      <!-- START -->
+      <ellipse cx="430" cy="35" rx="80" ry="22" fill="#6C5CE7"/>
+      <text x="430" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="white">DOMContentLoaded</text>
+
+      <!-- boot() -->
+      <rect x="330" y="75" width="200" height="44" rx="8" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="430" y="102" text-anchor="middle" font-size="12" font-weight="600" fill="#6C5CE7">boot() called</text>
+
+      <!-- loadS() -->
+      <rect x="330" y="137" width="200" height="44" rx="8" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="430" y="164" text-anchor="middle" font-size="12" font-weight="600" fill="#6C5CE7">loadS() — try IDB</text>
+
+      <!-- IDB empty? -->
+      <polygon points="430,205 530,240 430,275 330,240" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="430" y="237" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">IDB</text>
+      <text x="430" y="253" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">empty?</text>
+
+      <!-- YES: retry -->
+      <rect x="570" y="218" width="160" height="44" rx="8" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="650" y="237" text-anchor="middle" font-size="11" fill="#6C5CE7">Wait 600ms</text>
+      <text x="650" y="253" text-anchor="middle" font-size="11" fill="#6C5CE7">Retry IDB once</text>
+
+      <!-- Try localStorage -->
+      <rect x="100" y="218" width="160" height="44" rx="8" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="180" y="237" text-anchor="middle" font-size="11" fill="#6C5CE7">Try localStorage</text>
+      <text x="180" y="253" text-anchor="middle" font-size="11" fill="#6C5CE7">→ sessionStorage</text>
+
+      <!-- Data found? -->
+      <polygon points="430,295 540,330 430,365 320,330" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="430" y="325" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">Data</text>
+      <text x="430" y="341" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">found?</text>
+
+      <!-- NO: onboarding -->
+      <rect x="570" y="308" width="160" height="44" rx="8" fill="#FFE8E8" stroke="#D63031" stroke-width="1.5"/>
+      <text x="650" y="327" text-anchor="middle" font-size="11" fill="#D63031">First-time user</text>
+      <text x="650" y="343" text-anchor="middle" font-size="11" fill="#D63031">→ Show Onboarding</text>
+
+      <!-- YES: signed out? -->
+      <polygon points="430,385 540,415 430,445 320,415" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="430" y="411" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">Signed</text>
+      <text x="430" y="427" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">out?</text>
+
+      <!-- YES: welcome back -->
+      <rect x="570" y="398" width="160" height="44" rx="8" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="650" y="417" text-anchor="middle" font-size="11" fill="#F0A500">Show Welcome</text>
+      <text x="650" y="433" text-anchor="middle" font-size="11" fill="#F0A500">Back screen</text>
+
+      <!-- checkAndProcessSIPs -->
+      <rect x="330" y="463" width="200" height="44" rx="8" fill="#E8FFF5" stroke="#00B894" stroke-width="1.5"/>
+      <text x="430" y="482" text-anchor="middle" font-size="11" font-weight="600" fill="#00B894">checkAndProcessSIPs()</text>
+      <text x="430" y="498" text-anchor="middle" font-size="10" fill="#636E72">SIP due date checks</text>
+
+      <!-- initApp -->
+      <rect x="330" y="525" width="200" height="44" rx="8" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="430" y="548" text-anchor="middle" font-size="12" font-weight="600" fill="#6C5CE7">initApp() → renderAll()</text>
+      <text x="430" y="563" text-anchor="middle" font-size="10" fill="#636E72">Dashboard ready ✅</text>
+
+      <!-- ARROWS -->
+      <line x1="430" y1="57" x2="430" y2="73" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a3)"/>
+      <line x1="430" y1="119" x2="430" y2="135" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a3)"/>
+      <line x1="430" y1="181" x2="430" y2="203" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a3)"/>
+      <!-- IDB empty YES → retry -->
+      <line x1="530" y1="240" x2="568" y2="240" stroke="#F0A500" stroke-width="1.5" marker-end="url(#a3)"/>
+      <text x="540" y="233" font-size="10" fill="#F0A500">YES</text>
+      <!-- retry → back to check -->
+      <line x1="650" y1="262" x2="650" y2="330" stroke="#6C5CE7" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <line x1="650" y1="330" x2="542" y2="330" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a3)"/>
+      <!-- IDB empty NO → localStorage -->
+      <line x1="330" y1="240" x2="262" y2="240" stroke="#F0A500" stroke-width="1.5" marker-end="url(#a3)"/>
+      <text x="282" y="233" font-size="10" fill="#F0A500">NO</text>
+      <line x1="180" y1="262" x2="180" y2="330" stroke="#6C5CE7" stroke-width="1.5"/>
+      <line x1="180" y1="330" x2="318" y2="330" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a3)"/>
+      <!-- data found NO → onboarding -->
+      <line x1="540" y1="330" x2="568" y2="330" stroke="#D63031" stroke-width="1.5" marker-end="url(#a3r)"/>
+      <text x="542" y="323" font-size="10" fill="#D63031">NO</text>
+      <!-- data found YES → signed out? -->
+      <line x1="430" y1="365" x2="430" y2="383" stroke="#00B894" stroke-width="1.5" marker-end="url(#a3g)"/>
+      <text x="436" y="376" font-size="10" fill="#00B894">YES</text>
+      <!-- signed out YES -->
+      <line x1="540" y1="415" x2="568" y2="415" stroke="#F0A500" stroke-width="1.5" marker-end="url(#a3)"/>
+      <text x="542" y="408" font-size="10" fill="#F0A500">YES</text>
+      <!-- signed out NO → SIPs -->
+      <line x1="430" y1="445" x2="430" y2="461" stroke="#00B894" stroke-width="1.5" marker-end="url(#a3g)"/>
+      <text x="436" y="455" font-size="10" fill="#00B894">NO</text>
+      <line x1="430" y1="507" x2="430" y2="523" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a3)"/>
+    </svg>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM 4: SIP PROCESSING -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d4">
+  <div class="section-header">
+    <span class="section-num">Diagram 4</span>
+    <div class="section-header-text">
+      <h2>SIP Auto-Processing Flow</h2>
+      <p>checkAndProcessSIPs() — runs on every app open and refresh. Zero manual clicks needed.</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="860" height="620" viewBox="0 0 860 620" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <defs>
+        <marker id="a4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6C5CE7"/></marker>
+        <marker id="a4g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#00B894"/></marker>
+        <marker id="a4r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#D63031"/></marker>
+        <marker id="a4y" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#F0A500"/></marker>
+      </defs>
+
+      <!-- START -->
+      <ellipse cx="430" cy="30" rx="140" ry="22" fill="#6C5CE7"/>
+      <text x="430" y="35" text-anchor="middle" font-size="12" font-weight="700" fill="white">App Open / 🔄 Refresh Tap</text>
+
+      <!-- Get today -->
+      <rect x="300" y="65" width="260" height="44" rx="8" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="430" y="83" text-anchor="middle" font-size="11" font-weight="600" fill="#6C5CE7">Get today's date</text>
+      <text x="430" y="99" text-anchor="middle" font-size="10" fill="#636E72">todayDay, currentYM = "YYYY-MM"</text>
+
+      <!-- For each investment -->
+      <rect x="300" y="127" width="260" height="44" rx="8" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="430" y="145" text-anchor="middle" font-size="11" font-weight="600" fill="#6C5CE7">For each investment in S.investments</text>
+      <text x="430" y="161" text-anchor="middle" font-size="10" fill="#636E72">Loop through all investments</text>
+
+      <!-- Has monthly + dueDate? -->
+      <polygon points="430,185 560,220 430,255 300,220" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="430" y="215" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">monthly &gt; 0</text>
+      <text x="430" y="231" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">AND dueDate?</text>
+
+      <!-- NO → skip -->
+      <rect x="620" y="198" width="130" height="44" rx="8" fill="#FFE8E8" stroke="#D63031" stroke-width="1.5"/>
+      <text x="685" y="217" text-anchor="middle" font-size="11" fill="#D63031">SKIP</text>
+      <text x="685" y="233" text-anchor="middle" font-size="10" fill="#636E72">Not a SIP</text>
+
+      <!-- lastSIPMonth check -->
+      <polygon points="430,270 560,305 430,340 300,305" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="430" y="299" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">lastSIPMonth</text>
+      <text x="430" y="315" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">=== currentYM?</text>
+
+      <!-- YES → skip (already done) -->
+      <rect x="620" y="283" width="160" height="44" rx="8" fill="#FFE8E8" stroke="#D63031" stroke-width="1.5"/>
+      <text x="700" y="302" text-anchor="middle" font-size="11" fill="#D63031">SKIP — Already</text>
+      <text x="700" y="318" text-anchor="middle" font-size="11" fill="#D63031">processed this month</text>
+
+      <!-- due date check -->
+      <polygon points="430,355 570,390 430,425 290,390" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="430" y="384" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">todayDay &lt;</text>
+      <text x="430" y="400" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">effectiveDue?</text>
+
+      <!-- YES → not yet due -->
+      <rect x="620" y="368" width="160" height="44" rx="8" fill="#FFE8E8" stroke="#D63031" stroke-width="1.5"/>
+      <text x="700" y="387" text-anchor="middle" font-size="11" fill="#D63031">SKIP — Not yet</text>
+      <text x="700" y="403" text-anchor="middle" font-size="11" fill="#D63031">due this month</text>
+
+      <!-- PROCESS -->
+      <rect x="300" y="440" width="260" height="64" rx="8" fill="#E8FFF5" stroke="#00B894" stroke-width="2"/>
+      <text x="430" y="462" text-anchor="middle" font-size="12" font-weight="700" fill="#00B894">PROCESS SIP ✅</text>
+      <text x="430" y="480" text-anchor="middle" font-size="10" fill="#636E72">inv.invested += monthly</text>
+      <text x="430" y="494" text-anchor="middle" font-size="10" fill="#636E72">inv.value += monthly</text>
+      <text x="430" y="508" text-anchor="middle" font-size="10" fill="#00B894">lastSIPMonth = currentYM</text>
+
+      <!-- Save & render -->
+      <rect x="300" y="522" width="260" height="44" rx="8" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="430" y="541" text-anchor="middle" font-size="11" font-weight="600" fill="#6C5CE7">saveS() → renderAll()</text>
+      <text x="430" y="557" text-anchor="middle" font-size="10" fill="#636E72">Show "N SIP(s) processed" toast</text>
+
+      <!-- effectiveDue note -->
+      <rect x="60" y="355" width="200" height="70" rx="8" fill="#F8F6FF" stroke="#B2BEC3" stroke-width="1"/>
+      <text x="160" y="375" text-anchor="middle" font-size="11" font-weight="600" fill="#636E72">effectiveDue =</text>
+      <text x="160" y="393" text-anchor="middle" font-size="11" fill="#636E72">min(dueDate, daysInMonth)</text>
+      <text x="160" y="411" text-anchor="middle" font-size="10" fill="#636E72">Handles Feb 28/29 etc.</text>
+
+      <!-- ARROWS -->
+      <line x1="430" y1="52" x2="430" y2="63" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a4)"/>
+      <line x1="430" y1="109" x2="430" y2="125" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a4)"/>
+      <line x1="430" y1="171" x2="430" y2="183" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a4)"/>
+      <!-- monthly NO -->
+      <line x1="560" y1="220" x2="618" y2="220" stroke="#D63031" stroke-width="1.5" marker-end="url(#a4r)"/>
+      <text x="565" y="213" font-size="10" fill="#D63031">NO</text>
+      <!-- monthly YES -->
+      <line x1="430" y1="255" x2="430" y2="268" stroke="#00B894" stroke-width="1.5" marker-end="url(#a4g)"/>
+      <text x="436" y="265" font-size="10" fill="#00B894">YES</text>
+      <!-- lastSIPMonth YES -->
+      <line x1="560" y1="305" x2="618" y2="305" stroke="#D63031" stroke-width="1.5" marker-end="url(#a4r)"/>
+      <text x="563" y="298" font-size="10" fill="#D63031">YES</text>
+      <!-- lastSIPMonth NO -->
+      <line x1="430" y1="340" x2="430" y2="353" stroke="#00B894" stroke-width="1.5" marker-end="url(#a4g)"/>
+      <text x="436" y="350" font-size="10" fill="#00B894">NO</text>
+      <!-- dueDate YES -->
+      <line x1="570" y1="390" x2="618" y2="390" stroke="#D63031" stroke-width="1.5" marker-end="url(#a4r)"/>
+      <text x="573" y="383" font-size="10" fill="#D63031">YES</text>
+      <!-- dueDate NO -->
+      <line x1="430" y1="425" x2="430" y2="438" stroke="#00B894" stroke-width="1.5" marker-end="url(#a4g)"/>
+      <text x="436" y="435" font-size="10" fill="#00B894">NO</text>
+      <line x1="430" y1="504" x2="430" y2="520" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a4)"/>
+
+      <!-- skip arrows loop back -->
+      <line x1="685" y1="242" x2="685" y2="570" stroke="#D63031" stroke-width="1" stroke-dasharray="4 3"/>
+      <line x1="700" y1="327" x2="780" y2="327" stroke="#D63031" stroke-width="1" stroke-dasharray="4 3"/>
+      <line x1="780" y1="327" x2="780" y2="570" stroke="#D63031" stroke-width="1" stroke-dasharray="4 3"/>
+      <line x1="700" y1="412" x2="800" y2="412" stroke="#D63031" stroke-width="1" stroke-dasharray="4 3"/>
+      <line x1="800" y1="412" x2="800" y2="570" stroke="#D63031" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="720" y="590" font-size="10" fill="#D63031">All SKIP paths → next investment</text>
+      <line x1="260" y1="355" x2="218" y2="390" stroke="#636E72" stroke-width="1" stroke-dasharray="3 2"/>
+    </svg>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM 5: PRICE FETCH -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d5">
+  <div class="section-header">
+    <span class="section-num">Diagram 5</span>
+    <div class="section-header-text">
+      <h2>Live Price Fetch Flow</h2>
+      <p>fetchStockPrice() — tries NSE then BSE, with CORS proxy fallback</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="860" height="460" viewBox="0 0 860 460" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <defs>
+        <marker id="a5" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6C5CE7"/></marker>
+        <marker id="a5g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#00B894"/></marker>
+        <marker id="a5r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#D63031"/></marker>
+      </defs>
+
+      <!-- Swimlane headers -->
+      <rect x="20" y="20" width="200" height="420" rx="8" fill="#F0EDFF" stroke="#6C5CE7" stroke-width="1"/>
+      <rect x="230" y="20" width="200" height="420" rx="8" fill="#E3F2FD" stroke="#0984E3" stroke-width="1"/>
+      <rect x="440" y="20" width="200" height="420" rx="8" fill="#E3F2FD" stroke="#0984E3" stroke-width="1"/>
+      <rect x="650" y="20" width="190" height="420" rx="8" fill="#E8FFF5" stroke="#00B894" stroke-width="1"/>
+
+      <text x="120" y="42" text-anchor="middle" font-size="11" font-weight="700" fill="#6C5CE7">Exchange Loop</text>
+      <text x="330" y="42" text-anchor="middle" font-size="11" font-weight="700" fill="#0984E3">CORS Proxy 1</text>
+      <text x="540" y="42" text-anchor="middle" font-size="11" font-weight="700" fill="#0984E3">CORS Proxy 2</text>
+      <text x="745" y="42" text-anchor="middle" font-size="11" font-weight="700" fill="#00B894">Result</text>
+
+      <!-- Row 1: NSE attempt -->
+      <rect x="30" y="60" width="180" height="44" rx="6" fill="white" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="120" y="78" text-anchor="middle" font-size="11" font-weight="600" fill="#6C5CE7">Try SYMBOL.NS</text>
+      <text x="120" y="94" text-anchor="middle" font-size="10" fill="#636E72">(NSE — first)</text>
+
+      <rect x="240" y="60" width="180" height="44" rx="6" fill="white" stroke="#0984E3" stroke-width="1.5"/>
+      <text x="330" y="78" text-anchor="middle" font-size="11" fill="#0984E3">corsproxy.io</text>
+      <text x="330" y="94" text-anchor="middle" font-size="10" fill="#636E72">fetch with 8s timeout</text>
+
+      <!-- Success? -->
+      <polygon points="330,130 400,155 330,180 260,155" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="330" y="150" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">price</text>
+      <text x="330" y="165" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">&gt; 0?</text>
+
+      <!-- Success → return -->
+      <rect x="660" y="130" width="170" height="64" rx="6" fill="white" stroke="#00B894" stroke-width="2"/>
+      <text x="745" y="150" text-anchor="middle" font-size="11" font-weight="700" fill="#00B894">Return price data</text>
+      <text x="745" y="168" text-anchor="middle" font-size="10" fill="#636E72">price, change, changePct</text>
+      <text x="745" y="184" text-anchor="middle" font-size="10" fill="#00B894">exchange: "NSE"</text>
+
+      <!-- Proxy 1 fail → Proxy 2 -->
+      <rect x="450" y="60" width="180" height="44" rx="6" fill="white" stroke="#0984E3" stroke-width="1.5"/>
+      <text x="540" y="78" text-anchor="middle" font-size="11" fill="#0984E3">allorigins.win</text>
+      <text x="540" y="94" text-anchor="middle" font-size="10" fill="#636E72">fallback proxy</text>
+
+      <!-- Success from proxy 2? -->
+      <polygon points="540,130 610,155 540,180 470,155" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="540" y="150" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">price</text>
+      <text x="540" y="165" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">&gt; 0?</text>
+
+      <!-- Row 2: BSE attempt -->
+      <rect x="30" y="220" width="180" height="44" rx="6" fill="white" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="120" y="238" text-anchor="middle" font-size="11" font-weight="600" fill="#6C5CE7">Try SYMBOL.BO</text>
+      <text x="120" y="254" text-anchor="middle" font-size="10" fill="#636E72">(BSE — fallback)</text>
+
+      <rect x="240" y="220" width="180" height="44" rx="6" fill="white" stroke="#0984E3" stroke-width="1.5"/>
+      <text x="330" y="238" text-anchor="middle" font-size="11" fill="#0984E3">corsproxy.io</text>
+      <text x="330" y="254" text-anchor="middle" font-size="10" fill="#636E72">fetch with 8s timeout</text>
+
+      <!-- BSE Success? -->
+      <polygon points="330,290 400,315 330,340 260,315" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="330" y="310" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">price</text>
+      <text x="330" y="326" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">&gt; 0?</text>
+
+      <!-- BSE Success → return -->
+      <rect x="660" y="290" width="170" height="64" rx="6" fill="white" stroke="#00B894" stroke-width="2"/>
+      <text x="745" y="310" text-anchor="middle" font-size="11" font-weight="700" fill="#00B894">Return price data</text>
+      <text x="745" y="328" text-anchor="middle" font-size="10" fill="#636E72">price, change, changePct</text>
+      <text x="745" y="344" text-anchor="middle" font-size="10" fill="#00B894">exchange: "BSE"</text>
+
+      <!-- BSE proxy 2 -->
+      <rect x="450" y="220" width="180" height="44" rx="6" fill="white" stroke="#0984E3" stroke-width="1.5"/>
+      <text x="540" y="238" text-anchor="middle" font-size="11" fill="#0984E3">allorigins.win</text>
+      <text x="540" y="254" text-anchor="middle" font-size="10" fill="#636E72">fallback proxy</text>
+
+      <!-- BSE proxy 2 success? -->
+      <polygon points="540,290 610,315 540,340 470,315" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="540" y="310" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">price</text>
+      <text x="540" y="326" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">&gt; 0?</text>
+
+      <!-- All failed → null -->
+      <rect x="240" y="390" width="360" height="44" rx="6" fill="#FFE8E8" stroke="#D63031" stroke-width="2"/>
+      <text x="420" y="409" text-anchor="middle" font-size="11" font-weight="700" fill="#D63031">return null — symbol not found</text>
+      <text x="420" y="425" text-anchor="middle" font-size="10" fill="#636E72">liveValue unchanged, manual entry preserved</text>
+
+      <!-- ARROWS -->
+      <line x1="210" y1="82" x2="238" y2="82" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a5)"/>
+      <line x1="330" y1="104" x2="330" y2="128" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a5)"/>
+      <!-- proxy 1 NO → proxy 2 -->
+      <line x1="400" y1="155" x2="448" y2="82" stroke="#D63031" stroke-width="1.5" marker-end="url(#a5)"/>
+      <text x="418" y="108" font-size="9" fill="#D63031">NO</text>
+      <!-- proxy 1 YES -->
+      <line x1="400" y1="155" x2="658" y2="162" stroke="#00B894" stroke-width="1.5" marker-end="url(#a5g)"/>
+      <text x="530" y="148" font-size="9" fill="#00B894">YES</text>
+      <!-- proxy 2 success -->
+      <line x1="540" y1="104" x2="540" y2="128" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a5)"/>
+      <line x1="610" y1="155" x2="658" y2="162" stroke="#00B894" stroke-width="1.5" marker-end="url(#a5g)"/>
+      <text x="625" y="148" font-size="9" fill="#00B894">YES</text>
+      <!-- proxy 2 NO → BSE -->
+      <line x1="610" y1="155" x2="836" y2="155" stroke="#D63031" stroke-width="1" stroke-dasharray="3 2"/>
+      <line x1="836" y1="155" x2="836" y2="240" stroke="#D63031" stroke-width="1" stroke-dasharray="3 2"/>
+      <line x1="836" y1="240" x2="210" y2="240" stroke="#D63031" stroke-width="1.5" marker-end="url(#a5r)"/>
+      <text x="740" y="170" font-size="9" fill="#D63031">NO — try BSE</text>
+
+      <!-- BSE arrows -->
+      <line x1="210" y1="240" x2="238" y2="240" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a5)"/>
+      <line x1="330" y1="264" x2="330" y2="288" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a5)"/>
+      <line x1="400" y1="315" x2="448" y2="240" stroke="#D63031" stroke-width="1.5" marker-end="url(#a5)"/>
+      <text x="418" y="265" font-size="9" fill="#D63031">NO</text>
+      <line x1="400" y1="315" x2="658" y2="322" stroke="#00B894" stroke-width="1.5" marker-end="url(#a5g)"/>
+      <text x="530" y="308" font-size="9" fill="#00B894">YES</text>
+      <line x1="540" y1="264" x2="540" y2="288" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a5)"/>
+      <line x1="610" y1="315" x2="658" y2="322" stroke="#00B894" stroke-width="1.5" marker-end="url(#a5g)"/>
+      <text x="625" y="308" font-size="9" fill="#00B894">YES</text>
+      <!-- all fail → null -->
+      <line x1="610" y1="315" x2="838" y2="315" stroke="#D63031" stroke-width="1" stroke-dasharray="3 2"/>
+      <line x1="838" y1="315" x2="838" y2="412" stroke="#D63031" stroke-width="1" stroke-dasharray="3 2"/>
+      <line x1="838" y1="412" x2="602" y2="412" stroke="#D63031" stroke-width="1.5" marker-end="url(#a5r)"/>
+      <text x="660" y="405" font-size="9" fill="#D63031">all proxies fail</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM 6: EXIT SIGNAL DECISION TREE -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d10">
+  <div class="section-header">
+    <span class="section-num">Diagram 10</span>
+    <div class="section-header-text">
+      <h2>Exit Signal Decision Tree</h2>
+      <p>getExitCue() — evaluated for every investment on every render. Priority order matters.</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="860" height="580" viewBox="0 0 860 580" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <defs>
+        <marker id="a10" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6C5CE7"/></marker>
+        <marker id="a10g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#00B894"/></marker>
+        <marker id="a10r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#D63031"/></marker>
+        <marker id="a10y" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#F0A500"/></marker>
+      </defs>
+
+      <!-- START -->
+      <ellipse cx="200" cy="32" rx="160" ry="22" fill="#6C5CE7"/>
+      <text x="200" y="37" text-anchor="middle" font-size="12" font-weight="700" fill="white">Investment to evaluate</text>
+
+      <!-- Q1: targetReturn hit? -->
+      <polygon points="200,65 320,100 200,135 80,100" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="200" y="95" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">retPct ≥</text>
+      <text x="200" y="111" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">targetReturn?</text>
+      <!-- YES -->
+      <rect x="370" y="78" width="160" height="44" rx="8" fill="#FFE8E8" stroke="#D63031" stroke-width="2"/>
+      <text x="450" y="97" text-anchor="middle" font-size="12" font-weight="700" fill="#D63031">🔴 SELL</text>
+      <text x="450" y="113" text-anchor="middle" font-size="10" fill="#636E72">Hit X% target</text>
+
+      <!-- Q2: stopLoss hit? -->
+      <polygon points="200,155 320,190 200,225 80,190" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="200" y="185" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">retPct ≤</text>
+      <text x="200" y="201" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">−|stopLoss|?</text>
+      <rect x="370" y="168" width="160" height="44" rx="8" fill="#FFE8E8" stroke="#D63031" stroke-width="2"/>
+      <text x="450" y="187" text-anchor="middle" font-size="12" font-weight="700" fill="#D63031">🔴 SELL</text>
+      <text x="450" y="203" text-anchor="middle" font-size="10" fill="#636E72">Stop loss breached</text>
+
+      <!-- Q3: FD matured? -->
+      <polygon points="200,245 320,280 200,315 80,280" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="200" y="275" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">maturityDate</text>
+      <text x="200" y="291" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">in the past?</text>
+      <rect x="370" y="258" width="160" height="44" rx="8" fill="#FFE8E8" stroke="#D63031" stroke-width="2"/>
+      <text x="450" y="277" text-anchor="middle" font-size="12" font-weight="700" fill="#D63031">🔴 SELL</text>
+      <text x="450" y="293" text-anchor="middle" font-size="10" fill="#636E72">FD matured — reinvest</text>
+
+      <!-- Q4: Near 52W low? -->
+      <polygon points="200,335 320,370 200,405 80,370" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="200" y="365" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">livePrice ≤</text>
+      <text x="200" y="381" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">52WLow × 1.05?</text>
+      <rect x="370" y="348" width="160" height="44" rx="8" fill="#FFF9E6" stroke="#F0A500" stroke-width="2"/>
+      <text x="450" y="367" text-anchor="middle" font-size="12" font-weight="700" fill="#F0A500">🟡 REVIEW</text>
+      <text x="450" y="383" text-anchor="middle" font-size="10" fill="#636E72">Near 52-week low</text>
+
+      <!-- Q5: Maturing soon? -->
+      <polygon points="200,425 320,458 200,491 80,458" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="200" y="453" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">maturity within</text>
+      <text x="200" y="469" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">30 days?</text>
+      <rect x="370" y="438" width="160" height="44" rx="8" fill="#FFF9E6" stroke="#F0A500" stroke-width="2"/>
+      <text x="450" y="457" text-anchor="middle" font-size="12" font-weight="700" fill="#F0A500">🟡 REVIEW</text>
+      <text x="450" y="473" text-anchor="middle" font-size="10" fill="#636E72">Maturity approaching</text>
+
+      <!-- HOLD -->
+      <rect x="80" y="525" width="240" height="44" rx="8" fill="#E8FFF5" stroke="#00B894" stroke-width="2"/>
+      <text x="200" y="544" text-anchor="middle" font-size="12" font-weight="700" fill="#00B894">🟢 HOLD</text>
+      <text x="200" y="560" text-anchor="middle" font-size="10" fill="#636E72">No exit conditions triggered</text>
+
+      <!-- ARROWS down (NO path) -->
+      <line x1="200" y1="54" x2="200" y2="63" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a10)"/>
+      <line x1="200" y1="135" x2="200" y2="153" stroke="#00B894" stroke-width="1.5" marker-end="url(#a10g)"/>
+      <text x="206" y="147" font-size="9" fill="#00B894">NO</text>
+      <line x1="200" y1="225" x2="200" y2="243" stroke="#00B894" stroke-width="1.5" marker-end="url(#a10g)"/>
+      <text x="206" y="237" font-size="9" fill="#00B894">NO</text>
+      <line x1="200" y1="315" x2="200" y2="333" stroke="#00B894" stroke-width="1.5" marker-end="url(#a10g)"/>
+      <text x="206" y="327" font-size="9" fill="#00B894">NO</text>
+      <line x1="200" y1="405" x2="200" y2="423" stroke="#00B894" stroke-width="1.5" marker-end="url(#a10g)"/>
+      <text x="206" y="417" font-size="9" fill="#00B894">NO</text>
+      <line x1="200" y1="491" x2="200" y2="523" stroke="#00B894" stroke-width="1.5" marker-end="url(#a10g)"/>
+      <text x="206" y="510" font-size="9" fill="#00B894">NO</text>
+
+      <!-- ARROWS right (YES path) -->
+      <line x1="320" y1="100" x2="368" y2="100" stroke="#D63031" stroke-width="1.5" marker-end="url(#a10r)"/>
+      <text x="330" y="93" font-size="9" fill="#D63031">YES</text>
+      <line x1="320" y1="190" x2="368" y2="190" stroke="#D63031" stroke-width="1.5" marker-end="url(#a10r)"/>
+      <text x="330" y="183" font-size="9" fill="#D63031">YES</text>
+      <line x1="320" y1="280" x2="368" y2="280" stroke="#D63031" stroke-width="1.5" marker-end="url(#a10r)"/>
+      <text x="330" y="273" font-size="9" fill="#D63031">YES</text>
+      <line x1="320" y1="370" x2="368" y2="370" stroke="#F0A500" stroke-width="1.5" marker-end="url(#a10y)"/>
+      <text x="330" y="363" font-size="9" fill="#F0A500">YES</text>
+      <line x1="320" y1="458" x2="368" y2="458" stroke="#F0A500" stroke-width="1.5" marker-end="url(#a10y)"/>
+      <text x="330" y="451" font-size="9" fill="#F0A500">YES</text>
+
+      <!-- Priority label -->
+      <rect x="580" y="65" width="260" height="480" rx="10" fill="#F8F6FF" stroke="#B2BEC3" stroke-width="1"/>
+      <text x="710" y="90" text-anchor="middle" font-size="12" font-weight="700" fill="#6C5CE7">Priority Order</text>
+      <text x="710" y="115" text-anchor="middle" font-size="10" fill="#636E72">Checked in sequence.</text>
+      <text x="710" y="130" text-anchor="middle" font-size="10" fill="#636E72">First match wins.</text>
+      <text x="600" y="165" font-size="11" fill="#D63031">🔴 SELL signals (highest priority):</text>
+      <text x="600" y="185" font-size="10" fill="#636E72">1. Target return hit</text>
+      <text x="600" y="202" font-size="10" fill="#636E72">2. Stop-loss breached</text>
+      <text x="600" y="219" font-size="10" fill="#636E72">3. FD/RD matured</text>
+      <text x="600" y="260" font-size="11" fill="#F0A500">🟡 REVIEW signals:</text>
+      <text x="600" y="280" font-size="10" fill="#636E72">4. Near 52-week low</text>
+      <text x="600" y="297" font-size="10" fill="#636E72">    (within 5%)</text>
+      <text x="600" y="314" font-size="10" fill="#636E72">5. Maturity approaching</text>
+      <text x="600" y="331" font-size="10" fill="#636E72">    (within 30 days)</text>
+      <text x="600" y="370" font-size="11" fill="#00B894">🟢 HOLD (default):</text>
+      <text x="600" y="390" font-size="10" fill="#636E72">None of the above triggered</text>
+      <line x1="595" y1="245" x2="830" y2="245" stroke="#E0E0E0" stroke-width="1"/>
+      <line x1="595" y1="350" x2="830" y2="350" stroke="#E0E0E0" stroke-width="1"/>
+      <text x="710" y="440" text-anchor="middle" font-size="10" fill="#636E72">User can set custom</text>
+      <text x="710" y="456" text-anchor="middle" font-size="10" fill="#636E72">targetReturn % and</text>
+      <text x="710" y="472" text-anchor="middle" font-size="10" fill="#636E72">stopLoss % per investment</text>
+      <text x="710" y="488" text-anchor="middle" font-size="10" fill="#636E72">in Add/Edit form.</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM 7: WEALTH SCORE -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d11">
+  <div class="section-header">
+    <span class="section-num">Diagram 11</span>
+    <div class="section-header-text">
+      <h2>Wealth Score — Component Breakdown</h2>
+      <p>calcWealthScore() — 7 components summed to produce a 0–100 score</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="860" height="420" viewBox="0 0 860 420" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <!-- Title -->
+      <text x="430" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#1B2A4A">calcWealthScore( nw, invested, returns, mExp, mInc, inv[] )</text>
+
+      <!-- Components -->
+      <!-- Emergency Fund -->
+      <rect x="20" y="50" width="220" height="80" rx="10" fill="#E3F2FD" stroke="#0984E3" stroke-width="1.5"/>
+      <text x="130" y="72" text-anchor="middle" font-size="11" font-weight="700" fill="#0984E3">Emergency Fund</text>
+      <text x="130" y="90" text-anchor="middle" font-size="10" fill="#636E72">FD+RD ÷ monthlySpend</text>
+      <text x="130" y="108" text-anchor="middle" font-size="10" fill="#636E72">Target: 6 months</text>
+      <text x="130" y="120" text-anchor="middle" font-size="11" font-weight="700" fill="#0984E3">Max 15 pts</text>
+
+      <!-- Savings Rate -->
+      <rect x="260" y="50" width="220" height="80" rx="10" fill="#E8FFF5" stroke="#00B894" stroke-width="1.5"/>
+      <text x="370" y="72" text-anchor="middle" font-size="11" font-weight="700" fill="#00B894">Savings Rate</text>
+      <text x="370" y="90" text-anchor="middle" font-size="10" fill="#636E72">(income − expenses) / income</text>
+      <text x="370" y="108" text-anchor="middle" font-size="10" fill="#636E72">Target: 30%</text>
+      <text x="370" y="120" text-anchor="middle" font-size="11" font-weight="700" fill="#00B894">Max 15 pts</text>
+
+      <!-- Diversification -->
+      <rect x="500" y="50" width="220" height="80" rx="10" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="610" y="72" text-anchor="middle" font-size="11" font-weight="700" fill="#6C5CE7">Diversification</text>
+      <text x="610" y="90" text-anchor="middle" font-size="10" fill="#636E72">numAssetBuckets × 4</text>
+      <text x="610" y="108" text-anchor="middle" font-size="10" fill="#636E72">More buckets = better</text>
+      <text x="610" y="120" text-anchor="middle" font-size="11" font-weight="700" fill="#6C5CE7">Max 15 pts</text>
+
+      <!-- Portfolio Returns -->
+      <rect x="20" y="155" width="220" height="80" rx="10" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="130" y="177" text-anchor="middle" font-size="11" font-weight="700" fill="#F0A500">Portfolio Returns</text>
+      <text x="130" y="195" text-anchor="middle" font-size="10" fill="#636E72">(returnPct + 10) / 20 × 15</text>
+      <text x="130" y="213" text-anchor="middle" font-size="10" fill="#636E72">Positive returns score higher</text>
+      <text x="130" y="225" text-anchor="middle" font-size="11" font-weight="700" fill="#F0A500">Max 15 pts</text>
+
+      <!-- Goals -->
+      <rect x="260" y="155" width="220" height="80" rx="10" fill="#E8FFF5" stroke="#00CEC9" stroke-width="1.5"/>
+      <text x="370" y="177" text-anchor="middle" font-size="11" font-weight="700" fill="#00CEC9">Goal Progress</text>
+      <text x="370" y="195" text-anchor="middle" font-size="10" fill="#636E72">avg(goal.current / goal.target)</text>
+      <text x="370" y="213" text-anchor="middle" font-size="10" fill="#636E72">× 10</text>
+      <text x="370" y="225" text-anchor="middle" font-size="11" font-weight="700" fill="#00CEC9">Max 10 pts</text>
+
+      <!-- Insurance -->
+      <rect x="500" y="155" width="220" height="80" rx="10" fill="#FFE8E8" stroke="#D63031" stroke-width="1.5"/>
+      <text x="610" y="177" text-anchor="middle" font-size="11" font-weight="700" fill="#D63031">Insurance Score</text>
+      <text x="610" y="195" text-anchor="middle" font-size="10" fill="#636E72">insScore / 100 × 10</text>
+      <text x="610" y="213" text-anchor="middle" font-size="10" fill="#636E72">Active policies weighted</text>
+      <text x="610" y="225" text-anchor="middle" font-size="11" font-weight="700" fill="#D63031">Max 10 pts</text>
+
+      <!-- Data completeness + investments -->
+      <rect x="20" y="260" width="460" height="60" rx="10" fill="#F0EDFF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="250" y="283" text-anchor="middle" font-size="11" font-weight="700" fill="#6C5CE7">Data Completeness + Has Investments</text>
+      <text x="250" y="301" text-anchor="middle" font-size="10" fill="#636E72">+3 if expenses data exists  ·  +3 if income data exists  ·  +5 if portfolio non-empty</text>
+      <text x="250" y="313" text-anchor="middle" font-size="11" font-weight="700" fill="#6C5CE7">Max 11 pts</text>
+
+      <!-- TOTAL -->
+      <rect x="500" y="260" width="340" height="60" rx="10" fill="#6C5CE7"/>
+      <text x="670" y="285" text-anchor="middle" font-size="13" font-weight="700" fill="white">TOTAL SCORE</text>
+      <text x="670" y="305" text-anchor="middle" font-size="12" fill="white">min(100, sum of all components)</text>
+
+      <!-- Grades -->
+      <rect x="20" y="345" width="820" height="60" rx="10" fill="#F8F6FF" stroke="#B2BEC3" stroke-width="1"/>
+      <text x="430" y="363" text-anchor="middle" font-size="11" font-weight="700" fill="#636E72">GRADE THRESHOLDS</text>
+      <rect x="40" y="373" width="170" height="22" rx="6" fill="#E8FFF5" stroke="#00B894" stroke-width="1"/>
+      <text x="125" y="389" text-anchor="middle" font-size="11" font-weight="600" fill="#00B894">≥ 85 — Excellent</text>
+      <rect x="230" y="373" width="150" height="22" rx="6" fill="#E3F2FD" stroke="#0984E3" stroke-width="1"/>
+      <text x="305" y="389" text-anchor="middle" font-size="11" font-weight="600" fill="#0984E3">≥ 70 — Good</text>
+      <rect x="400" y="373" width="150" height="22" rx="6" fill="#FFF9E6" stroke="#F0A500" stroke-width="1"/>
+      <text x="475" y="389" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">≥ 50 — Fair</text>
+      <rect x="570" y="373" width="170" height="22" rx="6" fill="#FFE8E8" stroke="#D63031" stroke-width="1"/>
+      <text x="655" y="389" text-anchor="middle" font-size="11" font-weight="600" fill="#D63031">&lt; 50 — Poor</text>
+
+      <!-- Arrows from components to total -->
+      <defs><marker id="a11" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6C5CE7"/></marker></defs>
+      <line x1="130" y1="130" x2="130" y2="153" stroke="#6C5CE7" stroke-width="1" marker-end="url(#a11)"/>
+      <line x1="370" y1="130" x2="370" y2="153" stroke="#6C5CE7" stroke-width="1" marker-end="url(#a11)"/>
+      <line x1="610" y1="130" x2="610" y2="153" stroke="#6C5CE7" stroke-width="1" marker-end="url(#a11)"/>
+      <line x1="130" y1="235" x2="130" y2="258" stroke="#6C5CE7" stroke-width="1" marker-end="url(#a11)"/>
+      <line x1="370" y1="235" x2="370" y2="258" stroke="#6C5CE7" stroke-width="1" marker-end="url(#a11)"/>
+      <line x1="610" y1="235" x2="610" y2="258" stroke="#6C5CE7" stroke-width="1" marker-end="url(#a11)"/>
+      <line x1="480" y1="290" x2="498" y2="290" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a11)"/>
+      <text x="485" y="283" font-size="9" fill="#6C5CE7">+</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM 8: STORAGE FALLBACK -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d12">
+  <div class="section-header">
+    <span class="section-num">Diagram 12</span>
+    <div class="section-header-text">
+      <h2>Quad-Storage Fallback Chain</h2>
+      <p>loadS() and saveS() — how data is written to all 4 layers and read back</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="860" height="380" viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <defs>
+        <marker id="a12" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6C5CE7"/></marker>
+        <marker id="a12g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#00B894"/></marker>
+        <marker id="a12r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#D63031"/></marker>
+      </defs>
+
+      <!-- saveS() section -->
+      <rect x="20" y="20" width="400" height="155" rx="12" fill="#E8FFF5" stroke="#00B894" stroke-width="1.5"/>
+      <text x="220" y="44" text-anchor="middle" font-size="13" font-weight="700" fill="#00B894">saveS() — WRITE PATH (all 4 simultaneously)</text>
+
+      <rect x="40" y="55" width="360" height="36" rx="6" fill="white" stroke="#00B894" stroke-width="1"/>
+      <text x="220" y="78" text-anchor="middle" font-size="11" fill="#636E72">Compute hash → skip if unchanged since last save</text>
+
+      <rect x="40" y="100" width="80" height="60" rx="6" fill="#00B894"/>
+      <text x="80" y="125" text-anchor="middle" font-size="10" font-weight="700" fill="white">① IDB</text>
+      <text x="80" y="143" text-anchor="middle" font-size="9" fill="white">Primary</text>
+
+      <rect x="130" y="100" width="80" height="60" rx="6" fill="#0984E3"/>
+      <text x="170" y="125" text-anchor="middle" font-size="10" font-weight="700" fill="white">② Local</text>
+      <text x="170" y="143" text-anchor="middle" font-size="9" fill="white">Storage</text>
+
+      <rect x="220" y="100" width="80" height="60" rx="6" fill="#6C5CE7"/>
+      <text x="260" y="125" text-anchor="middle" font-size="10" font-weight="700" fill="white">③ Session</text>
+      <text x="260" y="143" text-anchor="middle" font-size="9" fill="white">Storage</text>
+
+      <rect x="310" y="100" width="80" height="60" rx="6" fill="#F0A500"/>
+      <text x="350" y="125" text-anchor="middle" font-size="10" font-weight="700" fill="white">④ Cookie</text>
+      <text x="350" y="143" text-anchor="middle" font-size="9" fill="white">4KB limit</text>
+
+      <!-- loadS() section -->
+      <rect x="440" y="20" width="400" height="280" rx="12" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="640" y="44" text-anchor="middle" font-size="13" font-weight="700" fill="#6C5CE7">loadS() — READ PATH (try in order)</text>
+
+      <!-- IDB -->
+      <rect x="460" y="58" width="360" height="44" rx="6" fill="#E8FFF5" stroke="#00B894" stroke-width="1.5"/>
+      <text x="640" y="76" text-anchor="middle" font-size="11" font-weight="600" fill="#00B894">① Try IndexedDB</text>
+      <text x="640" y="92" text-anchor="middle" font-size="10" fill="#636E72">openDB() → get("S")</text>
+      <polygon points="640,112 680,130 640,148 600,130" fill="#FFF9E6" stroke="#F0A500" stroke-width="1"/>
+      <text x="640" y="126" text-anchor="middle" font-size="10" fill="#F0A500">found?</text>
+      <text x="640" y="142" text-anchor="middle" font-size="10" fill="#F0A500"></text>
+      <!-- YES -->
+      <line x1="680" y1="130" x2="780" y2="130" stroke="#00B894" stroke-width="1.5" marker-end="url(#a12g)"/>
+      <text x="720" y="123" font-size="9" fill="#00B894">YES</text>
+      <rect x="782" y="112" width="60" height="36" rx="6" fill="#E8FFF5" stroke="#00B894" stroke-width="1"/>
+      <text x="812" y="135" text-anchor="middle" font-size="10" fill="#00B894">Return S</text>
+
+      <!-- localStorage -->
+      <rect x="460" y="158" width="360" height="44" rx="6" fill="#E3F2FD" stroke="#0984E3" stroke-width="1.5"/>
+      <text x="640" y="176" text-anchor="middle" font-size="11" font-weight="600" fill="#0984E3">② Try localStorage</text>
+      <text x="640" y="192" text-anchor="middle" font-size="10" fill="#636E72">key: "vf_state"</text>
+
+      <!-- sessionStorage -->
+      <rect x="460" y="218" width="360" height="44" rx="6" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="640" y="236" text-anchor="middle" font-size="11" font-weight="600" fill="#6C5CE7">③ Try sessionStorage</text>
+      <text x="640" y="252" text-anchor="middle" font-size="10" fill="#636E72">key: "vf_state_session"</text>
+
+      <!-- Cookie -->
+      <rect x="460" y="278" width="180" height="44" rx="6" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="550" y="296" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">④ Try Cookie</text>
+      <text x="550" y="312" text-anchor="middle" font-size="10" fill="#636E72">key: "vf_state"</text>
+
+      <!-- null - first time -->
+      <rect x="660" y="278" width="180" height="44" rx="6" fill="#FFE8E8" stroke="#D63031" stroke-width="1.5"/>
+      <text x="750" y="296" text-anchor="middle" font-size="11" font-weight="600" fill="#D63031">return null</text>
+      <text x="750" y="312" text-anchor="middle" font-size="10" fill="#636E72">→ Onboarding</text>
+
+      <!-- loadS arrows -->
+      <line x1="640" y1="102" x2="640" y2="110" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a12)"/>
+      <line x1="640" y1="148" x2="640" y2="156" stroke="#D63031" stroke-width="1.5" marker-end="url(#a12r)"/>
+      <text x="646" y="156" font-size="9" fill="#D63031">NO</text>
+      <line x1="640" y1="202" x2="640" y2="216" stroke="#D63031" stroke-width="1.5" marker-end="url(#a12r)"/>
+      <line x1="640" y1="262" x2="640" y2="276" stroke="#D63031" stroke-width="1.5" marker-end="url(#a12r)"/>
+      <line x1="640" y1="322" x2="660" y2="300" stroke="#D63031" stroke-width="1.5" marker-end="url(#a12r)"/>
+      <text x="645" y="335" font-size="9" fill="#D63031">All empty</text>
+
+      <!-- Auto-save note -->
+      <rect x="20" y="195" width="400" height="80" rx="10" fill="#F8F6FF" stroke="#B2BEC3" stroke-width="1"/>
+      <text x="220" y="218" text-anchor="middle" font-size="12" font-weight="700" fill="#636E72">Auto-save triggers</text>
+      <text x="220" y="240" text-anchor="middle" font-size="11" fill="#636E72">• Every 30 seconds (setInterval)</text>
+      <text x="220" y="258" text-anchor="middle" font-size="11" fill="#636E72">• window.beforeunload event</text>
+      <text x="220" y="276" text-anchor="middle" font-size="11" fill="#636E72">• document.visibilitychange (background)</text>
+
+      <!-- 600ms retry note -->
+      <rect x="20" y="295" width="400" height="60" rx="10" fill="#FFF9E6" stroke="#F0A500" stroke-width="1"/>
+      <text x="220" y="318" text-anchor="middle" font-size="12" font-weight="700" fill="#F0A500">Cold-start IDB retry</text>
+      <text x="220" y="338" text-anchor="middle" font-size="11" fill="#636E72">If IDB returns empty: wait 600ms, try once more</text>
+      <text x="220" y="352" text-anchor="middle" font-size="10" fill="#636E72">(handles race condition on first open)</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM 9: USER JOURNEY -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d13">
+  <div class="section-header">
+    <span class="section-num">Diagram 13</span>
+    <div class="section-header-text">
+      <h2>User Journey Map</h2>
+      <p>First-time user vs returning user — from install to active portfolio tracking</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="860" height="440" viewBox="0 0 860 440" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <!-- Timeline header -->
+      <text x="430" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#1B2A4A">User Lifecycle — From First Visit to Daily Use</text>
+
+      <!-- Phase labels -->
+      <rect x="20" y="35" width="155" height="28" rx="6" fill="#6C5CE7"/>
+      <text x="97" y="54" text-anchor="middle" font-size="11" font-weight="700" fill="white">DISCOVER</text>
+      <rect x="183" y="35" width="155" height="28" rx="6" fill="#0984E3"/>
+      <text x="260" y="54" text-anchor="middle" font-size="11" font-weight="700" fill="white">ONBOARD</text>
+      <rect x="346" y="35" width="155" height="28" rx="6" fill="#00B894"/>
+      <text x="423" y="54" text-anchor="middle" font-size="11" font-weight="700" fill="white">SETUP</text>
+      <rect x="509" y="35" width="155" height="28" rx="6" fill="#F0A500"/>
+      <text x="586" y="54" text-anchor="middle" font-size="11" font-weight="700" fill="white">DAILY USE</text>
+      <rect x="672" y="35" width="168" height="28" rx="6" fill="#D63031"/>
+      <text x="756" y="54" text-anchor="middle" font-size="11" font-weight="700" fill="white">POWER USER</text>
+
+      <!-- FIRST TIME USER lane -->
+      <rect x="20" y="75" width="820" height="140" rx="10" fill="#F0EDFF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="30" y="96" font-size="11" font-weight="700" fill="#6C5CE7">🆕 First-Time User</text>
+
+      <!-- Steps row 1 -->
+      <rect x="30" y="105" width="140" height="55" rx="7" fill="white" stroke="#6C5CE7" stroke-width="1"/>
+      <text x="100" y="125" text-anchor="middle" font-size="10" font-weight="600" fill="#6C5CE7">Opens URL</text>
+      <text x="100" y="141" text-anchor="middle" font-size="9" fill="#636E72">Or installs PWA</text>
+      <text x="100" y="155" text-anchor="middle" font-size="9" fill="#636E72">from browser</text>
+
+      <rect x="193" y="105" width="140" height="55" rx="7" fill="white" stroke="#0984E3" stroke-width="1"/>
+      <text x="263" y="125" text-anchor="middle" font-size="10" font-weight="600" fill="#0984E3">4-Step Onboard</text>
+      <text x="263" y="141" text-anchor="middle" font-size="9" fill="#636E72">Name, mode, PIN</text>
+      <text x="263" y="155" text-anchor="middle" font-size="9" fill="#636E72">security Q&amp;A</text>
+
+      <rect x="356" y="105" width="140" height="55" rx="7" fill="white" stroke="#00B894" stroke-width="1"/>
+      <text x="426" y="125" text-anchor="middle" font-size="10" font-weight="600" fill="#00B894">Add Investments</text>
+      <text x="426" y="141" text-anchor="middle" font-size="9" fill="#636E72">Stocks, SIPs, FDs</text>
+      <text x="426" y="155" text-anchor="middle" font-size="9" fill="#636E72">with lot history</text>
+
+      <rect x="519" y="105" width="140" height="55" rx="7" fill="white" stroke="#F0A500" stroke-width="1"/>
+      <text x="589" y="125" text-anchor="middle" font-size="10" font-weight="600" fill="#F0A500">Dashboard Live</text>
+      <text x="589" y="141" text-anchor="middle" font-size="9" fill="#636E72">Net worth shows</text>
+      <text x="589" y="155" text-anchor="middle" font-size="9" fill="#636E72">AI insights active</text>
+
+      <rect x="682" y="105" width="148" height="55" rx="7" fill="white" stroke="#D63031" stroke-width="1"/>
+      <text x="756" y="125" text-anchor="middle" font-size="10" font-weight="600" fill="#D63031">Full Features</text>
+      <text x="756" y="141" text-anchor="middle" font-size="9" fill="#636E72">Screener, ValeurBot</text>
+      <text x="756" y="155" text-anchor="middle" font-size="9" fill="#636E72">Goals, Insurance</text>
+
+      <!-- Arrows row 1 -->
+      <line x1="170" y1="132" x2="191" y2="132" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a12)"/>
+      <line x1="333" y1="132" x2="354" y2="132" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a12)"/>
+      <line x1="496" y1="132" x2="517" y2="132" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a12)"/>
+      <line x1="659" y1="132" x2="680" y2="132" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a12)"/>
+
+      <!-- RETURNING USER lane -->
+      <rect x="20" y="230" width="820" height="140" rx="10" fill="#E8FFF5" stroke="#00B894" stroke-width="1.5"/>
+      <text x="30" y="251" font-size="11" font-weight="700" fill="#00B894">🔄 Returning User (daily)</text>
+
+      <rect x="30" y="260" width="140" height="55" rx="7" fill="white" stroke="#00B894" stroke-width="1"/>
+      <text x="100" y="280" text-anchor="middle" font-size="10" font-weight="600" fill="#00B894">Open App</text>
+      <text x="100" y="296" text-anchor="middle" font-size="9" fill="#636E72">PIN lock (if set)</text>
+      <text x="100" y="312" text-anchor="middle" font-size="9" fill="#636E72">boot() fires</text>
+
+      <rect x="193" y="260" width="140" height="55" rx="7" fill="white" stroke="#00B894" stroke-width="1"/>
+      <text x="263" y="280" text-anchor="middle" font-size="10" font-weight="600" fill="#00B894">loadS()</text>
+      <text x="263" y="296" text-anchor="middle" font-size="9" fill="#636E72">Restore all data</text>
+      <text x="263" y="312" text-anchor="middle" font-size="9" fill="#636E72">from IDB</text>
+
+      <rect x="356" y="260" width="140" height="55" rx="7" fill="white" stroke="#00B894" stroke-width="1"/>
+      <text x="426" y="280" text-anchor="middle" font-size="10" font-weight="600" fill="#00B894">SIP Check</text>
+      <text x="426" y="296" text-anchor="middle" font-size="9" fill="#636E72">Auto-process any</text>
+      <text x="426" y="312" text-anchor="middle" font-size="9" fill="#636E72">due SIPs today</text>
+
+      <rect x="519" y="260" width="140" height="55" rx="7" fill="white" stroke="#00B894" stroke-width="1"/>
+      <text x="589" y="280" text-anchor="middle" font-size="10" font-weight="600" fill="#00B894">renderAll()</text>
+      <text x="589" y="296" text-anchor="middle" font-size="9" fill="#636E72">Dashboard, alerts</text>
+      <text x="589" y="312" text-anchor="middle" font-size="9" fill="#636E72">KPIs updated</text>
+
+      <rect x="682" y="260" width="148" height="55" rx="7" fill="white" stroke="#00B894" stroke-width="1"/>
+      <text x="756" y="280" text-anchor="middle" font-size="10" font-weight="600" fill="#00B894">🔄 Tap Refresh</text>
+      <text x="756" y="296" text-anchor="middle" font-size="9" fill="#636E72">Live prices fetched</text>
+      <text x="756" y="312" text-anchor="middle" font-size="9" fill="#636E72">SIPs re-checked</text>
+
+      <line x1="170" y1="287" x2="191" y2="287" stroke="#00B894" stroke-width="1.5" marker-end="url(#a12g)"/>
+      <line x1="333" y1="287" x2="354" y2="287" stroke="#00B894" stroke-width="1.5" marker-end="url(#a12g)"/>
+      <line x1="496" y1="287" x2="517" y2="287" stroke="#00B894" stroke-width="1.5" marker-end="url(#a12g)"/>
+      <line x1="659" y1="287" x2="680" y2="287" stroke="#00B894" stroke-width="1.5" marker-end="url(#a12g)"/>
+
+      <!-- Timeline arrow -->
+      <line x1="20" y1="400" x2="840" y2="400" stroke="#B2BEC3" stroke-width="1.5" marker-end="url(#a12)"/>
+      <text x="420" y="418" text-anchor="middle" font-size="11" fill="#636E72">TIME →  (hours → days → weeks → months)</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM 10: VALEURBOT -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d14">
+  <div class="section-header">
+    <span class="section-num">Diagram 14</span>
+    <div class="section-header-text">
+      <h2>ValeurBot Processing Flow</h2>
+      <p>How user queries are processed in Local mode (botAnswer) vs Gemini mode</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="860" height="480" viewBox="0 0 860 480" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <defs>
+        <marker id="a14" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6C5CE7"/></marker>
+        <marker id="a14g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#00B894"/></marker>
+        <marker id="a14b" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#0984E3"/></marker>
+      </defs>
+
+      <!-- User input -->
+      <ellipse cx="430" cy="32" rx="160" ry="22" fill="#6C5CE7"/>
+      <text x="430" y="37" text-anchor="middle" font-size="12" font-weight="700" fill="white">User submits query (text or 🎤 voice)</text>
+
+      <!-- AI mode check -->
+      <polygon points="430,68 540,103 430,138 320,103" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="430" y="98" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">AI mode =</text>
+      <text x="430" y="114" text-anchor="middle" font-size="11" font-weight="600" fill="#F0A500">Gemini?</text>
+
+      <!-- LOCAL PATH -->
+      <rect x="30" y="155" width="320" height="230" rx="12" fill="#E8FFF5" stroke="#00B894" stroke-width="1.5"/>
+      <text x="190" y="178" text-anchor="middle" font-size="12" font-weight="700" fill="#00B894">LOCAL MODE — botAnswer(query)</text>
+
+      <rect x="50" y="188" width="280" height="36" rx="6" fill="white" stroke="#00B894" stroke-width="1"/>
+      <text x="190" y="207" text-anchor="middle" font-size="10" fill="#636E72">Lowercase + trim query</text>
+      <text x="190" y="221" text-anchor="middle" font-size="10" fill="#636E72">Load filterByMember(S.investments)</text>
+
+      <rect x="50" y="233" width="280" height="100" rx="6" fill="white" stroke="#00B894" stroke-width="1"/>
+      <text x="190" y="252" text-anchor="middle" font-size="10" font-weight="600" fill="#00B894">Regex pattern matching (18 topics)</text>
+      <text x="60" y="272" font-size="9" fill="#636E72">• portfolio/summary/overview</text>
+      <text x="60" y="288" font-size="9" fill="#636E72">• net worth / top performer / worst</text>
+      <text x="60" y="304" font-size="9" fill="#636E72">• sector / tax / xirr / insurance</text>
+      <text x="60" y="320" font-size="9" fill="#636E72">• sip / dividend / goal / reminder...</text>
+
+      <rect x="50" y="343" width="280" height="30" rx="6" fill="#E8FFF5" stroke="#00B894" stroke-width="1"/>
+      <text x="190" y="363" text-anchor="middle" font-size="10" font-weight="600" fill="#00B894">Return {text, data} → render in chat</text>
+
+      <!-- GEMINI PATH -->
+      <rect x="510" y="155" width="330" height="280" rx="12" fill="#E3F2FD" stroke="#0984E3" stroke-width="1.5"/>
+      <text x="675" y="178" text-anchor="middle" font-size="12" font-weight="700" fill="#0984E3">GEMINI MODE — sendToGemini()</text>
+
+      <rect x="530" y="188" width="290" height="36" rx="6" fill="white" stroke="#0984E3" stroke-width="1"/>
+      <text x="675" y="207" text-anchor="middle" font-size="10" fill="#636E72">buildPortfolioContext()</text>
+      <text x="675" y="221" text-anchor="middle" font-size="10" fill="#636E72">Builds text summary of portfolio</text>
+
+      <rect x="530" y="233" width="290" height="70" rx="6" fill="white" stroke="#0984E3" stroke-width="1"/>
+      <text x="675" y="252" text-anchor="middle" font-size="10" font-weight="600" fill="#0984E3">Build prompt</text>
+      <text x="675" y="270" text-anchor="middle" font-size="9" fill="#636E72">"You are ValeurBot, Indian financial advisor..."</text>
+      <text x="675" y="286" text-anchor="middle" font-size="9" fill="#636E72">"Use ₹, Indian tax rules, not financial advice"</text>
+      <text x="675" y="299" text-anchor="middle" font-size="9" fill="#636E72">+ portfolioContext + user query</text>
+
+      <rect x="530" y="313" width="290" height="36" rx="6" fill="white" stroke="#0984E3" stroke-width="1"/>
+      <text x="675" y="332" text-anchor="middle" font-size="10" fill="#636E72">POST to Gemini API</text>
+      <text x="675" y="346" text-anchor="middle" font-size="10" fill="#636E72">generativelanguage.googleapis.com</text>
+
+      <rect x="530" y="359" width="290" height="36" rx="6" fill="white" stroke="#0984E3" stroke-width="1"/>
+      <text x="675" y="378" text-anchor="middle" font-size="10" fill="#636E72">Stream response → render in chat</text>
+      <text x="675" y="393" text-anchor="middle" font-size="10" fill="#636E72">Disclaimer appended automatically</text>
+
+      <rect x="530" y="405" width="290" height="22" rx="6" fill="#FFE8E8" stroke="#D63031" stroke-width="1"/>
+      <text x="675" y="420" text-anchor="middle" font-size="9" fill="#D63031">Requires user's own Gemini API key (free tier)</text>
+
+      <!-- ARROWS -->
+      <line x1="430" y1="54" x2="430" y2="66" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a14)"/>
+      <!-- Local path -->
+      <line x1="320" y1="103" x2="190" y2="153" stroke="#00B894" stroke-width="1.5" marker-end="url(#a14g)"/>
+      <text x="232" y="122" font-size="9" fill="#00B894">NO (Local)</text>
+      <!-- Gemini path -->
+      <line x1="540" y1="103" x2="675" y2="153" stroke="#0984E3" stroke-width="1.5" marker-end="url(#a14b)"/>
+      <text x="590" y="122" font-size="9" fill="#0984E3">YES (Gemini)</text>
+
+      <!-- Chips note -->
+      <rect x="30" y="405" width="320" height="60" rx="10" fill="#F8F6FF" stroke="#B2BEC3" stroke-width="1"/>
+      <text x="190" y="425" text-anchor="middle" font-size="11" font-weight="700" fill="#636E72">Suggested Chips (always shown)</text>
+      <text x="190" y="445" text-anchor="middle" font-size="10" fill="#636E72">Portfolio Summary · Net Worth · Tax Advice · SIP Status</text>
+      <text x="190" y="460" text-anchor="middle" font-size="10" fill="#636E72">Insurance · Goals · Dividends · Exit Signals</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM: XIRR CALCULATION -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d7">
+  <div class="section-header">
+    <span class="section-num">Diagram 7</span>
+    <div class="section-header-text">
+      <h2>Lot-Based XIRR Calculation</h2>
+      <p>calcLotsXIRR() — Newton-Raphson algorithm applied to purchase lot cashflows</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="860" height="380" viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <defs><marker id="a7" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6C5CE7"/></marker></defs>
+
+      <!-- Title -->
+      <text x="430" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#1B2A4A">HDFC Bank Example: 3 lots → XIRR calculation</text>
+
+      <!-- Lots input -->
+      <rect x="20" y="40" width="200" height="160" rx="10" fill="#EDE9FF" stroke="#6C5CE7" stroke-width="1.5"/>
+      <text x="120" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#6C5CE7">Purchase Lots</text>
+      <line x1="30" y1="70" x2="210" y2="70" stroke="#6C5CE7" stroke-width="0.5"/>
+      <text x="120" y="90" text-anchor="middle" font-size="10" fill="#636E72">Lot 1: 10 Mar 2023</text>
+      <text x="120" y="106" text-anchor="middle" font-size="10" fill="#636E72">10 shares @ ₹1,600</text>
+      <text x="120" y="126" text-anchor="middle" font-size="10" fill="#636E72">Lot 2: 20 Oct 2024</text>
+      <text x="120" y="142" text-anchor="middle" font-size="10" fill="#636E72">20 shares @ ₹1,750</text>
+      <text x="120" y="162" text-anchor="middle" font-size="10" fill="#636E72">Lot 3: 10 Jan 2026</text>
+      <text x="120" y="178" text-anchor="middle" font-size="10" fill="#636E72">100 shares @ ₹1,900</text>
+
+      <!-- Cashflows -->
+      <rect x="250" y="40" width="200" height="200" rx="10" fill="#E3F2FD" stroke="#0984E3" stroke-width="1.5"/>
+      <text x="350" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#0984E3">Cashflows Array</text>
+      <line x1="260" y1="70" x2="440" y2="70" stroke="#0984E3" stroke-width="0.5"/>
+      <text x="350" y="90" text-anchor="middle" font-size="10" fill="#D63031">−₹16,000 (Mar 2023)</text>
+      <text x="350" y="110" text-anchor="middle" font-size="10" fill="#636E72">outflow (lot 1)</text>
+      <text x="350" y="135" text-anchor="middle" font-size="10" fill="#D63031">−₹35,000 (Oct 2024)</text>
+      <text x="350" y="155" text-anchor="middle" font-size="10" fill="#636E72">outflow (lot 2)</text>
+      <text x="350" y="180" text-anchor="middle" font-size="10" fill="#D63031">−₹1,90,000 (Jan 2026)</text>
+      <text x="350" y="200" text-anchor="middle" font-size="10" fill="#636E72">outflow (lot 3)</text>
+      <text x="350" y="225" text-anchor="middle" font-size="10" fill="#00B894">+₹2,73,200 (Today)</text>
+      <text x="350" y="241" text-anchor="middle" font-size="10" fill="#636E72">inflow (current value)</text>
+
+      <!-- Newton-Raphson -->
+      <rect x="480" y="40" width="200" height="200" rx="10" fill="#FFF9E6" stroke="#F0A500" stroke-width="1.5"/>
+      <text x="580" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#F0A500">Newton-Raphson</text>
+      <line x1="490" y1="70" x2="670" y2="70" stroke="#F0A500" stroke-width="0.5"/>
+      <text x="580" y="92" text-anchor="middle" font-size="10" fill="#636E72">Start: rate = 0.1 (10%)</text>
+      <text x="580" y="115" text-anchor="middle" font-size="10" fill="#636E72">NPV(rate) =</text>
+      <text x="580" y="131" text-anchor="middle" font-size="10" fill="#F0A500">Σ cashflow / (1+rate)^years</text>
+      <text x="580" y="160" text-anchor="middle" font-size="10" fill="#636E72">Iterate 100× until</text>
+      <text x="580" y="176" text-anchor="middle" font-size="10" fill="#636E72">|derivative| &lt; 1e-10</text>
+      <text x="580" y="196" text-anchor="middle" font-size="10" fill="#636E72">rate = rate - f(rate)/f'(rate)</text>
+      <text x="580" y="228" text-anchor="middle" font-size="10" fill="#636E72">Floor: rate ≥ −0.999</text>
+
+      <!-- Result -->
+      <rect x="710" y="80" width="130" height="120" rx="10" fill="#00B894"/>
+      <text x="775" y="108" text-anchor="middle" font-size="12" font-weight="700" fill="white">Result</text>
+      <text x="775" y="132" text-anchor="middle" font-size="11" fill="white">XIRR =</text>
+      <text x="775" y="152" text-anchor="middle" font-size="18" font-weight="700" fill="white">8.2%</text>
+      <text x="775" y="175" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">annualised return</text>
+
+      <!-- When no lots note -->
+      <rect x="20" y="230" width="820" height="80" rx="10" fill="#F8F6FF" stroke="#B2BEC3" stroke-width="1"/>
+      <text x="430" y="252" text-anchor="middle" font-size="12" font-weight="700" fill="#636E72">Fallback when no lots available</text>
+      <text x="430" y="275" text-anchor="middle" font-size="11" fill="#636E72">If inv.started date known: XIRR ≈ (currentValue/invested)^(12/monthsHeld) − 1</text>
+      <text x="430" y="295" text-anchor="middle" font-size="11" fill="#636E72">If no started date: uses S.currentMonth counter (least accurate, legacy fallback)</text>
+
+      <!-- Arrows -->
+      <line x1="220" y1="120" x2="248" y2="120" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a7)"/>
+      <line x1="450" y1="120" x2="478" y2="120" stroke="#6C5CE7" stroke-width="1.5" marker-end="url(#a7)"/>
+      <line x1="680" y1="140" x2="708" y2="140" stroke="#00B894" stroke-width="1.5" marker-end="url(#a7)"/>
+    </svg>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- DIAGRAM: DIVIDEND -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="diagram-section" id="d8">
+  <div class="section-header">
+    <span class="section-num">Diagram 8</span>
+    <div class="section-header-text">
+      <h2>Date-Aware Dividend Calculation</h2>
+      <p>getQtyOnDate() — how lot history determines the correct quantity for each dividend</p>
+    </div>
+  </div>
+  <div class="diagram-card">
+    <svg width="860" height="360" viewBox="0 0 860 360" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">
+      <!-- Timeline -->
+      <line x1="60" y1="200" x2="800" y2="200" stroke="#B2BEC3" stroke-width="2"/>
+      <text x="430" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#1B2A4A">HDFC Bank — Lot Timeline vs Dividend Dates</text>
+
+      <!-- Lot purchase markers -->
+      <circle cx="120" cy="200" r="12" fill="#6C5CE7"/>
+      <text x="120" y="204" text-anchor="middle" font-size="10" font-weight="700" fill="white">L1</text>
+      <text x="120" y="225" text-anchor="middle" font-size="9" fill="#6C5CE7">Mar 2023</text>
+      <text x="120" y="239" text-anchor="middle" font-size="9" fill="#636E72">10 shares</text>
+      <text x="120" y="253" text-anchor="middle" font-size="9" fill="#636E72">@ ₹1,600</text>
+
+      <circle cx="440" cy="200" r="12" fill="#6C5CE7"/>
+      <text x="440" y="204" text-anchor="middle" font-size="10" font-weight="700" fill="white">L2</text>
+      <text x="440" y="225" text-anchor="middle" font-size="9" fill="#6C5CE7">Oct 2024</text>
+      <text x="440" y="239" text-anchor="middle" font-size="9" fill="#636E72">+20 shares</text>
+      <text x="440" y="253" text-anchor="middle" font-size="9" fill="#636E72">@ ₹1,750</text>
+
+      <circle cx="680" cy="200" r="12" fill="#6C5CE7"/>
+      <text x="680" y="204" text-anchor="middle" font-size="10" font-weight="700" fill="white">L3</text>
+      <text x="680" y="225" text-anchor="middle" font-size="9" fill="#6C5CE7">Jan 2026</text>
+      <text x="680" y="239" text-anchor="middle" font-size="9" fill="#636E72">+100 shares</text>
+      <text x="680" y="253" text-anchor="middle" font-size="9" fill="#636E72">@ ₹1,900</text>
+
+      <!-- Dividend markers -->
+      <rect x="220" y="155" width="80" height="30" rx="6" fill="#F0A500"/>
+      <text x="260" y="175" text-anchor="middle" font-size="10" font-weight="700" fill="white">D1 Jul 2023</text>
+      <line x1="260" y1="185" x2="260" y2="200" stroke="#F0A500" stroke-width="2"/>
+      <text x="260" y="145" text-anchor="middle" font-size="9" fill="#F0A500">DPS ₹10</text>
+
+      <rect x="540" y="155" width="80" height="30" rx="6" fill="#F0A500"/>
+      <text x="580" y="175" text-anchor="middle" font-size="10" font-weight="700" fill="white">D2 Jul 2024</text>
+      <line x1="580" y1="185" x2="580" y2="200" stroke="#F0A500" stroke-width="2"/>
+      <text x="580" y="145" text-anchor="middle" font-size="9" fill="#F0A500">DPS ₹12</text>
+
+      <rect x="730" y="155" width="80" height="30" rx="6" fill="#F0A500"/>
+      <text x="770" y="175" text-anchor="middle" font-size="10" font-weight="700" fill="white">D3 Jan 2026</text>
+      <line x1="770" y1="185" x2="770" y2="200" stroke="#F0A500" stroke-width="2"/>
+      <text x="770" y="145" text-anchor="middle" font-size="9" fill="#F0A500">DPS ₹10</text>
+
+      <!-- Calculation boxes -->
+      <rect x="195" y="50" width="130" height="70" rx="8" fill="#E8FFF5" stroke="#00B894" stroke-width="1.5"/>
+      <text x="260" y="70" text-anchor="middle" font-size="10" font-weight="700" fill="#00B894">D1 Calculation</text>
+      <text x="260" y="88" text-anchor="middle" font-size="10" fill="#636E72">Lots ≤ Jul 2023:</text>
+      <text x="260" y="104" text-anchor="middle" font-size="10" fill="#636E72">L1 only = 10 shares</text>
+      <text x="260" y="116" text-anchor="middle" font-size="10" font-weight="700" fill="#00B894">10 × ₹10 = ₹100</text>
+
+      <rect x="515" y="50" width="130" height="70" rx="8" fill="#E8FFF5" stroke="#00B894" stroke-width="1.5"/>
+      <text x="580" y="70" text-anchor="middle" font-size="10" font-weight="700" fill="#00B894">D2 Calculation</text>
+      <text x="580" y="88" text-anchor="middle" font-size="10" fill="#636E72">Lots ≤ Jul 2024:</text>
+      <text x="580" y="104" text-anchor="middle" font-size="10" fill="#636E72">L1+L2 = 30 shares</text>
+      <text x="580" y="116" text-anchor="middle" font-size="10" font-weight="700" fill="#00B894">30 × ₹12 = ₹360</text>
+
+      <rect x="700" y="50" width="140" height="70" rx="8" fill="#E8FFF5" stroke="#00B894" stroke-width="1.5"/>
+      <text x="770" y="70" text-anchor="middle" font-size="10" font-weight="700" fill="#00B894">D3 Calculation</text>
+      <text x="770" y="88" text-anchor="middle" font-size="10" fill="#636E72">Lots ≤ Jan 2026:</text>
+      <text x="770" y="104" text-anchor="middle" font-size="10" fill="#636E72">L1+L2+L3=130 sh</text>
+      <text x="770" y="116" text-anchor="middle" font-size="10" font-weight="700" fill="#00B894">130×₹10 = ₹1,300</text>
+
+      <!-- Connecting lines to calc boxes -->
+      <line x1="260" y1="120" x2="260" y2="153" stroke="#00B894" stroke-width="1.5" stroke-dasharray="3 2"/>
+      <line x1="580" y1="120" x2="580" y2="153" stroke="#00B894" stroke-width="1.5" stroke-dasharray="3 2"/>
+      <line x1="770" y1="120" x2="770" y2="153" stroke="#00B894" stroke-width="1.5" stroke-dasharray="3 2"/>
+
+      <!-- Total -->
+      <rect x="200" y="285" width="460" height="50" rx="10" fill="#6C5CE7"/>
+      <text x="430" y="307" text-anchor="middle" font-size="12" font-weight="700" fill="white">Total Dividend Income</text>
+      <text x="430" y="325" text-anchor="middle" font-size="13" font-weight="700" fill="white">₹100 + ₹360 + ₹1,300 = ₹1,760 ✅</text>
+
+      <!-- Wrong calc note -->
+      <rect x="660" y="285" width="180" height="50" rx="10" fill="#FFE8E8" stroke="#D63031" stroke-width="1.5"/>
+      <text x="750" y="305" text-anchor="middle" font-size="10" font-weight="600" fill="#D63031">Without lots:</text>
+      <text x="750" y="320" text-anchor="middle" font-size="11" font-weight="700" fill="#D63031">130 × ₹32 = ₹4,160 ❌</text>
+    </svg>
+  </div>
+</div>
+
+</body>
+</html>
