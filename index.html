@@ -2296,6 +2296,54 @@ function rDashEvents(){
     }).join('')+'</div></div>';
 }
 
+
+// ─── Auto-Refresh — live data during market hours ────────────────────────────
+var _autoRefreshTimer = null;
+var AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+function isMarketHours() {
+  // NSE market hours: 9:15 - 15:30 IST, Monday-Friday
+  // IST = UTC + 5h 30min
+  var now = new Date();
+  var ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+  var h   = ist.getUTCHours();
+  var min = ist.getUTCMinutes();
+  var day = ist.getUTCDay(); // 0=Sun, 6=Sat
+  if (day === 0 || day === 6) return false; // weekend
+  var afterOpen  = (h > 9)  || (h === 9  && min >= 15);
+  var beforeClose = (h < 15) || (h === 15 && min <= 30);
+  return afterOpen && beforeClose;
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  if (!isMarketHours()) return; // no-op outside market hours
+  _autoRefreshTimer = setInterval(function() {
+    if (document.visibilityState === 'hidden') return; // don't refresh in background
+    if (isMarketHours()) {
+      refreshAll();
+    } else {
+      stopAutoRefresh(); // market closed — stop timer
+    }
+  }, AUTO_REFRESH_INTERVAL);
+}
+
+function stopAutoRefresh() {
+  if (_autoRefreshTimer) { clearInterval(_autoRefreshTimer); _autoRefreshTimer = null; }
+}
+
+// Restart auto-refresh when tab/app comes back to foreground
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') {
+    // If market is open and last fetch was > 5 min ago, refresh immediately
+    var stale = !priceLastFetched || (Date.now() - priceLastFetched.getTime() > AUTO_REFRESH_INTERVAL);
+    if (isMarketHours() && stale) refreshAll();
+    startAutoRefresh();
+  } else {
+    stopAutoRefresh();
+  }
+});
+
 async function boot(){
   console.log('[VF] boot() started');
   try{await openDB();console.log('[VF] IDB opened:',!!DB)}catch(e){DB=null;console.warn('[VF] IDB failed:',e)}
@@ -3940,10 +3988,13 @@ function initApp(){
   rMarket();
   generateAlerts();
 
-  var hasStocks=S.investments.some(function(i){return i.type==='Stocks'&&i.nseSymbol});
-  if(hasStocks&&(!priceLastFetched||Date.now()-priceLastFetched>30*60*1000)){
-    setTimeout(fetchLivePrices,2000);
+  // Auto-refresh: fetch on open if stale (> 5 min or never fetched), then start timer
+  var staleMs = AUTO_REFRESH_INTERVAL;
+  var isStale = !priceLastFetched || (Date.now() - priceLastFetched.getTime() > staleMs);
+  if(isStale){
+    setTimeout(function(){ refreshAll(); }, 1500); // small delay so UI renders first
   }
+  startAutoRefresh();
 
   rSecurity();
   toast('👋 Welcome, '+(S.user.name||'User')+'!');
