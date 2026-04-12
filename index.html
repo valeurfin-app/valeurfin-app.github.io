@@ -1481,7 +1481,7 @@ var S=null,DB=null,currentMember='all',editingId=null,editingType=null,alertList
 var selectedInvType='SIP',mfSearchResults=[],livePrices={},priceLastFetched=null;
 var saveInProgress=false,lastSaveHash='',idbWritten=false;
 
-var CORS_PROXIES=['https://corsproxy.io/?','https://api.allorigins.win/raw?url='];
+var CORS_PROXIES=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=','https://thingproxy.freeboard.io/fetch/'];
 var activeProxy=0;
 function yahooURL(sym){return 'https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'.NS?range=1d&interval=1d'}
 
@@ -3209,38 +3209,68 @@ async function fetchLivePrices(){
 
 var indexData={nifty:null,sensex:null,banknifty:null};
 async function fetchIndices(){
-  var idx=[
+  // Try v7/quote API (batch, one call) then v8/chart (per symbol) as fallback
+  var symbols='%5ENSEI,%5EBSESN,%5ENSEBANK';
+  var v7url='https://query1.finance.yahoo.com/v7/finance/quote?symbols='+symbols
+    +'&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,shortName';
+  var kmap={'%5ENSEI':'nifty','%5EBSESN':'sensex','%5ENSEBANK':'banknifty'};
+  var nmap={'^NSEI':'NIFTY 50','^BSESN':'SENSEX','^NSEBANK':'BANK NIFTY'};
+  var keymap={'^NSEI':'nifty','^BSESN':'sensex','^NSEBANK':'banknifty'};
+
+  for(var ip=0;ip<CORS_PROXIES.length;ip++){
+    try{
+      var resp=await fetch(CORS_PROXIES[ip]+encodeURIComponent(v7url),
+        {signal:AbortSignal.timeout(8000)});
+      if(!resp.ok)continue;
+      var data=await resp.json();
+      var results=data&&data.quoteResponse&&data.quoteResponse.result;
+      if(results&&results.length){
+        results.forEach(function(q){
+          var key=keymap[q.symbol];
+          if(key)indexData[key]={
+            name:nmap[q.symbol]||q.shortName||q.symbol,
+            price:q.regularMarketPrice||0,
+            change:q.regularMarketChange||0,
+            changePct:q.regularMarketChangePercent||0
+          };
+        });
+        activeProxy=ip;return;
+      }
+    }catch(e){}
+  }
+
+  // Fallback: v8/chart per symbol
+  var fb=[
     {key:'nifty',sym:'^NSEI',name:'NIFTY 50'},
     {key:'sensex',sym:'^BSESN',name:'SENSEX'},
     {key:'banknifty',sym:'^NSEBANK',name:'BANK NIFTY'}
   ];
-  for(var i=0;i<idx.length;i++){
-    var fetched=false;
-    for(var ip=0;ip<CORS_PROXIES.length&&!fetched;ip++){
+  for(var fi=0;fi<fb.length;fi++){
+    for(var fp=0;fp<CORS_PROXIES.length;fp++){
       try{
-        var url=CORS_PROXIES[ip]+encodeURIComponent(
+        var furl=CORS_PROXIES[fp]+encodeURIComponent(
           'https://query1.finance.yahoo.com/v8/finance/chart/'
-          +idx[i].sym+'?range=1d&interval=1d');
-        var resp=await fetch(url,{signal:AbortSignal.timeout(7000)});
-        if(resp.ok){
-          var data=await resp.json();
-          var meta=data&&data.chart&&data.chart.result
-            &&data.chart.result[0]&&data.chart.result[0].meta;
-          if(meta&&meta.regularMarketPrice>0){
-            indexData[idx[i].key]={
-              name:idx[i].name,price:meta.regularMarketPrice,
-              change:meta.regularMarketPrice-(meta.chartPreviousClose||meta.regularMarketPrice),
-              changePct:meta.chartPreviousClose
-                ?((meta.regularMarketPrice-meta.chartPreviousClose)/meta.chartPreviousClose*100):0
-            };
-            fetched=true;activeProxy=ip;
-          }
+          +encodeURIComponent(fb[fi].sym)+'?range=1d&interval=1d');
+        var fr=await fetch(furl,{signal:AbortSignal.timeout(6000)});
+        if(!fr.ok)continue;
+        var fd=await fr.json();
+        var meta=fd&&fd.chart&&fd.chart.result
+          &&fd.chart.result[0]&&fd.chart.result[0].meta;
+        if(meta&&meta.regularMarketPrice>0){
+          indexData[fb[fi].key]={
+            name:fb[fi].name,price:meta.regularMarketPrice,
+            change:meta.regularMarketPrice-(meta.chartPreviousClose||meta.regularMarketPrice),
+            changePct:meta.chartPreviousClose
+              ?((meta.regularMarketPrice-meta.chartPreviousClose)/meta.chartPreviousClose*100):0
+          };
+          activeProxy=fp;break;
         }
       }catch(e){}
     }
-    await new Promise(function(ir){setTimeout(ir,150);});
+    await new Promise(function(ir){setTimeout(ir,100);});
   }
 }
+
 // ===== MARKET PULSE =====
 function rMarket(){
   var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol});
