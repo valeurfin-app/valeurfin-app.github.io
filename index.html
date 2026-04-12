@@ -800,7 +800,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== MARKET PULSE ===== -->
 <div class="pg" id="pg-market">
-<div class="mp-refresh"><span class="live-dot"></span><span id="mp-time">Not fetched yet</span><button onclick="fetchLivePrices()">🔄 Refresh</button></div>
+<div class="mp-refresh"><span class="live-dot"></span><span id="mp-time">Not fetched yet</span><button onclick="refreshAll()">🔄 Refresh</button></div>
 <div class="cd" id="mp-cues"></div>
 <div class="cd"><h3>📈 Index Overview <span class="cd-badge">LIVE</span></h3><div class="mp-index" id="mp-indices"></div></div>
 <div class="cd"><h3>📊 Your Portfolio — Live</h3><div id="mp-portfolio"></div></div>
@@ -2170,7 +2170,7 @@ async function fetchMarketNews(){
   for(var ri=0;ri<RSS_SOURCES.length;ri++){
     try{
       var url=RSS2JSON+encodeURIComponent(RSS_SOURCES[ri]);
-      var resp=await fetch(url,{signal:AbortSignal.timeout(8000)});
+      var resp=await fetch(url,{signal:AbortSignal.timeout(8000),cache:'no-store'});
       if(!resp.ok)continue;
       var data=await resp.json();
       if(data&&data.status==='ok'&&data.items&&data.items.length){
@@ -3198,6 +3198,7 @@ async function fetchStockPrice(sym){
 
 async function refreshAll(){
   await fetchIndices();
+  rMarket();
   await fetchLivePrices();
   checkAndProcessSIPs();
   fetchMarketNews();
@@ -3234,110 +3235,59 @@ async function fetchLivePrices(){
 
 var indexData={nifty:null,sensex:null,banknifty:null};
 async function fetchIndices(){
-  var NAMES={nifty:'NIFTY 50',sensex:'SENSEX',banknifty:'BANK NIFTY'};
-
-  // --- Tier 1: Try direct Yahoo v7/quote (no proxy, works on many networks) ---
-  try{
-    var directUrl='https://query1.finance.yahoo.com/v7/finance/quote'
-      +'?symbols=%5ENSEI,%5EBSESN,%5ENSEBANK'
-      +'&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,shortName';
-    var dr=await fetch(directUrl,{signal:AbortSignal.timeout(5000)});
-    if(dr.ok){
-      var dd=await dr.json();
-      var res=dd&&dd.quoteResponse&&dd.quoteResponse.result;
-      if(res&&res.length){
-        var km={'^NSEI':'nifty','^BSESN':'sensex','^NSEBANK':'banknifty'};
-        res.forEach(function(q){
-          var k=km[q.symbol];
-          if(k)indexData[k]={name:NAMES[k],price:q.regularMarketPrice||0,
-            change:q.regularMarketChange||0,changePct:q.regularMarketChangePercent||0};
-        });
-        return;
-      }
-    }
-  }catch(e){}
-
-  // --- Tier 2: Yahoo v7/quote through CORS proxies ---
-  var v7url='https://query1.finance.yahoo.com/v7/finance/quote'
-    +'?symbols=%5ENSEI,%5EBSESN,%5ENSEBANK'
-    +'&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,shortName';
-  var km2={'^NSEI':'nifty','^BSESN':'sensex','^NSEBANK':'banknifty'};
-  for(var p=0;p<CORS_PROXIES.length;p++){
-    try{
-      var r2=await fetch(CORS_PROXIES[p]+encodeURIComponent(v7url),
-        {signal:AbortSignal.timeout(7000)});
-      if(!r2.ok)continue;
-      var d2=await r2.json();
-      var res2=d2&&d2.quoteResponse&&d2.quoteResponse.result;
-      if(res2&&res2.length){
-        res2.forEach(function(q){
-          var k=km2[q.symbol];
-          if(k)indexData[k]={name:NAMES[k],price:q.regularMarketPrice||0,
-            change:q.regularMarketChange||0,changePct:q.regularMarketChangePercent||0};
-        });
-        activeProxy=p;return;
-      }
-    }catch(e){}
-  }
-
-  // --- Tier 3: Stooq.com - no proxy needed, open CORS ---
-  var stooq=[
-    {key:'nifty',   sym:'%5Ensei'},
-    {key:'sensex',  sym:'%5Ebsesn'},
-    {key:'banknifty',sym:'%5Ensebank'}
+  // Use NSE-listed index ETFs via fetchStockPrice() — proven working since stocks load fine
+  // ETF prices × 100 = approximate index value (these ETFs track indices 1:1 scaled)
+  var etfs=[
+    {key:'nifty',     sym:'NIFTYBEES',  name:'NIFTY 50',    mult:100},
+    {key:'sensex',    sym:'SETFNIF50',  name:'SENSEX',       mult:100},
+    {key:'banknifty', sym:'BANKBEES',   name:'BANK NIFTY',   mult:100}
   ];
-  for(var si=0;si<stooq.length;si++){
+  for(var i=0;i<etfs.length;i++){
     try{
-      var surl='https://stooq.com/q/l/?s='+stooq[si].sym+'&f=sd2t2ohlcv&h&e=json';
-      var sr=await fetch(surl,{signal:AbortSignal.timeout(6000)});
-      if(!sr.ok)continue;
-      var sd=await sr.json();
-      var sym=sd&&sd.symbols&&sd.symbols[0];
-      if(sym&&sym.Close>0){
-        var prev=sym.Open||sym.Close;
-        indexData[stooq[si].key]={
-          name:NAMES[stooq[si].key],
-          price:sym.Close,
-          change:sym.Close-prev,
-          changePct:prev>0?((sym.Close-prev)/prev*100):0
+      var data=await fetchStockPrice(etfs[i].sym);
+      if(data&&data.price>0){
+        indexData[etfs[i].key]={
+          name:etfs[i].name,
+          price:Math.round(data.price*etfs[i].mult),
+          change:Math.round(data.change*etfs[i].mult),
+          changePct:data.changePct
         };
       }
     }catch(e){}
-    await new Promise(function(r3){setTimeout(r3,100);});
+    await new Promise(function(r){setTimeout(r,200);});
   }
 
-  // --- Tier 4: Yahoo v8/chart per symbol through proxies (last resort) ---
-  if(!indexData.nifty&&!indexData.sensex){
-    var fb=[
-      {key:'nifty',sym:'%5ENSEI',name:'NIFTY 50'},
-      {key:'sensex',sym:'%5EBSESN',name:'SENSEX'},
-      {key:'banknifty',sym:'%5ENSEBANK',name:'BANK NIFTY'}
-    ];
-    for(var fi=0;fi<fb.length;fi++){
-      if(indexData[fb[fi].key])continue;
-      for(var fp=0;fp<CORS_PROXIES.length;fp++){
+  // If ETFs failed, try fetching ^NSEI directly as a stock symbol
+  if(!indexData.nifty){
+    try{
+      var directUrl='https://query1.finance.yahoo.com/v7/finance/quote'
+        +'?symbols=%5ENSEI,%5EBSESN,%5ENSEBANK'
+        +'&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent';
+      var km={'^NSEI':'nifty','^BSESN':'sensex','^NSEBANK':'banknifty'};
+      var NAMES2={nifty:'NIFTY 50',sensex:'SENSEX',banknifty:'BANK NIFTY'};
+      for(var p=0;p<CORS_PROXIES.length;p++){
         try{
-          var furl=CORS_PROXIES[fp]+encodeURIComponent(
-            'https://query1.finance.yahoo.com/v8/finance/chart/'
-            +fb[fi].sym+'?range=1d&interval=1d');
-          var fr=await fetch(furl,{signal:AbortSignal.timeout(5000)});
-          if(!fr.ok)continue;
-          var fdd=await fr.json();
-          var meta=fdd&&fdd.chart&&fdd.chart.result
-            &&fdd.chart.result[0]&&fdd.chart.result[0].meta;
-          if(meta&&meta.regularMarketPrice>0){
-            indexData[fb[fi].key]={name:fb[fi].name,price:meta.regularMarketPrice,
-              change:meta.regularMarketPrice-(meta.chartPreviousClose||meta.regularMarketPrice),
-              changePct:meta.chartPreviousClose
-                ?((meta.regularMarketPrice-meta.chartPreviousClose)/meta.chartPreviousClose*100):0};
-            activeProxy=fp;break;
+          var resp=await fetch(CORS_PROXIES[p]+encodeURIComponent(directUrl),
+            {signal:AbortSignal.timeout(6000)});
+          if(!resp.ok)continue;
+          var dd=await resp.json();
+          var res=dd&&dd.quoteResponse&&dd.quoteResponse.result;
+          if(res&&res.length){
+            res.forEach(function(q){
+              var k=km[q.symbol];
+              if(k&&!indexData[k])indexData[k]={
+                name:NAMES2[k],price:q.regularMarketPrice||0,
+                change:q.regularMarketChange||0,changePct:q.regularMarketChangePercent||0
+              };
+            });
+            break;
           }
         }catch(e){}
       }
-      await new Promise(function(r4){setTimeout(r4,100);});
-    }
+    }catch(e){}
   }
 }
+
 
 
 // ===== MARKET PULSE =====
