@@ -3,7 +3,7 @@
 // Cache name — increment suffix (v4c → v4d) when pushing updates
 // to force old caches to be deleted on next visit
 
-var CACHE_NAME = 'valeurfin-v4g';
+var CACHE_NAME = 'valeurfin-v4d';
 
 // Files to cache for offline use
 var CACHE_FILES = [
@@ -23,6 +23,10 @@ var SKIP_CACHE_PATTERNS = [
   'googleapis.com',
   'corsproxy.io',
   'allorigins.win',
+  'codetabs.com',
+  'thingproxy.freeboard.io',
+  'rss2json.com',
+  'stooq.com',
   'generativelanguage',
   'cdn-cgi',
   'cloudflare'
