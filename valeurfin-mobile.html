@@ -418,6 +418,11 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 .event-chip-date{font-weight:700;color:var(--p);font-size:9px;margin-bottom:2px}
 .event-chip-label{color:var(--txt);font-size:10px}
 .event-chip-amt{color:var(--txt2);font-size:9px}
+.mp-index{display:flex;gap:8px;overflow-x:auto;padding:4px 0}
+.mp-idx{flex-shrink:0;min-width:100px;background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:8px 10px}
+.mi-name{font-size:8px;color:var(--txt3);font-weight:600;margin-bottom:2px}
+.mi-val{font-size:14px;font-weight:800;color:var(--txt);margin-bottom:1px}
+.mi-chg{font-size:9px;font-weight:600}
 </style>
 </head>
 <!-- === END MOBILE PART M1 of 5 — All CSS Complete === -->
@@ -652,6 +657,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
 <div id="mp-cues-m"></div>
 <div style="display:flex;align-items:center;gap:4px;font-size:8px;color:var(--txt2);margin-bottom:6px"><span class="live-dot"></span><span id="mp-time-m">—</span><button class="btn-sm" onclick="refreshAll()">🔄</button></div>
+<div class="cd"><h3>📈 Index Overview <span class="cd-badge">LIVE</span></h3><div id="mp-indices-m"></div></div>
 <div class="cd"><h3>📊 Portfolio <span class="cd-badge">LIVE</span></h3><div id="mp-portfolio-m"></div></div>
 <div class="cd"><h3>🔥 Gainers</h3><div id="mp-gainers-m"></div></div>
 <div class="cd"><h3>📉 Losers</h3><div id="mp-losers-m"></div></div>
@@ -1345,6 +1351,7 @@ var saveInProgress=false,lastSaveHash='',idbWritten=false;
 
 var CORS_PROXIES=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=','https://thingproxy.freeboard.io/fetch/'];
 var activeProxy=0;
+var indexData={nifty:null,sensex:null,banknifty:null};
 function yahooURL(sym){return 'https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'.NS?range=1d&interval=1d'}
 
 // ===== PERSISTENCE — Quad Fallback =====
@@ -1762,7 +1769,7 @@ async function fetchMarketNews(){
   for(var ri=0;ri<RSS_SOURCES.length;ri++){
     try{
       var url=RSS2JSON+encodeURIComponent(RSS_SOURCES[ri]);
-      var resp=await fetch(url,{signal:AbortSignal.timeout(8000)});
+      var resp=await fetch(url,{signal:AbortSignal.timeout(8000),cache:'no-store'});
       if(!resp.ok)continue;
       var data=await resp.json();
       if(data&&data.status==='ok'&&data.items&&data.items.length){
@@ -1886,6 +1893,30 @@ function rDashEvents(){
         +'<div class="event-chip-amt">'+fmtFull(ev.amt)+'</div>'
         +'</div>';
     }).join('')+'</div></div>';
+}
+
+
+async function fetchIndices(){
+  // Use NSE-listed index ETFs via fetchStockPrice (proven working on mobile too)
+  var etfs=[
+    {key:'nifty',     sym:'NIFTYBEES',  name:'NIFTY 50',  mult:100},
+    {key:'sensex',    sym:'SETFNIF50',  name:'SENSEX',    mult:100},
+    {key:'banknifty', sym:'BANKBEES',   name:'BANK NIFTY',mult:100}
+  ];
+  for(var i=0;i<etfs.length;i++){
+    try{
+      var data=await fetchStockPrice(etfs[i].sym);
+      if(data&&data.price>0){
+        indexData[etfs[i].key]={
+          name:etfs[i].name,
+          price:Math.round(data.price*etfs[i].mult),
+          change:Math.round(data.change*etfs[i].mult),
+          changePct:data.changePct
+        };
+      }
+    }catch(e){}
+    await new Promise(function(r){setTimeout(r,200);});
+  }
 }
 
 async function boot(){
@@ -2487,11 +2518,14 @@ async function fetchStockPrice(sym){
 }
 
 async function refreshAll(){
-  await fetchIndices();
+  if(typeof fetchIndices==='function') await fetchIndices();
+  rMarketM();
   await fetchLivePrices();
   checkAndProcessSIPs();
   rMarketCues();
-  fetchMarketNews();
+  await fetchMarketNews();
+  rMarketNews();
+  rDashNews();
 }
 async function fetchLivePrices(){
   var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol});
@@ -2520,6 +2554,27 @@ async function fetchLivePrices(){
 // ===== MARKET PULSE =====
 function rMarketM(){
   var el=document.getElementById('mp-time-m');if(el)el.textContent=priceLastFetched?priceLastFetched.toLocaleString():'—';
+  // Index tiles
+  var idxEl=document.getElementById('mp-indices-m');
+  if(idxEl){
+    var idxH='';
+    var idxDefs=[{k:'nifty',n:'NIFTY 50'},{k:'sensex',n:'SENSEX'},{k:'banknifty',n:'BANK NIFTY'}];
+    idxDefs.forEach(function(def){
+      var ix=indexData[def.k];
+      if(ix&&ix.price){
+        var up=ix.change>=0;
+        idxH+='<div class="mp-idx">'
+          +'<div class="mi-name">'+ix.name+'</div>'
+          +'<div class="mi-val">'+ix.price.toLocaleString('en-IN',{maximumFractionDigits:0})+'</div>'
+          +'<div class="mi-chg" style="color:'+(up?'var(--g)':'var(--d)')+'">'+(up?'+':'')+ix.change.toFixed(0)+' ('+(up?'+':'')+ix.changePct.toFixed(2)+'%)</div>'
+          +'</div>';
+      } else {
+        idxH+='<div class="mp-idx"><div class="mi-name">'+def.n+'</div><div class="mi-val">—</div>'
+          +'<div class="mi-chg" style="color:var(--txt3)">Tap Refresh</div></div>';
+      }
+    });
+    idxEl.innerHTML='<div style="display:flex;gap:8px;overflow-x:auto;padding:4px 0">'+idxH+'</div>';
+  }
   var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol});
   var port=document.getElementById('mp-portfolio-m');
   if(!stocks.length){if(port)port.innerHTML='<div style="padding:8px;font-size:9px;color:var(--txt3)">Add stocks</div>';return}
