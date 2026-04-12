@@ -2157,15 +2157,23 @@ function rMarketCues(){
 var marketNewsCache=[],newsLastFetched=0;
 async function fetchMarketNews(){
   if(Date.now()-newsLastFetched<1800000&&marketNewsCache.length)return;
-  try{
-    var url=CORS_PROXIES[activeProxy]+encodeURIComponent(
-      "https://query1.finance.yahoo.com/v1/finance/search?q=NIFTY+India+stock+market&newsCount=20&quotesCount=0&enableNavLinks=false");
-    var resp=await fetch(url,{signal:AbortSignal.timeout(8000)});
-    if(!resp.ok)return;
-    var data=await resp.json();
-    if(data&&data.news&&data.news.length){
-      marketNewsCache=data.news.slice(0,20);newsLastFetched=Date.now();rMarketNews();rDashNews();}
-  }catch(e){}
+  var newsUrl='https://query1.finance.yahoo.com/v1/finance/search'
+    +'?q=NIFTY+India+stock+market&newsCount=20&quotesCount=0&enableNavLinks=false';
+  for(var np=0;np<CORS_PROXIES.length;np++){
+    try{
+      var resp=await fetch(CORS_PROXIES[np]+encodeURIComponent(newsUrl),
+        {signal:AbortSignal.timeout(8000)});
+      if(!resp.ok)continue;
+      var data=await resp.json();
+      if(data&&data.news&&data.news.length){
+        marketNewsCache=data.news.slice(0,20);newsLastFetched=Date.now();
+        rMarketNews();rDashNews();return;
+      }
+    }catch(e){}
+  }
+  var el=document.getElementById('mp-news'),elM=document.getElementById('mp-news-m');
+  var msg='<div style="padding:12px;font-size:11px;color:var(--txt3)">News unavailable - try refreshing</div>';
+  if(el)el.innerHTML=msg;if(elM)elM.innerHTML=msg;
 }
 function timeAgo(ts){
   var diff=Math.floor((Date.now()-ts*1000)/60000);
@@ -3164,13 +3172,16 @@ async function fetchStockPrice(sym){
 }
 
 async function refreshAll(){
+  await fetchIndices();
   await fetchLivePrices();
   checkAndProcessSIPs();
   fetchMarketNews();
+  rMarketCues();
+  rMarket();
 }
 async function fetchLivePrices(){
   var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol});
-  if(!stocks.length){toast('No stocks with NSE symbols','warn');return}
+  if(!stocks.length){toast('No stock symbols found — add stocks with NSE symbols to see live prices','warn');priceLastFetched=new Date();return}
   toast('🔄 Fetching prices...');var fetched=0;
   for(var idx=0;idx<stocks.length;idx++){
     var inv=stocks[idx];var data=await fetchStockPrice(inv.nseSymbol);
@@ -3191,25 +3202,45 @@ async function fetchLivePrices(){
     }
     await new Promise(function(r){setTimeout(r,300)});
   }
-  await fetchIndices();
   priceLastFetched=new Date();
   if(fetched>0){saveS();renderAll();rMarket();generateAlerts();toast('✅ '+fetched+' prices updated')}
-  else toast('⚠️ Could not fetch','warn');
+  else toast('⚠️ Could not fetch prices','warn');
 }
 
 var indexData={nifty:null,sensex:null,banknifty:null};
 async function fetchIndices(){
-  var indices=[{key:'nifty',sym:'^NSEI',name:'NIFTY 50'},{key:'sensex',sym:'^BSESN',name:'SENSEX'},{key:'banknifty',sym:'^NSEBANK',name:'BANK NIFTY'}];
-  for(var i=0;i<indices.length;i++){
-    try{
-      var url=CORS_PROXIES[activeProxy]+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+indices[i].sym+'?range=1d&interval=1d');
-      var resp=await fetch(url,{signal:AbortSignal.timeout(8000)});
-      if(resp.ok){var d=await resp.json();var meta=d&&d.chart&&d.chart.result&&d.chart.result[0]&&d.chart.result[0].meta;if(meta)indexData[indices[i].key]={name:indices[i].name,price:meta.regularMarketPrice||0,change:(meta.regularMarketPrice||0)-(meta.chartPreviousClose||0),changePct:meta.chartPreviousClose?((meta.regularMarketPrice-meta.chartPreviousClose)/meta.chartPreviousClose*100):0}}
-    }catch(e){}
-    await new Promise(function(r){setTimeout(r,200)});
+  var idx=[
+    {key:'nifty',sym:'^NSEI',name:'NIFTY 50'},
+    {key:'sensex',sym:'^BSESN',name:'SENSEX'},
+    {key:'banknifty',sym:'^NSEBANK',name:'BANK NIFTY'}
+  ];
+  for(var i=0;i<idx.length;i++){
+    var fetched=false;
+    for(var ip=0;ip<CORS_PROXIES.length&&!fetched;ip++){
+      try{
+        var url=CORS_PROXIES[ip]+encodeURIComponent(
+          'https://query1.finance.yahoo.com/v8/finance/chart/'
+          +idx[i].sym+'?range=1d&interval=1d');
+        var resp=await fetch(url,{signal:AbortSignal.timeout(7000)});
+        if(resp.ok){
+          var data=await resp.json();
+          var meta=data&&data.chart&&data.chart.result
+            &&data.chart.result[0]&&data.chart.result[0].meta;
+          if(meta&&meta.regularMarketPrice>0){
+            indexData[idx[i].key]={
+              name:idx[i].name,price:meta.regularMarketPrice,
+              change:meta.regularMarketPrice-(meta.chartPreviousClose||meta.regularMarketPrice),
+              changePct:meta.chartPreviousClose
+                ?((meta.regularMarketPrice-meta.chartPreviousClose)/meta.chartPreviousClose*100):0
+            };
+            fetched=true;activeProxy=ip;
+          }
+        }
+      }catch(e){}
+    }
+    await new Promise(function(ir){setTimeout(ir,150);});
   }
 }
-
 // ===== MARKET PULSE =====
 function rMarket(){
   var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol});
