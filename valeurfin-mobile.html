@@ -1749,22 +1749,47 @@ function rMarketCues(){
 var marketNewsCache=[],newsLastFetched=0;
 async function fetchMarketNews(){
   if(Date.now()-newsLastFetched<1800000&&marketNewsCache.length)return;
-  var newsUrl='https://query1.finance.yahoo.com/v1/finance/search'
-    +'?q=NIFTY+India+stock+market&newsCount=20&quotesCount=0&enableNavLinks=false';
-  for(var np=0;np<CORS_PROXIES.length;np++){
+
+  // RSS sources — tried in order via rss2json.com (free, no auth, open CORS)
+  var RSS_SOURCES=[
+    'https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms',
+    'https://www.business-standard.com/rss/markets-106.rss',
+    'https://www.livemint.com/rss/markets',
+    'https://finance.yahoo.com/rss/headline?s=%5ENSEI'
+  ];
+  var RSS2JSON='https://api.rss2json.com/v1/api.json?rss_url=';
+
+  for(var ri=0;ri<RSS_SOURCES.length;ri++){
     try{
-      var resp=await fetch(CORS_PROXIES[np]+encodeURIComponent(newsUrl),
-        {signal:AbortSignal.timeout(8000)});
+      var url=RSS2JSON+encodeURIComponent(RSS_SOURCES[ri]);
+      var resp=await fetch(url,{signal:AbortSignal.timeout(8000)});
       if(!resp.ok)continue;
       var data=await resp.json();
-      if(data&&data.news&&data.news.length){
-        marketNewsCache=data.news.slice(0,20);newsLastFetched=Date.now();
-        rMarketNews();rDashNews();return;
+      if(data&&data.status==='ok'&&data.items&&data.items.length){
+        // Normalise RSS items into our news format
+        marketNewsCache=data.items.slice(0,20).map(function(item){
+          return{
+            title:item.title||'',
+            link:item.link||item.url||'#',
+            publisher:data.feed&&data.feed.title
+              ?data.feed.title.replace(' - Markets','').replace(' Markets','')
+              :'Market News',
+            providerPublishTime:item.pubDate
+              ?Math.floor(new Date(item.pubDate).getTime()/1000)
+              :Math.floor(Date.now()/1000)
+          };
+        }).filter(function(n){return n.title.length>10;});
+        if(marketNewsCache.length){
+          newsLastFetched=Date.now();
+          rMarketNews();rDashNews();return;
+        }
       }
     }catch(e){}
   }
+
+  // All RSS sources failed — show message
   var el=document.getElementById('mp-news'),elM=document.getElementById('mp-news-m');
-  var msg='<div style="padding:12px;font-size:11px;color:var(--txt3)">News unavailable - try refreshing</div>';
+  var msg='<div style="padding:12px;font-size:11px;color:var(--txt3)">News unavailable — try again later</div>';
   if(el)el.innerHTML=msg;if(elM)elM.innerHTML=msg;
 }
 function timeAgo(ts){
