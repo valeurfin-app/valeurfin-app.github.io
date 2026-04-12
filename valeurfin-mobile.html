@@ -1749,15 +1749,23 @@ function rMarketCues(){
 var marketNewsCache=[],newsLastFetched=0;
 async function fetchMarketNews(){
   if(Date.now()-newsLastFetched<1800000&&marketNewsCache.length)return;
-  try{
-    var url=CORS_PROXIES[activeProxy]+encodeURIComponent(
-      "https://query1.finance.yahoo.com/v1/finance/search?q=NIFTY+India+stock+market&newsCount=20&quotesCount=0&enableNavLinks=false");
-    var resp=await fetch(url,{signal:AbortSignal.timeout(8000)});
-    if(!resp.ok)return;
-    var data=await resp.json();
-    if(data&&data.news&&data.news.length){
-      marketNewsCache=data.news.slice(0,20);newsLastFetched=Date.now();rMarketNews();rDashNews();}
-  }catch(e){}
+  var newsUrl='https://query1.finance.yahoo.com/v1/finance/search'
+    +'?q=NIFTY+India+stock+market&newsCount=20&quotesCount=0&enableNavLinks=false';
+  for(var np=0;np<CORS_PROXIES.length;np++){
+    try{
+      var resp=await fetch(CORS_PROXIES[np]+encodeURIComponent(newsUrl),
+        {signal:AbortSignal.timeout(8000)});
+      if(!resp.ok)continue;
+      var data=await resp.json();
+      if(data&&data.news&&data.news.length){
+        marketNewsCache=data.news.slice(0,20);newsLastFetched=Date.now();
+        rMarketNews();rDashNews();return;
+      }
+    }catch(e){}
+  }
+  var el=document.getElementById('mp-news'),elM=document.getElementById('mp-news-m');
+  var msg='<div style="padding:12px;font-size:11px;color:var(--txt3)">News unavailable - try refreshing</div>';
+  if(el)el.innerHTML=msg;if(elM)elM.innerHTML=msg;
 }
 function timeAgo(ts){
   var diff=Math.floor((Date.now()-ts*1000)/60000);
@@ -2454,6 +2462,7 @@ async function fetchStockPrice(sym){
 }
 
 async function refreshAll(){
+  await fetchIndices();
   await fetchLivePrices();
   checkAndProcessSIPs();
   rMarketCues();
