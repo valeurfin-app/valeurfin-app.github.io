@@ -3,7 +3,7 @@
 // Cache name — increment suffix (v4c → v4d) when pushing updates
 // to force old caches to be deleted on next visit
 
-var CACHE_NAME = 'valeurfin-v5b';
+var CACHE_NAME = 'valeurfin-v5c';
 
 // Files to cache for offline use
 var CACHE_FILES = [
