@@ -3252,7 +3252,7 @@ function recalcStockInvested() {
 function recalcStockCurrentValue() {
   var qty      = parseFloat((document.getElementById('add-qty')||{}).value) || 0;
   var liveP    = parseFloat((document.getElementById('add-stock-price')||{}).value) || 0;
-  var curEl    = document.getElementById('add-current');
+  var curEl    = document.getElementById('add-current-stock') || document.getElementById('add-current');
   if(curEl && !curEl.dataset.manualEdit) {
     var val = qty > 0 && liveP > 0 ? (qty * liveP) : 0;
     if(val > 0) curEl.value = val.toFixed(2);
@@ -3262,7 +3262,7 @@ function recalcStockCurrentValue() {
 
 function recalcStockReturn() {
   var invested = parseFloat((document.getElementById('add-invested-calc')||{}).value) || 0;
-  var curVal   = parseFloat((document.getElementById('add-current')||{}).value) || 0;
+  var curVal   = parseFloat((document.getElementById('add-current-stock')||document.getElementById('add-current')||{}).value) || 0;
   var started  = (document.getElementById('add-started')||{}).value || '';
   var retEl    = document.getElementById('add-return-display');
   if(!retEl) return;
@@ -3363,8 +3363,8 @@ function buildAddFields(){
      +'</div><div id="add-sym-result" style="font-size:9px;margin-top:3px"></div></div>';
     h+='<div class="fr"><div class="fg"><label>Sector</label>'
      +'<select class="inp" id="add-sector"><option value="">Select</option>'
-     +SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div>';
-
+     +SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div></div>';
+  }
   if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
   if(t.id==='Gold'){
     h+='<div class="fr"><div class="fg">'
@@ -3380,7 +3380,7 @@ function buildAddFields(){
       +'</select></div></div>';
   }
   if(t.hasMonthly){if(t.hasMF){h+='<div class="fr"><div class="fg"><label>Total Units Held <span style="font-size:9px;color:var(--txt2);font-weight:400">(from broker/CAMS)</span></label><input class="inp" id="add-total-units" type="number" step="0.001" placeholder="e.g. 2456.789"></div><div class="fg"><label>Scheme Code <span style="font-size:9px;color:var(--txt2);font-weight:400">(auto-filled)</span></label><input class="inp" id="add-scheme-code" placeholder="e.g. 118989" readonly></div></div>';}h+='<div class="fr"><div class="fg"><label>Monthly SIP (₹)</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'">'+ordinal(d)+'</option>';h+='</select></div></div>';h+='<div class="fr"><div class="fg"><label>Annual Step-Up</label><select class="inp" id="add-stepup" onchange="toggleStepUpCustom(this.value)"><option value="0">No Step-Up</option><option value="5">5% per year</option><option value="10">10% per year</option><option value="15">15% per year</option><option value="20">20% per year</option><option value="custom">Custom %</option></select></div><div class="fg" id="stepup-custom-wrap" style="display:none"><label>Custom %</label><input class="inp" id="add-stepup-custom" type="number" step="1" min="1" placeholder="e.g. 12"></div></div>';h+='<div class="fr"><div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start (Month 1)</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div><div class="fg"></div></div>';}
-  else if(t.id==='Stocks'){
+  if(t.id==='Stocks'){
     h+='<div class="fr">'
      +'<div class="fg"><label>QTY <span style="color:var(--d)">*</span></label>'
      +'<input class="inp" id="add-qty" type="number" min="0" step="1" placeholder="e.g. 10" '
@@ -3397,12 +3397,12 @@ function buildAddFields(){
      +'oninput="markManualEdit(\'add-stock-price\');recalcStockCurrentValue()"></div></div>';
     h+='<div class="fr">'
      +'<div class="fg"><label>Current Value (₹) <span style="font-size:9px;color:var(--txt2);font-weight:400">auto = qty × price</span></label>'
-     +'<input class="inp" id="add-current" type="number" placeholder="auto-calculated" '
-     +'oninput="markManualEdit(\'add-current\');recalcStockReturn()"></div>'
+     +'<input class="inp" id="add-current-stock" type="number" placeholder="auto-calculated" '
+     +'oninput="markManualEdit(\'add-current-stock\');recalcStockReturn()"></div>'
      +'<div class="fg"><label>Return % <span style="font-size:9px;color:var(--txt2);font-weight:400">(XIRR — calculated)</span></label>'
      +'<div style="padding:9px 12px;border:2px solid var(--bdr);border-radius:9px;font-size:13px;font-weight:700;background:var(--bg)" id="add-return-display">—</div>'
      +'<input type="hidden" id="add-return" value="0"></div></div>';
-  } else {
+  } else if(!t.hasMonthly) {
     h+='<div class="fr"><div class="fg"><label>Invested (₹)</label>'
      +'<input class="inp" id="add-invested" type="number"></div>'
      +'<div class="fg"><label>Return %</label>'
@@ -3410,7 +3410,7 @@ function buildAddFields(){
   }
   if(t.hasFD)h+='<div class="fr"><div class="fg"><label>Maturity</label><input class="inp" id="add-maturity" type="date"></div><div class="fg"><label>Interest %</label><input class="inp" id="add-fdrate" type="number" placeholder="7.5"></div></div>';
   if(t.id==='Stocks'){h+='<div style="background:var(--bbg);border:1px solid var(--bdr);border-radius:10px;padding:10px;margin-top:4px"><div style="font-size:10px;font-weight:700;color:var(--b);margin-bottom:6px">Previous Purchases <span style="font-size:9px;font-weight:400;color:var(--txt2)">(optional)</span></div><div id="lots-list" style="margin-bottom:6px"></div><div class="fr" style="gap:6px"><input class="inp" id="lot-date" type="date" style="flex:1"><input class="inp" id="lot-qty" type="number" style="flex:1" placeholder="Qty"><input class="inp" id="lot-price" type="number" style="flex:1" placeholder="Price"><button class="btn-sm" onclick="addLotRow()" style="white-space:nowrap">+ Add</button></div></div>';
-  }}
+  }
   form.innerHTML=h;
 }
 
@@ -3719,7 +3719,8 @@ function addInvestment(){
   if(selectedInvType==='Stocks'&&!validateStocksForm())return;
   var name=document.getElementById('add-name').value.trim();
   if(!name){toast('Enter name','err');return}
-  var started=document.getElementById('add-started').value||'';var currentVal=parseFloat(document.getElementById('add-current').value)||0;
+  var started=document.getElementById('add-started').value||'';
+  var currentVal=parseFloat((document.getElementById('add-current-stock')||document.getElementById('add-current')||{}).value)||0;
   var monthly=t.hasMonthly?(parseFloat(document.getElementById('add-monthly').value)||0):0;
   var dueDate=t.hasMonthly?(document.getElementById('add-due').value||'5'):'';
   var stepUpEl=document.getElementById('add-stepup');
@@ -3844,9 +3845,11 @@ function rInsurance(){
   var iDash=(2*Math.PI*40).toFixed(2);var iOff=(2*Math.PI*40-(iScore.score||0)/100*2*Math.PI*40).toFixed(2);
   document.getElementById('ins-score').innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:8px 0"><div class="score-ring"><svg width="96" height="96"><circle cx="48" cy="48" r="40" fill="none" stroke="var(--bdr)" stroke-width="7"/><circle cx="48" cy="48" r="40" fill="none" stroke="'+iScore.color+'" stroke-width="7" stroke-dasharray="'+iDash+'" stroke-dashoffset="'+iOff+'" stroke-linecap="round"/></svg><span class="sr-val" style="color:'+iScore.color+';font-size:18px">'+iScore.score+'</span></div><div><div style="font-size:16px;font-weight:800;color:'+iScore.color+'">'+iScore.grade+'</div></div></div>';
   if(!policies.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';
-  el.innerHTML=policies.map(function(p){var t=INS_TYPES.find(function(x){return x.id===p.insType});return '<div class="ins-card"><div class="ins-top"><div class="ins-ic" style="background:'+(p.status==='active'?'var(--gbg)':'var(--dbg)')+'">'+(t?t.icon:'🛡️')+'</div><div class="ins-info"><h4>'+p.label+'</h4><p>'+(t?t.label:'')+' · '+p.company+' · <b>'+p.status.toUpperCase()+'</b></p></div></div><div class="ins-grid"><div class="ig-k">Sum</div><div class="ig-v">'+fmtFull(p.sumAssured)+'</div><div class="ig-k">Premium</div><div class="ig-v">'+fmtFull(p.premium)+'/'+({'yearly':'yr','half-yearly':'6m','quarterly':'qtr','monthly':'mo'}[p.premFreq]||p.premFreq||'yr')+'</div></div><div style="margin-top:6px;text-align:right"><button class="btn-sm" onclick="deleteIns(\''+p.id+'\')">🗑️</button></div></div>'}).join('');
+  el.innerHTML=policies.map(function(p){var t=INS_TYPES.find(function(x){return x.id===p.insType});var monthNames=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];var dueStr=p.premDueDate?(ordinal(parseInt(p.premDueDate))+(p.premDueMonth?' '+monthNames[parseInt(p.premDueMonth)]:'')):'';return '<div class="ins-card"><div class="ins-top"><div class="ins-ic" style="background:'+(p.status==='active'?'var(--gbg)':'var(--dbg)')+'">'+(t?t.icon:'🛡️')+'</div><div class="ins-info"><h4>'+p.label+'</h4><p>'+(t?t.label:'')+' · '+p.company+' · <b>'+p.status.toUpperCase()+'</b></p></div></div><div class="ins-grid"><div class="ig-k">Sum</div><div class="ig-v">'+fmtFull(p.sumAssured)+'</div><div class="ig-k">Premium</div><div class="ig-v">'+fmtFull(p.premium)+'/'+({'yearly':'yr','half-yearly':'6m','quarterly':'qtr','monthly':'mo'}[p.premFreq]||p.premFreq||'yr')+(dueStr?' · Due '+dueStr:'')+'</div></div><div style="margin-top:6px;text-align:right"><button class="btn-sm" onclick="deleteIns(\''+p.id+'\')">🗑️</button></div></div>'}).join('');
 }
 function openInsModal(){
+  var dateOpts='<option value="">Not set</option>';for(var d=1;d<=31;d++)dateOpts+='<option value="'+d+'">'+ordinal(d)+'</option>';
+  var monthOpts='<option value="">Every month</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option>';
   document.getElementById('ism-form').innerHTML=
     '<div class="fg"><label>Policy Name</label><input class="inp" id="ins-label"></div>'
     +'<div class="fr"><div class="fg"><label>Type</label>'
@@ -3869,7 +3872,11 @@ function openInsModal(){
     +'</select></div>'
     +'<div class="fg"><label>Status</label>'
     +'<select class="inp" id="ins-status"><option value="active">Active</option><option value="lapsed">Lapsed</option></select>'
-    +'</div></div>';
+    +'</div></div>'
+    +'<div class="fr"><div class="fg"><label>Premium Due Day <small style="color:var(--txt2);font-weight:400">(optional — enables alerts)</small></label>'
+    +'<select class="inp" id="ins-prem-day">'+dateOpts+'</select></div>'
+    +'<div class="fg"><label>Premium Due Month <small style="color:var(--txt2);font-weight:400">(for yearly/half-yearly)</small></label>'
+    +'<select class="inp" id="ins-prem-month">'+monthOpts+'</select></div></div>';
   document.getElementById('ins-modal').classList.add('open');
   trapFocus(document.getElementById('ins-modal'));
 }
@@ -3881,9 +3888,11 @@ function saveInsurance(){
   var pr=parseFloat(document.getElementById('ins-prem').value)||0;
   var pf=document.getElementById('ins-prem-freq')?document.getElementById('ins-prem-freq').value:'yearly';
   var st=document.getElementById('ins-status').value;
+  var premDay=document.getElementById('ins-prem-day')?document.getElementById('ins-prem-day').value:'';
+  var premMonth=document.getElementById('ins-prem-month')?document.getElementById('ins-prem-month').value:'';
   if(!l||!sa){toast('Fill policy name and sum assured','err');return;}
   S.insurance.push({id:uid(),label:l,insType:t,company:co,sumAssured:sa,premium:pr,
-    premFreq:pf,premDueDate:'5',status:st,owner:'self',createdAt:Date.now()});
+    premFreq:pf,premDueDate:premDay,premDueMonth:premMonth,status:st,owner:'self',createdAt:Date.now()});
   saveS().then(function(){renderAll();closeInsModal();toast('✅ Saved');});
 }
 function deleteIns(id){if(confirm('Delete?')){S.insurance=S.insurance.filter(function(i){return i.id!==id});saveS().then(function(){renderAll()})}}
@@ -4652,12 +4661,43 @@ function generateAlerts(){
   });
 
   // --- INSURANCE PREMIUM DUE ---
+  // Fires 3 days before. Uses premDueDate (day) + premDueMonth (month) + premFreq.
   (S.insurance||[]).filter(function(p){return p.status==='active'&&p.premDueDate}).forEach(function(p){
-    var due=parseInt(p.premDueDate);
-    var diff=due-today;
-    if(diff>=0&&diff<=7){
+    var dueDay=parseInt(p.premDueDate);
+    if(!dueDay||dueDay<1||dueDay>31)return;
+    var nowDate=new Date();
+    var thisYear=nowDate.getFullYear();
+    var thisMonth=nowDate.getMonth()+1; // 1-12
+    var freq=p.premFreq||'yearly';
+    var dueMonth=parseInt(p.premDueMonth)||0; // 0 = every month / not set
+
+    // Determine which months this premium falls in
+    var dueMonths=[];
+    if(freq==='monthly'){
+      dueMonths=[thisMonth]; // check current month
+    } else if(freq==='quarterly'&&dueMonth){
+      // Quarterly from starting month: e.g. Jan → Jan,Apr,Jul,Oct
+      for(var qm=dueMonth;qm<=12;qm+=3)dueMonths.push(qm);
+    } else if(freq==='half-yearly'&&dueMonth){
+      dueMonths=[dueMonth];
+      var hm2=dueMonth+6;if(hm2>12)hm2-=12;
+      dueMonths.push(hm2);
+    } else if(freq==='yearly'&&dueMonth){
+      dueMonths=[dueMonth];
+    } else {
+      // No month set — fall back to checking day only in current month
+      dueMonths=[thisMonth];
+    }
+
+    // Check if any due month is the current month
+    if(dueMonths.indexOf(thisMonth)===-1)return;
+
+    var diff=dueDay-nowDate.getDate();
+    if(diff>=0&&diff<=3){
       var daysLabel=diff===0?'Today':diff===1?'Tomorrow':diff+' days';
-      alertList.push({icon:'🛡️',title:p.label+' Premium Due',desc:fmtFull(p.premium)+'/'+p.premFreq+' — '+daysLabel,priority:diff===0?0:1});
+      var monthNames=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var dueDateStr=ordinal(dueDay)+(dueMonth?' '+monthNames[dueMonth]:'');
+      alertList.push({icon:'🛡️',title:p.label+' Premium Due',desc:fmtFull(p.premium)+'/'+({'yearly':'yr','half-yearly':'6m','quarterly':'qtr','monthly':'mo'}[freq]||freq)+' — '+daysLabel+' ('+dueDateStr+')',priority:diff===0?0:1});
     }
   });
 
