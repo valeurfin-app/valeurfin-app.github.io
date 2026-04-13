@@ -722,7 +722,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- ===== MAIN ===== -->
 <div class="main" id="main-wrap">
 <div class="topbar">
-<div class="tb-left"><h1 id="pg-title">Dashboard</h1><span class="tb-date" id="tb-month">Month 0</span><span style="font-size:9px;background:linear-gradient(135deg,var(--p),#0984E3);color:#fff;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:6px;vertical-align:middle">✨ AI</span></div>
+<div class="tb-left"><h1 id="pg-title">Dashboard</h1><span class="tb-date" id="tb-month">Month 0</span><span style="font-size:9px;background:linear-gradient(135deg,var(--p),#0984E3);color:#fff;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:6px;vertical-align:middle">✨ AI</span><span id="member-indicator" style="display:none;font-size:10px;background:var(--pbg);color:var(--p);padding:3px 8px;border-radius:8px;font-weight:700;margin-left:6px;cursor:pointer" onclick="showMemberSwitcher()">👨‍👩‍👧‍👦 All</span></div>
 <div class="tb-right">
 <button class="tb-btn voice-btn" onclick="toggleVoice()" id="voice-btn" title="Voice">🎤</button>
 <!-- Process Month removed — SIPs auto-process on due date -->
@@ -1984,20 +1984,58 @@ function renderFamilyDD(){
   var dd=document.getElementById('sb-family-dd'),sw=document.getElementById('sb-family-switch');
   if(S.user.mode==='family'&&S.family.length>0){
     sw.style.display='block';
-    // Rebuild options but PRESERVE the currently selected member
-    var saved=currentMember;
-    dd.innerHTML='<option value="all">👨\u200d👩\u200d👧\u200d👦 All Members</option>'
+    // Rebuild dropdown without touching currentMember
+    dd.innerHTML='<option value="all">👨‍👩‍👧‍👦 All Members</option>'
       +'<option value="self">'+S.user.name+' (You)</option>'
       +S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+' ('+f.relation+')</option>'}).join('');
-    // Restore selection after rebuilding DOM
-    dd.value=saved||'all';
-    // If value didn't stick (member removed), reset to all
-    if(dd.value!==saved){currentMember='all';dd.value='all';}
+    // Reflect currentMember — NEVER change it here
+    dd.value=currentMember||'all';
+    if(!dd.value||dd.value!==currentMember)dd.value='all';
   }else{
     sw.style.display='none';
-    currentMember='all';
+    if(S.user.mode!=='family')currentMember='all';
   }
 }
+function showMemberSwitcher(){
+  if(!S||S.user.mode!=='family'||!S.family||!S.family.length)return;
+  var ALL_FAM="👨‍👩‍👧‍👦";
+  var PERSON="👤";
+  var members=[
+    {id:'all', name:'All Family',        icon:ALL_FAM},
+    {id:'self',name:S.user.name+' (You)',icon:PERSON}
+  ].concat(S.family.map(function(f){return{id:f.id,name:f.name,icon:PERSON};}));
+  var existing=document.getElementById('member-switcher-popup');
+  if(existing){existing.remove();return;}
+  var popup=document.createElement('div');
+  popup.id='member-switcher-popup';
+  popup.style.cssText='position:fixed;top:52px;left:50%;transform:translateX(-50%);'
+    +'background:var(--card);border:1px solid var(--bdr);border-radius:12px;'
+    +'box-shadow:0 8px 30px rgba(0,0,0,.2);z-index:9999;padding:8px;min-width:200px;'
+    +'animation:popIn .15s ease';
+  var header=document.createElement('div');
+  header.style.cssText='font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;padding:4px 8px 8px';
+  header.textContent='Switch Portfolio View';
+  popup.appendChild(header);
+  members.forEach(function(mb){
+    var isActive=currentMember===mb.id;
+    var row=document.createElement('div');
+    row.style.cssText='padding:9px 12px;cursor:pointer;border-radius:8px;display:flex;align-items:center;gap:10px;font-size:13px;'
+      +'font-weight:'+(isActive?'700':'400')+';'
+      +'background:'+(isActive?'var(--pbg)':'transparent')+';'
+      +'color:'+(isActive?'var(--p)':'var(--txt)');
+    row.innerHTML=mb.icon+' '+mb.name+(isActive?'<span style="margin-left:auto;font-size:11px">&#10003;</span>':'')
+    row.setAttribute('data-mbid',mb.id);
+    row.addEventListener('click',function(){switchMember(this.dataset.mbid);popup.remove();});
+    popup.appendChild(row);
+  });
+  document.body.appendChild(popup);
+  setTimeout(function(){
+    document.addEventListener('click',function _close(e){
+      if(!popup.contains(e.target)){popup.remove();document.removeEventListener('click',_close);}
+    });
+  },100);
+}
+
 function switchMember(val){
   currentMember=val||'all';
   renderAll();
@@ -2235,12 +2273,31 @@ function renderMemberPills(containerId){
   var el=document.getElementById(containerId);
   if(!el)return;
   if(S.user.mode!=="family"||!S.family||!S.family.length){el.innerHTML="";return;}
-  var members=[{id:"all",name:"All Family"},{id:"self",name:S.user.name+" (You)"}]
-    .concat(S.family.map(function(f){return{id:f.id,name:f.name};}));
-  el.innerHTML="<div class=\"member-pills\">"+members.map(function(mb){
-    return "<button class=\"member-pill"+(currentMember===mb.id?" active":"")
-      +"\" data-mbid=\""+mb.id+"\" onclick=\"switchMember(this.dataset.mbid)\">"+mb.name+"</button>";
-  }).join("")+"</div>";
+  var ALL_FAM="👨‍👩‍👧‍👦";
+  var PERSON="👤";
+  var members=[
+    {id:"all", name:"All Family", icon:ALL_FAM},
+    {id:"self",name:S.user.name,  icon:PERSON}
+  ].concat(S.family.map(function(f){return{id:f.id,name:f.name,icon:PERSON};}));
+  var ind=document.getElementById('member-indicator');
+  if(ind){
+    var cur=members.find(function(mb){return mb.id===currentMember;});
+    ind.textContent=currentMember==='all'?(ALL_FAM+' All'):(PERSON+' '+(cur?cur.name:'Member'));
+    ind.style.display='inline';
+  }
+  var html='<div style="margin-bottom:12px">'
+    +'<div style="font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Viewing portfolio for</div>'
+    +'<div class="member-pills">'
+    +members.map(function(mb){
+      var isActive=currentMember===mb.id;
+      return '<button class="member-pill'+(isActive?' active':'')+'"'
+        +' data-mbid="'+mb.id+'"'
+        +' onclick="switchMember(this.dataset.mbid)">'
+        +mb.icon+' '+mb.name
+        +'</button>';
+    }).join('')
+    +'</div></div>';
+  el.innerHTML=html;
 }
 function rFamilyOverview(){
   var el=document.getElementById("dash-family-overview");
@@ -5013,6 +5070,14 @@ function rSwpSummary(inv){
 }
 
 function initApp(){
+  setTimeout(function(){
+    var ind=document.getElementById('member-indicator');
+    if(ind&&S&&S.user.mode==='family'&&(S.family||[]).length>0){
+      ind.style.display='inline';
+      ind.textContent='👨‍👩‍👧‍👦 All';
+    }
+  },0);
+
   applyTheme();
   renderAll();
   rMarket();
