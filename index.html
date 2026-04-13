@@ -835,7 +835,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== ADD INVESTMENT ===== -->
 <div class="pg" id="pg-add">
-<div class="cd"><h3>➕ Add New Investment</h3><p class="m-sub">Select type and fill details</p><div class="pills" id="add-pills"></div><div id="add-form"></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn-s" onclick="addInvestment()">💾 Add Investment</button><button class="btn-cancel" onclick="resetAddForm()">Reset</button></div></div>
+<div class="cd"><h3>➕ Add New Investment</h3><p class="m-sub">Select type and fill details &nbsp;<span id="stocks-mandatory-note" style="display:none;font-size:10px;color:var(--d)">* Required fields for Stocks</span></p><div class="pills" id="add-pills"></div><div id="add-form"></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn-s" onclick="addInvestment()">💾 Add Investment</button><button class="btn-cancel" onclick="resetAddForm()">Reset</button></div></div>
 </div>
 
 <!-- ===== EXPENSES ===== -->
@@ -3135,7 +3135,149 @@ function toggleStepUpCustom(val){
   if(w)w.style.display=(val==='custom')?'':'none';
 }
 
-function selectInvType(type){selectedInvType=type;renderAddForm()}
+
+// ─── Add Investment — Stocks helpers ────────────────────────────────────────
+
+// Debounce timer for symbol auto-test
+var _symTestTimer = null;
+
+function onSymbolInput(val) {
+  // Uppercase the value
+  var el = document.getElementById('add-symbol');
+  if(el) el.value = val.toUpperCase();
+  clearTimeout(_symTestTimer);
+  if(!val || val.length < 2) return;
+  // Auto-test after 900ms pause in typing
+  _symTestTimer = setTimeout(function() {
+    autoTestSymbol();
+  }, 900);
+}
+
+async function autoTestSymbol() {
+  var sym = (document.getElementById('add-symbol')||{}).value;
+  if(!sym) return;
+  var resEl = document.getElementById('add-sym-result');
+  if(resEl) resEl.innerHTML = '<span style="color:var(--txt2)">🔍 Fetching price for '+sym+'...</span>';
+  var data = await fetchStockPrice(sym);
+  if(data && data.price > 0) {
+    if(resEl) resEl.innerHTML = '<span style="color:var(--g)">✅ '+sym
+      +' — ₹'+data.price.toFixed(2)
+      +(data.changePct>=0?' <span style="color:var(--g)">▲':'<span style="color:var(--d)">▼')
+      +Math.abs(data.changePct).toFixed(2)+'%</span></span>';
+    // Auto-fill current stock price field
+    var priceEl = document.getElementById('add-stock-price');
+    if(priceEl && !priceEl.dataset.manualEdit) priceEl.value = data.price.toFixed(2);
+    // Recalculate current value
+    recalcStockCurrentValue();
+  } else {
+    if(resEl) resEl.innerHTML = '<span style="color:var(--d)">❌ '+sym+' not found on NSE/BSE</span>';
+  }
+}
+
+function recalcStockInvested() {
+  var qty   = parseFloat((document.getElementById('add-qty')||{}).value) || 0;
+  var price = parseFloat((document.getElementById('add-avgprice')||{}).value) || 0;
+  var invEl = document.getElementById('add-invested-calc');
+  if(invEl && !invEl.dataset.manualEdit) {
+    var val = qty * price;
+    invEl.value = val > 0 ? val.toFixed(2) : '';
+  }
+  recalcStockReturn();
+  // Also update pending lots display
+  updateStockTotalsFromLots();
+}
+
+function recalcStockCurrentValue() {
+  var qty      = parseFloat((document.getElementById('add-qty')||{}).value) || 0;
+  var liveP    = parseFloat((document.getElementById('add-stock-price')||{}).value) || 0;
+  var curEl    = document.getElementById('add-current');
+  if(curEl && !curEl.dataset.manualEdit) {
+    var val = qty > 0 && liveP > 0 ? (qty * liveP) : 0;
+    if(val > 0) curEl.value = val.toFixed(2);
+  }
+  recalcStockReturn();
+}
+
+function recalcStockReturn() {
+  var invested = parseFloat((document.getElementById('add-invested-calc')||{}).value) || 0;
+  var curVal   = parseFloat((document.getElementById('add-current')||{}).value) || 0;
+  var started  = (document.getElementById('add-started')||{}).value || '';
+  var retEl    = document.getElementById('add-return-display');
+  if(!retEl) return;
+  if(invested <= 0 || curVal <= 0) { retEl.textContent = '—'; return; }
+  // Simple return %
+  var simplePct = ((curVal - invested) / invested * 100);
+  // XIRR if we have started date
+  if(started) {
+    var months = (Date.now() - new Date(started).getTime()) / (1000*60*60*24*30.44);
+    if(months >= 0.5) {
+      var xirr = (Math.pow(curVal/invested, 12/months) - 1) * 100;
+      retEl.textContent = xirr.toFixed(1) + '% XIRR';
+      retEl.style.color = xirr >= 0 ? 'var(--g)' : 'var(--d)';
+      return;
+    }
+  }
+  retEl.textContent = simplePct.toFixed(1) + '%';
+  retEl.style.color = simplePct >= 0 ? 'var(--g)' : 'var(--d)';
+}
+
+function updateStockTotalsFromLots() {
+  // When previous lots are added/removed, update total qty + invested
+  if(!pendingLots.length) return;
+  var currentQty   = parseFloat((document.getElementById('add-qty')||{}).value) || 0;
+  var currentPrice = parseFloat((document.getElementById('add-avgprice')||{}).value) || 0;
+  // All lots including the current one
+  var allLots = pendingLots.slice();
+  if(currentQty > 0 && currentPrice > 0) {
+    allLots.push({qty: currentQty, price: currentPrice});
+  }
+  if(!allLots.length) return;
+  var totalQty  = allLots.reduce(function(s,l){return s+l.qty}, 0);
+  var totalInv  = allLots.reduce(function(s,l){return s+l.qty*l.price}, 0);
+  var avgPrice  = totalQty > 0 ? totalInv/totalQty : 0;
+  var invEl = document.getElementById('add-invested-calc');
+  if(invEl && !invEl.dataset.manualEdit) invEl.value = totalInv.toFixed(2);
+  recalcStockCurrentValue();
+}
+
+function markManualEdit(fieldId) {
+  var el = document.getElementById(fieldId);
+  if(el) el.dataset.manualEdit = '1';
+}
+
+function validateStocksForm() {
+  var errors = [];
+  var mandatory = [
+    {id:'add-name',      label:'Name'},
+    {id:'add-platform',  label:'Platform'},
+    {id:'add-started',   label:'Start Date'},
+    {id:'add-qty',       label:'QTY'},
+    {id:'add-avgprice',  label:'Buy Price'},
+  ];
+  mandatory.forEach(function(f) {
+    var el = document.getElementById(f.id);
+    if(!el) return;
+    var val = el.value ? el.value.trim() : '';
+    if(!val || val === '' || val === '0') {
+      el.style.borderColor = 'var(--d)';
+      errors.push(f.label);
+    } else {
+      el.style.borderColor = '';
+    }
+  });
+  if(errors.length) {
+    toast('Required: ' + errors.join(', '), 'err');
+    return false;
+  }
+  return true;
+}
+
+function selectInvType(type){
+  selectedInvType=type;
+  renderAddForm();
+  var note=document.getElementById('stocks-mandatory-note');
+  if(note)note.style.display=(type==='Stocks')?'inline':'';
+}
 function resetAddForm(){selectedInvType='SIP';resetPendingLots();renderAddForm()}
 
 function buildAddFields(){
@@ -3151,7 +3293,16 @@ function buildAddFields(){
   h+='<div class="fr"><div class="fg"><label>Platform</label><select class="inp" id="add-platform"><option value="">Select</option>'+(t.id==='Crypto'?CRYPTO_EXCHANGES:t.id==='FD'||t.id==='RD'||t.id==='PPF'?BANKS:PLATFORMS).map(function(p){return '<option>'+p+'</option>'}).join('')+'</select></div>';
   h+='<div class="fg"><label>Started</label><input class="inp" id="add-started" type="date"></div></div>';
   h+='<div class="fg"><label>Current Value (₹)</label><input class="inp" id="add-current" type="number" placeholder="₹"></div>';
-  if(t.id==='Stocks')h+='<div class="fg"><label>NSE Symbol <span style="font-size:9px;color:var(--txt2);font-weight:400">(type symbol, then Test)</span></label><div style="display:flex;gap:6px;align-items:flex-start"><input class="inp" id="add-symbol" placeholder="e.g. NIFTYBEES" style="flex:1" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn-sm" onclick="testSymbol(\'add-symbol\',\'add-sym-result\')" style="white-space:nowrap;margin-top:0">🔍 Test</button></div><div id="add-sym-result" style="font-size:9px;margin-top:3px"></div></div><div class="fr"><div class="fg"><div class="fg"><label>Sector</label><select class="inp" id="add-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div></div>';
+  if(t.id==='Stocks'){
+    h+='<div class="fg"><label>NSE Symbol <span style="font-size:9px;color:var(--txt2);font-weight:400">(auto-fetches price)</span></label>'
+     +'<div style="display:flex;gap:6px;align-items:flex-start">'
+     +'<input class="inp" id="add-symbol" placeholder="e.g. HDFCBANK" style="flex:1" '
+     +'oninput="onSymbolInput(this.value)" autocomplete="off">'
+     +'</div><div id="add-sym-result" style="font-size:9px;margin-top:3px"></div></div>';
+    h+='<div class="fr"><div class="fg"><label>Sector</label>'
+     +'<select class="inp" id="add-sector"><option value="">Select</option>'
+     +SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div>';
+
   if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
   if(t.id==='Gold'){
     h+='<div class="fr"><div class="fg">'
@@ -3167,9 +3318,37 @@ function buildAddFields(){
       +'</select></div></div>';
   }
   if(t.hasMonthly){if(t.hasMF){h+='<div class="fr"><div class="fg"><label>Total Units Held <span style="font-size:9px;color:var(--txt2);font-weight:400">(from broker/CAMS)</span></label><input class="inp" id="add-total-units" type="number" step="0.001" placeholder="e.g. 2456.789"></div><div class="fg"><label>Scheme Code <span style="font-size:9px;color:var(--txt2);font-weight:400">(auto-filled)</span></label><input class="inp" id="add-scheme-code" placeholder="e.g. 118989" readonly></div></div>';}h+='<div class="fr"><div class="fg"><label>Monthly SIP (₹)</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'">'+ordinal(d)+'</option>';h+='</select></div></div>';h+='<div class="fr"><div class="fg"><label>Annual Step-Up</label><select class="inp" id="add-stepup" onchange="toggleStepUpCustom(this.value)"><option value="0">No Step-Up</option><option value="5">5% per year</option><option value="10">10% per year</option><option value="15">15% per year</option><option value="20">20% per year</option><option value="custom">Custom %</option></select></div><div class="fg" id="stepup-custom-wrap" style="display:none"><label>Custom %</label><input class="inp" id="add-stepup-custom" type="number" step="1" min="1" placeholder="e.g. 12"></div></div>';h+='<div class="fr"><div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start (Month 1)</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div><div class="fg"></div></div>';}
-  else h+='<div class="fr"><div class="fg"><label>Invested (₹)</label><input class="inp" id="add-invested" type="number"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="8"></div></div>';
+  else if(t.id==='Stocks'){
+    h+='<div class="fr">'
+     +'<div class="fg"><label>QTY <span style="color:var(--d)">*</span></label>'
+     +'<input class="inp" id="add-qty" type="number" min="0" step="1" placeholder="e.g. 10" '
+     +'oninput="recalcStockInvested()"></div>'
+     +'<div class="fg"><label>Buy Price (₹/share) <span style="color:var(--d)">*</span></label>'
+     +'<input class="inp" id="add-avgprice" type="number" min="0" step="0.01" placeholder="e.g. 1650" '
+     +'oninput="recalcStockInvested()"></div></div>';
+    h+='<div class="fr">'
+     +'<div class="fg"><label>Invested Amount (₹) <span style="font-size:9px;color:var(--txt2);font-weight:400">auto = qty × buy price</span></label>'
+     +'<input class="inp" id="add-invested-calc" type="number" placeholder="auto-calculated" '
+     +'oninput="markManualEdit(\'add-invested-calc\');recalcStockReturn()"></div>'
+     +'<div class="fg"><label>Current Stock Price (₹) <span style="font-size:9px;color:var(--txt2);font-weight:400">auto-fetched</span></label>'
+     +'<input class="inp" id="add-stock-price" type="number" placeholder="fetched on symbol" '
+     +'oninput="markManualEdit(\'add-stock-price\');recalcStockCurrentValue()"></div></div>';
+    h+='<div class="fr">'
+     +'<div class="fg"><label>Current Value (₹) <span style="font-size:9px;color:var(--txt2);font-weight:400">auto = qty × price</span></label>'
+     +'<input class="inp" id="add-current" type="number" placeholder="auto-calculated" '
+     +'oninput="markManualEdit(\'add-current\');recalcStockReturn()"></div>'
+     +'<div class="fg"><label>Return % <span style="font-size:9px;color:var(--txt2);font-weight:400">(XIRR — calculated)</span></label>'
+     +'<div style="padding:9px 12px;border:2px solid var(--bdr);border-radius:9px;font-size:13px;font-weight:700;background:var(--bg)" id="add-return-display">—</div>'
+     +'<input type="hidden" id="add-return" value="0"></div></div>';
+  } else {
+    h+='<div class="fr"><div class="fg"><label>Invested (₹)</label>'
+     +'<input class="inp" id="add-invested" type="number"></div>'
+     +'<div class="fg"><label>Return %</label>'
+     +'<input class="inp" id="add-return" type="number" placeholder="8"></div></div>';
+  }
   if(t.hasFD)h+='<div class="fr"><div class="fg"><label>Maturity</label><input class="inp" id="add-maturity" type="date"></div><div class="fg"><label>Interest %</label><input class="inp" id="add-fdrate" type="number" placeholder="7.5"></div></div>';
-  if(t.id==='Stocks'){h+='<div class="fr"><div class="fg"><label>Qty (this purchase)</label><input class="inp" id="add-qty" type="number" placeholder="e.g. 10"></div><div class="fg"><label>Buy Price (₹/share)</label><input class="inp" id="add-avgprice" type="number" placeholder="e.g. 1650"></div></div>';h+='<div style="background:var(--bbg);border:1px solid var(--bdr);border-radius:10px;padding:10px;margin-top:4px"><div style="font-size:10px;font-weight:700;color:var(--b);margin-bottom:6px">Previous Purchases <span style="font-size:9px;font-weight:400;color:var(--txt2)">(optional)</span></div><div id="lots-list" style="margin-bottom:6px"></div><div class="fr" style="gap:6px"><input class="inp" id="lot-date" type="date" style="flex:1"><input class="inp" id="lot-qty" type="number" style="flex:1" placeholder="Qty"><input class="inp" id="lot-price" type="number" style="flex:1" placeholder="Price"><button class="btn-sm" onclick="addLotRow()" style="white-space:nowrap">+ Add</button></div></div>';}
+  if(t.id==='Stocks'){h+='<div style="background:var(--bbg);border:1px solid var(--bdr);border-radius:10px;padding:10px;margin-top:4px"><div style="font-size:10px;font-weight:700;color:var(--b);margin-bottom:6px">Previous Purchases <span style="font-size:9px;font-weight:400;color:var(--txt2)">(optional)</span></div><div id="lots-list" style="margin-bottom:6px"></div><div class="fr" style="gap:6px"><input class="inp" id="lot-date" type="date" style="flex:1"><input class="inp" id="lot-qty" type="number" style="flex:1" placeholder="Qty"><input class="inp" id="lot-price" type="number" style="flex:1" placeholder="Price"><button class="btn-sm" onclick="addLotRow()" style="white-space:nowrap">+ Add</button></div></div>';
+  }}
   form.innerHTML=h;
 }
 
@@ -3407,6 +3586,8 @@ function selectStock(name,sym,sector){
   var es=document.getElementById('add-symbol');if(es)es.value=sym;
   var esc=document.getElementById('add-sector');if(esc)esc.value=sector;
   clearTimeout(mfSearchTimer);
+  // Auto-fetch live price when stock is selected from dropdown
+  if(sym) setTimeout(autoTestSymbol, 100);
 }
 
 // Close all dropdowns when clicking outside them
@@ -3431,9 +3612,10 @@ function addLotRow(){
   if(!date||!qty||!price){toast('Fill date, qty and price','err');return;}
   pendingLots.push({id:uid(),date:date,qty:qty,price:price});
   renderPendingLots();
+  updateStockTotalsFromLots();
   ['lot-date','lot-qty','lot-price'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
 }
-function removePendingLot(idx){pendingLots.splice(idx,1);renderPendingLots();}
+function removePendingLot(idx){pendingLots.splice(idx,1);renderPendingLots();updateStockTotalsFromLots();}
 function renderPendingLots(){
   var el=document.getElementById('lots-list');
   if(!el)return;
@@ -3470,7 +3652,11 @@ function editRemoveLot(invId,lotId){
   saveS().then(function(){openEditInv(invId);toast('✅ Lot removed');});
 }
 function addInvestment(){
-  var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var name=document.getElementById('add-name').value.trim();if(!name){toast('Enter name','err');return}
+  var t=INV_TYPES.find(function(x){return x.id===selectedInvType});
+  // Mandatory field validation for Stocks
+  if(selectedInvType==='Stocks'&&!validateStocksForm())return;
+  var name=document.getElementById('add-name').value.trim();
+  if(!name){toast('Enter name','err');return}
   var started=document.getElementById('add-started').value||'';var currentVal=parseFloat(document.getElementById('add-current').value)||0;
   var monthly=t.hasMonthly?(parseFloat(document.getElementById('add-monthly').value)||0):0;
   var dueDate=t.hasMonthly?(document.getElementById('add-due').value||'5'):'';
@@ -3478,8 +3664,13 @@ function addInvestment(){
   var stepUpRaw=stepUpEl?stepUpEl.value:'0';
   var stepUp=t.hasMonthly?(stepUpRaw==='custom'?(parseFloat(document.getElementById('add-stepup-custom')?document.getElementById('add-stepup-custom').value:0)||0):parseFloat(stepUpRaw)||0):0;var stepUpFrom=t.hasMonthly?(parseInt(document.getElementById('add-stepup-from')?document.getElementById('add-stepup-from').value:0)||0):0;
   var returnRate=parseFloat(document.getElementById('add-return').value)||0;
-  var invested=t.hasMonthly?currentVal:(parseFloat(document.getElementById('add-invested').value)||currentVal);
+  var investedCalcEl=document.getElementById('add-invested-calc');
+  var invested=t.hasMonthly?currentVal
+    :(investedCalcEl?(parseFloat(investedCalcEl.value)||0)
+    :(parseFloat(document.getElementById('add-invested')?document.getElementById('add-invested').value:0)||currentVal));
+  if(!invested&&currentVal)invested=currentVal;
   var platform=document.getElementById('add-platform').value||'';
+  if(selectedInvType==='Stocks'&&!platform){toast('Select Platform','err');return;}
   var owner=document.getElementById('add-owner')?document.getElementById('add-owner').value:'self';
   var goldGrams  =parseFloat(document.getElementById('add-gold-grams')&&document.getElementById('add-gold-grams').value)||0;
   var goldPurity =parseInt(document.getElementById('add-gold-purity')&&document.getElementById('add-gold-purity').value)||22;
