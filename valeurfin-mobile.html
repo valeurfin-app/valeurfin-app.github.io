@@ -1349,7 +1349,7 @@ var selectedInvType='SIP',currentAddType='investment',mfSearchResults=[],livePri
 var chatMessagesM=[],botPageMessagesM=[];
 var saveInProgress=false,lastSaveHash='',idbWritten=false;
 
-var CORS_PROXIES=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=','https://thingproxy.freeboard.io/fetch/'];
+var CORS_PROXIES=['https://prices.valeurfin.workers.dev/?url=','https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=','https://thingproxy.freeboard.io/fetch/'];
 var activeProxy=0;
 var indexData={nifty:null,sensex:null,banknifty:null};
 function yahooURL(sym){return 'https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'.NS?range=1d&interval=1d'}
@@ -1596,7 +1596,48 @@ function invHasLots(inv){return inv.lots&&inv.lots.length>0;}
 function getInvQty(inv){if(invHasLots(inv))return inv.lots.reduce(function(s,l){return s+(l.qty||0)},0);return inv.qty||0;}
 function getInvInvested(inv){if(invHasLots(inv))return inv.lots.reduce(function(s,l){return s+(l.qty||0)*(l.price||0)},0);return inv.invested||0;}
 function getInvAvgPrice(inv){if(!invHasLots(inv))return inv.avgPrice||0;var q=getInvQty(inv);return q?getInvInvested(inv)/q:0;}
-function getInvValue(inv){if((inv.type==='SIP'||inv.type==='ELSS')&&inv.totalUnits&&inv.currentNAV)return inv.totalUnits*inv.currentNAV;if(invHasLots(inv)&&inv.livePrice)return getInvQty(inv)*inv.livePrice;return inv.liveValue||inv.value||0;}
+function getInvValue(inv){
+  // Path 1: MF/ELSS — units × NAV
+  if((inv.type==='SIP'||inv.type==='ELSS')&&inv.totalUnits&&inv.currentNAV)
+    return inv.totalUnits*inv.currentNAV;
+  // Path 2: Stocks/ETF — lots × live price
+  if(invHasLots(inv)&&inv.livePrice)return getInvQty(inv)*inv.livePrice;
+  // Path 3: FD/PPF — compound annual (computed live, never saved)
+  if((inv.type==='FD'||inv.type==='PPF')&&inv.returnRate>0&&inv.started&&inv.invested>0){
+    var s3=new Date(inv.started).getTime();
+    if(!isNaN(s3)){
+      var e3=inv.maturityDate
+        ?Math.min(Date.now(),new Date(inv.maturityDate).getTime())
+        :Date.now();
+      var y3=(e3-s3)/(1000*60*60*24*365.25);
+      if(y3>0)return Math.round(inv.invested*Math.pow(1+inv.returnRate/100,y3));
+    }
+  }
+  // Path 4: RD — each monthly deposit earns compound interest individually
+  if(inv.type==='RD'&&inv.returnRate>0&&inv.started&&inv.monthly>0){
+    var s4=new Date(inv.started).getTime();
+    if(!isNaN(s4)){
+      var e4=inv.maturityDate
+        ?Math.min(Date.now(),new Date(inv.maturityDate).getTime())
+        :Date.now();
+      var mn4=Math.floor((e4-s4)/(1000*60*60*24*30.44));
+      if(mn4>0){
+        var r4=inv.returnRate/100/12;var tot4=0;
+        for(var n4=1;n4<=mn4;n4++)tot4+=inv.monthly*Math.pow(1+r4,mn4-n4+1);
+        return Math.round(tot4);
+      }
+    }
+  }
+  // Path 5: Gold — grams × live gold price (when goldPriceData available)
+  if(inv.type==='Gold'&&(inv.grams||0)>0&&goldPriceData){
+    var gp5=(inv.goldPurity||24)>=24?goldPriceData.price24k
+      :(inv.goldPurity||24)>=22?goldPriceData.price22k
+      :goldPriceData.price18k;
+    return Math.round(inv.grams*gp5);
+  }
+  // Fallback: live value → manual value
+  return inv.liveValue||inv.value||0;
+}
 function getInvReturns(inv){return getInvValue(inv)-getInvInvested(inv);}
 function getInvXIRR(inv){var val=getInvValue(inv);var invested=getInvInvested(inv);if(!invested||invested<=0)return 0;if(invHasLots(inv)&&inv.lots.length>0)return calcLotsXIRR(inv.lots,val);if(inv.started){var months=(Date.now()-new Date(inv.started))/(1000*60*60*24*30.44);if(months<0.5)return 0;return(Math.pow(val/invested,12/months)-1)*100;}return(Math.pow(val/invested,12/Math.max(1,S.currentMonth))-1)*100;}
 function calcLotsXIRR(lots,currentValue){if(!lots||!lots.length)return 0;var cfs=lots.map(function(l){return{date:new Date(l.date),amount:-(l.qty*l.price)};});cfs.push({date:new Date(),amount:currentValue});cfs.sort(function(a,b){return a.date-b.date});var first=cfs[0].date;function npv(r){return cfs.reduce(function(s,cf){var y=(cf.date-first)/(365.25*24*3600*1000);return s+cf.amount/Math.pow(1+r,y)},0);}var rate=0.1;for(var i=0;i<100;i++){var f=npv(rate);var df=npv(rate+0.0001);var delta=(df-f)/0.0001;if(Math.abs(delta)<1e-10)break;rate=rate-f/delta;if(rate<-0.999)rate=-0.999;}if(isNaN(rate)||!isFinite(rate))return 0;return rate*100;}
@@ -1967,6 +2008,86 @@ document.addEventListener('visibilitychange', function() {
   }
 });
 
+
+// ─── Gold & MF NAV globals ────────────────────────────────────────────────
+var goldPriceData   = null;
+var goldLastFetched = 0;
+var GOLD_STALE_MS   = 4 * 60 * 60 * 1000;
+var mfNavLastFetched = 0;
+var MF_NAV_STALE_MS  = 8 * 60 * 60 * 1000;
+
+// ─── Gold Price Auto-Update ───────────────────────────────────────────────
+async function fetchGoldPrice() {
+  if (Date.now() - goldLastFetched < GOLD_STALE_MS) return;
+  try {
+    var resp = await fetch('https://gold-api.com/price/XAU?currency=INR', {
+      signal: AbortSignal.timeout(8000), cache: 'no-store'
+    });
+    if (!resp.ok) return;
+    var data = await resp.json();
+    if (data && data.price_gram_24k > 0) {
+      goldPriceData = {
+        price24k: data.price_gram_24k,
+        price22k: data.price_gram_22k  || +(data.price_gram_24k * (22/24)).toFixed(2),
+        price18k: data.price_gram_18k  || +(data.price_gram_24k * (18/24)).toFixed(2),
+        updatedAt: Date.now()
+      };
+      goldLastFetched = Date.now();
+      var goldInvs = S.investments.filter(function(i) {
+        return i.type === 'Gold' && (i.grams || 0) > 0;
+      });
+      if (goldInvs.length) {
+        goldInvs.forEach(function(inv) {
+          var pur = inv.goldPurity || 24;
+          var pgm = pur >= 24 ? goldPriceData.price24k
+            : pur >= 22       ? goldPriceData.price22k
+            :                   goldPriceData.price18k;
+          inv.value = Math.round(inv.grams * pgm);
+        });
+        saveS(); renderAll();
+        toast('\u2705 Gold price updated');
+      }
+    }
+  } catch(e) {}
+}
+
+// ─── MF NAV Auto-Update ───────────────────────────────────────────────────
+async function fetchMFNavs() {
+  if (Date.now() - mfNavLastFetched < MF_NAV_STALE_MS) return;
+  var targets = S.investments.filter(function(i) {
+    return (i.type === 'SIP' || i.type === 'ELSS') &&
+           i.schemeCode && String(i.schemeCode).trim().length > 3 &&
+           i.totalUnits > 0;
+  });
+  if (!targets.length) return;
+  var updated = 0;
+  for (var i = 0; i < targets.length; i++) {
+    var inv = targets[i];
+    var navUrl = 'https://api.mfapi.in/mf/' + inv.schemeCode + '/latest';
+    var fetched = false;
+    for (var p = 0; p < CORS_PROXIES.length && !fetched; p++) {
+      try {
+        var proxyUrl = CORS_PROXIES[p] + encodeURIComponent(navUrl);
+        var resp = await fetch(proxyUrl, {
+          signal: AbortSignal.timeout(8000), cache: 'no-store'
+        });
+        if (!resp.ok) continue;
+        var data = await resp.json();
+        if (data && data.status === 'SUCCESS' && data.data && data.data.length > 0) {
+          var nav = parseFloat(data.data[0].nav);
+          if (nav > 0) { inv.currentNAV = nav; updated++; fetched = true; }
+        }
+      } catch(e) { continue; }
+    }
+    await new Promise(function(resolve) { setTimeout(resolve, 200); });
+  }
+  if (updated > 0) {
+    mfNavLastFetched = Date.now();
+    saveS(); renderAll();
+    toast('\u2705 NAV updated for ' + updated + ' fund' + (updated > 1 ? 's' : ''));
+  }
+}
+
 async function boot(){
   try{await openDB()}catch(e){DB=null}
   var data=null;
@@ -2199,6 +2320,19 @@ function buildAddFields(){var t=INV_TYPES.find(function(x){return x.id===selecte
   h+='<div class="fr"><div class="fg"><label>Platform</label><select class="inp" id="add-platform"><option value="">Select</option>'+(t.id==='Crypto'?CRYPTO_EXCHANGES:t.id==='FD'||t.id==='RD'||t.id==='PPF'?BANKS:PLATFORMS).map(function(p){return '<option>'+p+'</option>'}).join('')+'</select></div><div class="fg"><label>Started</label><input class="inp" id="add-started" type="date"></div></div>';
   h+='<div class="fg"><label>Current (₹)</label><input class="inp" id="add-current" type="number"></div>';
   if(t.id==='Stocks')h+='<div class="fg"><label>NSE Symbol</label><div style="display:flex;gap:5px"><input class="inp" id="add-symbol" placeholder="e.g. NIFTYBEES" style="flex:1" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn-sm" onclick="testSymbol(\'add-symbol\',\'add-sym-result\')">🔍</button></div><div id="add-sym-result" style="font-size:9px;margin-top:3px"></div></div><div class="fg"><label>Sector</label><select class="inp" id="add-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div></div>';
+  if(t.id==='Gold'){
+    h+='<div class="fr"><div class="fg">'
+      +'<label>Weight (grams) '
+      +'<span style="font-size:9px;color:var(--txt2);font-weight:400">optional — enables auto price</span></label>'
+      +'<input class="inp" id="add-gold-grams" type="number" step="0.01" min="0" placeholder="e.g. 10.5"></div>'
+      +'<div class="fg"><label>Purity</label>'
+      +'<select class="inp" id="add-gold-purity">'
+      +'<option value="24">24K (999 / Pure)</option>'
+      +'<option value="22" selected>22K (916 / Hallmark)</option>'
+      +'<option value="18">18K (750 / Jewellery)</option>'
+      +'<option value="0">SGB / ETF (no purity)</option>'
+      +'</select></div></div>';
+  }
   if(t.hasMonthly){h+='<div class="fr"><div class="fg"><label>Monthly</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due</label><select class="inp" id="add-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'">'+ordinal(d)+'</option>';h+='</select></div></div><div class="fr"><div class="fg"><label>Step-Up %</label><input class="inp" id="add-stepup" type="number" value="10"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="12"></div></div>'}
   else h+='<div class="fr"><div class="fg"><label>Invested</label><input class="inp" id="add-invested" type="number"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="8"></div></div>';
   if(t.hasFD)h+='<div class="fr"><div class="fg"><label>Maturity</label><input class="inp" id="add-maturity" type="date"></div><div class="fg"><label>Rate %</label><input class="inp" id="add-fdrate" type="number" placeholder="7.5"></div></div>';
@@ -2443,7 +2577,9 @@ function resetPendingLots(){pendingLots=[];var el=document.getElementById('lots-
 function editAddLot(){var inv=S.investments.find(function(i){return i.id===editingId;});if(!inv)return;var date=document.getElementById('edit-lot-date')?document.getElementById('edit-lot-date').value:'';var qty=parseFloat(document.getElementById('edit-lot-qty')?document.getElementById('edit-lot-qty').value:0)||0;var price=parseFloat(document.getElementById('edit-lot-price')?document.getElementById('edit-lot-price').value:0)||0;if(!date||!qty||!price){var msg=document.getElementById('edit-lot-msg');if(msg)msg.innerHTML='<span style="color:var(--d)">Fill all fields</span>';return;}if(!inv.lots)inv.lots=[];inv.lots.push({id:uid(),date:date,qty:qty,price:price});inv.lots.sort(function(a,b){return new Date(a.date)-new Date(b.date);});syncInvFromLots(inv);saveS().then(function(){openEditInv(editingId);fireNotif('✅','Lot added','');});}
 function editRemoveLot(invId,lotId){var inv=S.investments.find(function(i){return i.id===invId;});if(!inv||!inv.lots)return;if(!confirm('Remove this lot?'))return;inv.lots=inv.lots.filter(function(l){return l.id!==lotId;});syncInvFromLots(inv);saveS().then(function(){openEditInv(invId);fireNotif('✅','Lot removed','');});}
 function addInvestment(){var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var name=document.getElementById('add-name').value.trim();if(!name){fireNotif('⚠️','Enter name','');return}var started=document.getElementById('add-started').value||'';var currentVal=parseFloat(document.getElementById('add-current').value)||0;var monthly=t.hasMonthly?(parseFloat(document.getElementById('add-monthly').value)||0):0;var dueDate=t.hasMonthly?(document.getElementById('add-due').value||'5'):'';var stepUp=t.hasMonthly?(parseFloat(document.getElementById('add-stepup').value)||0):0;var returnRate=parseFloat(document.getElementById('add-return').value)||0;var invested=t.hasMonthly?currentVal:(parseFloat(document.getElementById('add-invested').value)||currentVal);var platform=document.getElementById('add-platform').value||'';var maturityDate=document.getElementById('add-maturity')?document.getElementById('add-maturity').value:'';var fdRate=document.getElementById('add-fdrate')?parseFloat(document.getElementById('add-fdrate').value)||returnRate:returnRate;var qty=document.getElementById('add-qty')?parseFloat(document.getElementById('add-qty').value)||0:0;var avgPrice=document.getElementById('add-avgprice')?parseFloat(document.getElementById('add-avgprice').value)||0:0;var nseSymbol=document.getElementById('add-symbol')?document.getElementById('add-symbol').value:'';var sector=document.getElementById('add-sector')?document.getElementById('add-sector').value:'';if(t.id==='Stocks'&&!nseSymbol){var look=stockLookup(name);if(look){nseSymbol=look.sym;if(!sector)sector=look.sector}}
-  var inv={id:uid(),type:selectedInvType,label:name,platform:platform,bucket:t.bucket,invested:invested||currentVal,value:currentVal||invested,monthly:monthly,dueDate:dueDate,stepUp:stepUp,returnRate:t.hasFD?fdRate:returnRate,returns:0,owner:'self',started:started,maturityDate:maturityDate,qty:qty,avgPrice:avgPrice,nseSymbol:nseSymbol,sector:sector,livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:[],schemeCode:'',totalUnits:0,currentNAV:0,createdAt:Date.now()};
+  var goldGrams  =parseFloat(document.getElementById('add-gold-grams')&&document.getElementById('add-gold-grams').value)||0;
+  var goldPurity =parseInt(document.getElementById('add-gold-purity')&&document.getElementById('add-gold-purity').value)||22;
+  var inv={id:uid(),type:selectedInvType,label:name,platform:platform,bucket:t.bucket,invested:invested||currentVal,value:currentVal||invested,monthly:monthly,dueDate:dueDate,stepUp:stepUp,returnRate:t.hasFD?fdRate:returnRate,returns:0,owner:'self',started:started,maturityDate:maturityDate,qty:qty,avgPrice:avgPrice,nseSymbol:nseSymbol,sector:sector,livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:[],schemeCode:'',totalUnits:0,currentNAV:0,grams:goldGrams,goldPurity:goldPurity,createdAt:Date.now()};
   if(selectedInvType==='Stocks'){var allLots=pendingLots.slice();if(qty>0&&avgPrice>0)allLots.push({id:uid(),date:started||new Date().toISOString().slice(0,10),qty:qty,price:avgPrice});if(allLots.length>0){allLots.sort(function(a,b){return new Date(a.date)-new Date(b.date)});inv.lots=allLots;syncInvFromLots(inv);}resetPendingLots();}
   if(selectedInvType==='SIP'||selectedInvType==='ELSS'){var scEl=document.getElementById('add-scheme-code');var tuEl=document.getElementById('add-total-units');if(scEl&&scEl.value)inv.schemeCode=scEl.value;if(tuEl&&tuEl.value)inv.totalUnits=parseFloat(tuEl.value)||0;}
 
@@ -2569,6 +2705,8 @@ async function refreshAll(){
   if(typeof fetchIndices==='function') await fetchIndices();
   rMarketM();
   await fetchLivePrices();
+  fetchMFNavs();    // non-blocking
+  fetchGoldPrice(); // non-blocking
   checkAndProcessSIPs();
   rMarketCues();
   await fetchMarketNews();
@@ -2841,8 +2979,14 @@ function renderScreenerM(){
 
 function initApp(){
   applyTheme();renderAll();rMarketM();rBotPageM();generateAlerts();
-  var hasStocks=S.investments.some(function(i){return i.type==='Stocks'&&i.nseSymbol});
-  if(hasStocks&&(!priceLastFetched||Date.now()-priceLastFetched>30*60*1000))setTimeout(fetchLivePrices,2000);
+  var staleMs = AUTO_REFRESH_INTERVAL;
+  var isStale = !priceLastFetched || (Date.now() - priceLastFetched.getTime() > staleMs);
+  if (isStale) {
+    setTimeout(function() { refreshAll(); }, 1500);
+  } else {
+    setTimeout(function() { fetchMFNavs(); fetchGoldPrice(); }, 3000);
+  }
+  startAutoRefresh();
   fireNotif('👋','Welcome',S.user.name||'User');
 }
 
