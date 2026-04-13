@@ -4068,14 +4068,17 @@ function rDividends() {
   var stocksWithSymbols = S.investments.filter(function(i) {
     return i.type === 'Stocks' && i.nseSymbol;
   });
-  // stocksLoading: true only if fetch has never been attempted
-  // divCacheDate=0: never tried  divCacheDate=1: tried but proxy failed
-  // divCacheDate>1: successful fetch (real timestamp)
-  var stocksLoading = stocksWithSymbols.some(function(i) {
+  // divCacheDate=0: never tried → show "Loading..."
+  // divCacheDate=1: tried but all proxies failed → show "Unavailable" with retry
+  // divCacheDate>1: successful fetch (may have 0 dividends — that's valid)
+  var stocksNeverTried = stocksWithSymbols.some(function(i) {
     return !i.divCacheDate && (i.divCache||[]).length === 0;
   });
+  var stocksFailedProxy = !stocksNeverTried && stocksWithSymbols.some(function(i) {
+    return i.divCacheDate === 1 && (i.divCache||[]).length === 0;
+  });
 
-  if (!divs.length && stockDivTotal <= 0 && !stocksLoading) {
+  if (!divs.length && stockDivTotal <= 0 && !stocksNeverTried && !stocksFailedProxy) {
     el.innerHTML = ''; empty.style.display = 'block'; summary.innerHTML = ''; return;
   }
   empty.style.display = 'none';
@@ -4151,12 +4154,14 @@ function rDividends() {
   if (stockRows) {
     html += '<div class="cd" style="margin-bottom:12px">'
       + '<h3 style="font-size:13px">📊 From Your Holdings <span class="cd-badge">Auto</span></h3>'
-      + (stocksLoading ? '<p style="font-size:10px;color:var(--txt3)">🔄 Fetching dividend data...</p>' : '')
+      + (stocksNeverTried ? '<p style="font-size:10px;color:var(--txt3)">🔄 Fetching dividend data...</p>' : '')
       + '<div style="overflow-x:auto"><table class="div-tbl"><thead><tr>'
       + '<th>Stock</th><th>Payments</th><th>Last DPS</th><th>Last Ex-Date</th><th>Your Total</th>'
       + '</tr></thead><tbody>' + stockRows + '</tbody></table></div></div>';
-  } else if (stocksLoading) {
+  } else if (stocksNeverTried) {
     html += '<div class="cd"><p style="font-size:11px;color:var(--txt3);padding:8px">🔄 Loading dividend history for your stocks...</p></div>';
+  } else if (stocksFailedProxy) {
+    html += '<div class="cd"><p style="font-size:11px;color:var(--txt3);padding:8px">⚠️ Dividend data unavailable — proxy servers busy. <button class="btn-sm" onclick="S.investments.forEach(function(i){if(i.type===\'Stocks\')i.divCacheDate=0;});loadAllDividends();" style="margin-left:6px">🔄 Retry</button></p></div>';
   }
 
   // Manual entries
