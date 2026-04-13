@@ -647,6 +647,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="more-item" onclick="goMore('pg-screener')"><span class="mi-ic">🔍</span>Screener</div>
 <div class="more-item" onclick="goMore('pg-family')"><span class="mi-ic">👨‍👩‍👧‍👦</span>Family</div>
 <div class="more-item" onclick="goMore('pg-security')"><span class="mi-ic">🔒</span>Security</div>
+<div class="more-item" onclick="goMore('pg-import')"><span class="mi-ic">📥</span>Import</div>
 <div class="more-item" onclick="goMore('pg-about')"><span class="mi-ic">💎</span>About</div>
 <div class="more-item" id="install-btn" onclick="installApp()" style="display:none"><span class="mi-ic">📲</span>Install App</div>
 </div>
@@ -862,6 +863,62 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="chat-input-wrap-m"><input class="chat-input-m" id="chat-input-m" placeholder="Ask..." onkeydown="if(event.key==='Enter')chatSendM()"><button class="voice-btn" id="chat-voice-btn-m" onclick="toggleVoiceChat()">🎤</button><button class="chat-send-m" onclick="chatSendM()">➤</button></div>
 </div>
 
+
+<!-- ===== IMPORT DATA ===== -->
+<div class="pg" id="pg-import">
+<button class="btn-sm" onclick="goNav('more')" style="margin-bottom:10px">← Back</button>
+<div class="cd">
+  <h3>📥 Import Data <span class="cd-badge">CSV</span></h3>
+  <p class="m-sub">Import holdings from your broker. Existing investments are never modified.</p>
+  <div class="disclaimer-bar">⚠️ Review the preview before importing.</div>
+  <div class="pills" id="import-tabs-m" style="margin-bottom:12px">
+    <button class="pill on" onclick="switchImportTabM(this,'stocks')">📊 Stocks</button>
+    <button class="pill" onclick="switchImportTabM(this,'mf')">📈 MFs</button>
+    <button class="pill" onclick="switchImportTabM(this,'crypto')">🪙 Crypto</button>
+  </div>
+  <div id="import-tab-m-stocks">
+    <p style="font-size:11px;color:var(--txt2);margin-bottom:8px">Zerodha · Groww · Angel One · Dhan · Upstox · ICICI Direct · HDFC Securities · 5Paisa · Motilal Oswal</p>
+    <div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:10px;font-size:10px;color:var(--txt2)">
+      <b style="color:var(--txt)">How to export:</b><br>
+      Zerodha: Console → Portfolio → Holdings → Download ↓<br>
+      Groww: Stocks → Portfolio → Export
+    </div>
+    <label class="btn-proc" style="display:block;text-align:center;cursor:pointer">
+      📂 Choose CSV File
+      <input type="file" accept=".csv,.txt" id="import-stocks-file-m" style="display:none" onchange="handleStocksCSVm(this)">
+    </label>
+    <div id="import-stocks-preview-m" style="display:none;margin-top:10px">
+      <div id="import-stocks-info-m" style="font-size:11px;color:var(--txt2);margin-bottom:6px"></div>
+      <div id="import-stocks-list-m" style="margin-bottom:10px"></div>
+      <button class="btn-proc" id="import-stocks-btn-m" onclick="confirmImportStocksM()">💾 Import Holdings</button>
+      <button class="btn-cancel" style="width:100%;margin-top:6px;padding:10px" onclick="resetImportStocksM()">Cancel</button>
+    </div>
+    <div id="import-stocks-result-m" style="display:none;margin-top:8px"></div>
+  </div>
+  <div id="import-tab-m-mf" style="display:none">
+    <p style="font-size:11px;color:var(--txt2);margin-bottom:8px">Kuvera &amp; Groww Mutual Funds CSV supported.</p>
+    <div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:10px;font-size:10px;color:var(--txt2)">
+      <b style="color:var(--txt)">How to export:</b><br>
+      Kuvera: Portfolio → Export → Download CSV<br>
+      Groww: Mutual Funds → Portfolio → Export
+    </div>
+    <label class="btn-proc" style="display:block;text-align:center;cursor:pointer">
+      📂 Choose CSV File
+      <input type="file" accept=".csv,.txt" id="import-mf-file-m" style="display:none" onchange="handleMFCSVm(this)">
+    </label>
+    <div id="import-mf-preview-m" style="display:none;margin-top:10px">
+      <div id="import-mf-info-m" style="font-size:11px;color:var(--txt2);margin-bottom:6px"></div>
+      <div id="import-mf-list-m" style="margin-bottom:10px"></div>
+      <button class="btn-proc" id="import-mf-btn-m" onclick="confirmImportMFm()">💾 Import Funds</button>
+      <button class="btn-cancel" style="width:100%;margin-top:6px;padding:10px" onclick="resetImportMFm()">Cancel</button>
+    </div>
+    <div id="import-mf-result-m" style="display:none;margin-top:8px"></div>
+  </div>
+  <div id="import-tab-m-crypto" style="display:none">
+    <div class="empty-state"><div class="es-ic">🪙</div><h3>Coming Soon</h3><p>Crypto CSV import coming soon.</p></div>
+  </div>
+</div>
+</div>
 <!-- === END MOBILE PART M2 of 5 — All HTML Complete === -->
 
 
@@ -2099,6 +2156,74 @@ async function fetchMFNavs() {
     toast('\u2705 NAV updated for ' + updated + ' fund' + (updated > 1 ? 's' : ''));
   }
 }
+
+
+// ─── CSV shared parsers (used by mobile import) ───────────────────────────────
+function parseCSVLine(line){var result=[],cur='',inQ=false;for(var i=0;i<line.length;i++){var ch=line[i];if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){result.push(cur.trim());cur='';}else{cur+=ch;}}result.push(cur.trim());return result;}
+function cleanNum(s){if(!s)return 0;return parseFloat(String(s).replace(/[^\d.\-]/g,''))||0;}
+function detectBroker(headers){var h=headers.map(function(x){return x.toLowerCase().replace(/[^a-z0-9]/g,'');});if(h.some(function(x){return x==='instrument';})&&h.some(function(x){return x==='qty';}))return 'zerodha-stocks';if(h.some(function(x){return x==='symbol';})&&h.some(function(x){return x==='isin';}))return 'angelone-stocks';if(h.some(function(x){return x==='symbol';})&&h.some(function(x){return x==='buyavgprice';}))return 'dhan-stocks';if(h.some(function(x){return x==='symbol';})&&h.some(function(x){return x==='averagebuyprice';}))return 'upstox-stocks';if(h.some(function(x){return x==='symbol';})&&h.some(function(x){return x==='averageprice';}))return 'groww-stocks';if(h.some(function(x){return x==='scripname';})&&h.some(function(x){return x==='purchaserate';}))return 'icici-stocks';if(h.some(function(x){return x==='scriptname';})&&h.some(function(x){return x==='avgcostprice';}))return 'hdfc-stocks';if(h.some(function(x){return x==='stockname';})&&h.some(function(x){return x==='avgprice';}))return '5paisa-stocks';if(h.some(function(x){return x==='scriptname';})&&h.some(function(x){return x==='avgcost';}))return 'motilal-stocks';if(h.some(function(x){return x==='symbol';})&&h.some(function(x){return x==='quantity'||x==='qty';}))return 'generic-stocks';if(h.some(function(x){return x.indexOf('schemename')!==-1||x.indexOf('fundname')!==-1;})&&h.some(function(x){return x==='units';})&&h.some(function(x){return x.indexOf('nav')!==-1;}))return 'kuvera-mf';if(h.some(function(x){return x.indexOf('scheme')!==-1;})&&h.some(function(x){return x==='units';}))return 'groww-mf';return null;}
+function parseStocksCSV(text){
+  var lines=text.trim().split('\n').filter(function(l){return l.trim();});
+  if(lines.length<2)return{err:'File appears empty or invalid.'};
+  var headers=parseCSVLine(lines[0]);
+  var broker=detectBroker(headers);
+  if(!broker||broker.indexOf('stocks')===-1)return{err:'Not recognised as a stocks CSV. Supported: Zerodha, Groww, Angel One, Dhan, Upstox, ICICI Direct, HDFC Securities, 5Paisa, Motilal Oswal.'};
+  var hL=headers.map(function(h){return h.toLowerCase().replace(/[^a-z0-9]/g,'');});
+  function col(names){for(var i=0;i<names.length;i++){var idx=hL.indexOf(names[i]);if(idx!==-1)return idx;}return -1;}
+  var symC  = col(['instrument','symbol','tradingsymbol','scripname','scriptname','stockname']);
+  var nameC = col(['companyname','name','stockname','scripname','scriptname']);
+  var qtyC  = col(['qty','quantity','qtyowned','holdingqty']);
+  var avgC  = col(['avgcost','averageprice','avgprice','averagecost','avgbuyprice','averagebuyprice','buyavgprice','purchaserate','avgcostprice']);
+  var ltpC  = col(['ltp','currentprice','lastprice','cmp','marketprice','marketrate']);
+  var valC  = col(['curval','currentvalue','portfoliovalue','currentval','marketvalue']);
+  if(symC===-1||qtyC===-1)return{err:'Missing required columns. Check file format.'};
+  var existing=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol;}).map(function(i){return i.nseSymbol.toUpperCase();});
+  var results=[];
+  for(var i=1;i<lines.length;i++){
+    var row=parseCSVLine(lines[i]);
+    if(row.length<2)continue;
+    var rawVal=(row[symC]||'').trim();
+    var qty=cleanNum(row[qtyC]);
+    if(!rawVal||qty<=0)continue;
+    // Try direct symbol lookup first
+    var rawUp=rawVal.toUpperCase().replace(/\s/g,'');
+    var db=STOCK_DB.find(function(s){return s.sym===rawUp;});
+    // If not found as symbol, try as company name (ICICI, HDFC, 5Paisa, Motilal)
+    if(!db){
+      var nameLow=rawVal.toLowerCase();
+      db=STOCK_DB.find(function(s){return s.name.toLowerCase()===nameLow;});
+    }
+    // Also try nameC column if available
+    if(!db&&nameC!==-1&&row[nameC]){
+      var n2=(row[nameC]||'').trim().toLowerCase();
+      db=STOCK_DB.find(function(s){return s.name.toLowerCase()===n2;});
+    }
+    var sym=db?db.sym:rawUp;
+    var avgP=avgC!==-1?cleanNum(row[avgC]):0;
+    var ltp =ltpC!==-1?cleanNum(row[ltpC]):0;
+    var curV=valC!==-1?cleanNum(row[valC]):(ltp*qty||avgP*qty);
+    results.push({
+      sym:sym, name:db?db.name:rawVal,
+      qty:qty, avgPrice:avgP, ltp:ltp, curVal:curV,
+      invested:avgP*qty, sector:db?db.sector:'Others',
+      isDupe:existing.indexOf(sym)!==-1
+    });
+  }
+  if(!results.length)return{err:'No valid rows found in file.'};
+  return{broker:broker,results:results};
+}
+function parseMFCSV(text){var lines=text.trim().split('\n').filter(function(l){return l.trim();});if(lines.length<2)return{err:'File appears empty or invalid.'};var headers=parseCSVLine(lines[0]);var broker=detectBroker(headers);if(!broker||broker.indexOf('mf')===-1)return{err:'Not recognised as a mutual fund CSV. Supported: Kuvera, Groww MF.'};var hL=headers.map(function(h){return h.toLowerCase().replace(/[^a-z0-9]/g,'');});function col(names){for(var i=0;i<names.length;i++){var idx=hL.indexOf(names[i]);if(idx!==-1)return idx;}return -1;}var nameC=col(['fundname','schemename','mutualfundname','name']),unitsC=col(['units','quantity','totalunits']),avgNC=col(['averagenav','avgcost','averagecost','purchasenav','avgbuyprice']),curNC=col(['currentnav','nav','latestnav','currentprice']),curVC=col(['currentvalue','curval','portfoliovalue']),invC=col(['investedamount','investedvalue','invested','purchasevalue','purchaseamount']);if(nameC===-1||unitsC===-1)return{err:'Missing required columns (Fund Name, Units).'};var existing=S.investments.filter(function(i){return i.type==='SIP'||i.type==='ELSS';}).map(function(i){return i.label.toLowerCase();});var results=[];for(var i=1;i<lines.length;i++){var row=parseCSVLine(lines[i]);if(row.length<2)continue;var name=(row[nameC]||'').trim(),units=cleanNum(row[unitsC]);if(!name||units<=0)continue;var avgN=avgNC!==-1?cleanNum(row[avgNC]):0,curN=curNC!==-1?cleanNum(row[curNC]):0,curV=curVC!==-1?cleanNum(row[curVC]):(curN*units),inv=invC!==-1?cleanNum(row[invC]):(avgN*units);results.push({name:name,units:units,avgNav:avgN,curNav:curN,curVal:curV,invested:inv,isDupe:existing.indexOf(name.toLowerCase())!==-1});}if(!results.length)return{err:'No valid rows found.'};return{broker:broker,results:results};}
+
+
+// ─── Mobile Import ─────────────────────────────────────────────────────────
+var _impStocksM=[],_impMFM=[];
+function switchImportTabM(btn,tab){document.querySelectorAll('#import-tabs-m .pill').forEach(function(p){p.classList.remove('on');});btn.classList.add('on');['stocks','mf','crypto'].forEach(function(t){var el=document.getElementById('import-tab-m-'+t);if(el)el.style.display=(t===tab)?'':'none';});}
+function handleStocksCSVm(input){var file=input.files[0];if(!file)return;var r=new FileReader();r.onload=function(e){var parsed=parseStocksCSV(e.target.result);if(parsed.err){var res=document.getElementById('import-stocks-result-m');res.style.display='';res.innerHTML='<div style="color:var(--d);background:var(--dbg);padding:8px;border-radius:8px;font-size:11px">❌ '+parsed.err+'</div>';return;}_impStocksM=parsed.results;var newC=parsed.results.filter(function(r){return !r.isDupe;}).length,dupC=parsed.results.filter(function(r){return r.isDupe;}).length;document.getElementById('import-stocks-info-m').innerHTML='<b>'+parsed.results.length+'</b> rows · <span style="color:var(--g)">'+newC+' new</span>'+(dupC?' · <span style="color:var(--w)">'+dupC+' skip</span>':'');document.getElementById('import-stocks-list-m').innerHTML=parsed.results.slice(0,25).map(function(r){return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:11px;opacity:'+(r.isDupe?'.5':'1')+'"><span><b>'+r.sym+'</b> · '+r.qty+' @ ₹'+(r.avgPrice?r.avgPrice.toFixed(2):'?')+'</span><span style="color:'+(r.isDupe?'var(--w)':'var(--g)')+'">'+( r.isDupe?'Skip':'New')+'</span></div>';}).join('');document.getElementById('import-stocks-btn-m').disabled=(newC===0);document.getElementById('import-stocks-preview-m').style.display='';document.getElementById('import-stocks-result-m').style.display='none';};r.readAsText(file);input.value='';}
+function confirmImportStocksM(){var toImport=_impStocksM.filter(function(r){return !r.isDupe;});if(!toImport.length){fireNotif('⚠️','Nothing to import','All holdings already exist');return;}toImport.forEach(function(r){S.investments.push({id:uid(),type:'Stocks',label:r.name,platform:'Imported',bucket:'Equity',invested:r.invested||0,value:r.curVal||r.ltp*r.qty||r.avgPrice*r.qty||0,monthly:0,dueDate:'',stepUp:0,stepUpFrom:0,returnRate:0,returns:0,owner:'self',started:'',maturityDate:'',qty:r.qty,avgPrice:r.avgPrice,nseSymbol:r.sym,sector:r.sector,livePrice:r.ltp||null,liveValue:r.ltp?r.ltp*r.qty:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:r.avgPrice>0?[{id:uid(),date:new Date().toISOString().slice(0,10),qty:r.qty,price:r.avgPrice}]:[],schemeCode:'',totalUnits:0,currentNAV:0,grams:0,goldPurity:22,createdAt:Date.now()});});saveS().then(function(){renderAll();document.getElementById('import-stocks-result-m').style.display='';document.getElementById('import-stocks-result-m').innerHTML='<div style="color:var(--g);background:var(--gbg);padding:10px;border-radius:8px;font-size:12px;font-weight:600">✅ Imported '+toImport.length+' stock'+(toImport.length>1?'s':'')+' successfully!</div>';document.getElementById('import-stocks-preview-m').style.display='none';_impStocksM=[];fireNotif('✅','Imported',toImport.length+' stocks added');});}
+function resetImportStocksM(){_impStocksM=[];document.getElementById('import-stocks-preview-m').style.display='none';document.getElementById('import-stocks-result-m').style.display='none';}
+function handleMFCSVm(input){var file=input.files[0];if(!file)return;var r=new FileReader();r.onload=function(e){var parsed=parseMFCSV(e.target.result);if(parsed.err){var res=document.getElementById('import-mf-result-m');res.style.display='';res.innerHTML='<div style="color:var(--d);background:var(--dbg);padding:8px;border-radius:8px;font-size:11px">❌ '+parsed.err+'</div>';return;}_impMFM=parsed.results;var newC=parsed.results.filter(function(r){return !r.isDupe;}).length,dupC=parsed.results.filter(function(r){return r.isDupe;}).length;document.getElementById('import-mf-info-m').innerHTML='<b>'+parsed.results.length+'</b> rows · <span style="color:var(--g)">'+newC+' new</span>'+(dupC?' · <span style="color:var(--w)">'+dupC+' skip</span>':'');document.getElementById('import-mf-list-m').innerHTML=parsed.results.slice(0,25).map(function(r){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:11px;opacity:'+(r.isDupe?'.5':'1')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">'+r.name.substring(0,35)+'</span><span style="flex-shrink:0;color:'+(r.isDupe?'var(--w)':'var(--g)')+'">'+( r.isDupe?'Skip':'New')+'</span></div>';}).join('');document.getElementById('import-mf-btn-m').disabled=(newC===0);document.getElementById('import-mf-preview-m').style.display='';document.getElementById('import-mf-result-m').style.display='none';};r.readAsText(file);input.value='';}
+function confirmImportMFm(){var toImport=_impMFM.filter(function(r){return !r.isDupe;});if(!toImport.length){fireNotif('⚠️','Nothing to import','All funds already exist');return;}toImport.forEach(function(r){S.investments.push({id:uid(),type:'SIP',label:r.name,platform:'Imported',bucket:'Equity',invested:r.invested||0,value:r.curVal||0,monthly:0,dueDate:'',stepUp:0,stepUpFrom:0,returnRate:0,returns:0,owner:'self',started:'',maturityDate:'',qty:0,avgPrice:0,nseSymbol:'',sector:'',livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:[],schemeCode:'',totalUnits:r.units,currentNAV:r.curNav||0,grams:0,goldPurity:22,createdAt:Date.now()});});saveS().then(function(){renderAll();document.getElementById('import-mf-result-m').style.display='';document.getElementById('import-mf-result-m').innerHTML='<div style="color:var(--g);background:var(--gbg);padding:10px;border-radius:8px;font-size:12px;font-weight:600">✅ Imported '+toImport.length+' fund'+(toImport.length>1?'s':'')+' successfully!</div>';document.getElementById('import-mf-preview-m').style.display='none';_impMFM=[];fireNotif('✅','Imported',toImport.length+' funds added');});}
+function resetImportMFm(){_impMFM=[];document.getElementById('import-mf-preview-m').style.display='none';document.getElementById('import-mf-result-m').style.display='none';}
 
 async function boot(){
   try{await openDB()}catch(e){DB=null}
