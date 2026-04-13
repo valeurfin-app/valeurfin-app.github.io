@@ -2910,7 +2910,10 @@ function rDash(){
   var iScore=calcInsuranceScore();
 
   var h='';
-  h+='<div class="st hero"><div class="lbl">TOTAL NET WORTH'+(priceLastFetched?' <span class="live-badge up"><span class="live-dot"></span> LIVE</span>':'')+'</div><div class="val">'+(nw>0?fmtFull(nw):'₹0')+'</div>'+(nw>0?'<span class="sub '+(returns>=0?'up':'dn')+'">'+fS(returns)+' ('+pct(retPct)+')</span>':'<span class="sub info">Add investments</span>')+'</div>';
+  var viewingLabel='TOTAL NET WORTH';
+  if(currentMember==='self')viewingLabel=(S.user.name||'YOUR').toUpperCase()+'\'S NET WORTH';
+  else if(currentMember!=='all'){var _fm=S.family.find(function(f){return f.id===currentMember;});if(_fm)viewingLabel=_fm.name.toUpperCase()+'\'S NET WORTH';}
+  h+='<div class="st hero"><div class="lbl">'+viewingLabel+(priceLastFetched?' <span class="live-badge up"><span class="live-dot"></span> LIVE</span>':'')+'</div><div class="val">'+(nw>0?fmtFull(nw):'₹0')+'</div>'+(nw>0?'<span class="sub '+(returns>=0?'up':'dn')+'">'+fS(returns)+' ('+pct(retPct)+')</span>':'<span class="sub info">Add investments</span>')+'</div>';
   h+='<div class="st"><div class="lbl">MONTHLY SIP</div><div class="val">'+fmt(monthlySIP)+'</div><span class="sub info">'+inv.filter(function(i){return i.monthly>0}).length+' active</span></div>';
   h+='<div class="st"><div class="lbl">EXPENSES</div><div class="val">'+fmt(totalSpend)+'</div></div>';
   h+='<div class="st"><div class="lbl">SAVINGS RATE</div>';
