@@ -1637,7 +1637,38 @@ function invHasLots(inv){return inv.lots&&inv.lots.length>0;}
 function getInvQty(inv){if(invHasLots(inv))return inv.lots.reduce(function(s,l){return s+(l.qty||0)},0);return inv.qty||0;}
 function getInvInvested(inv){if(invHasLots(inv))return inv.lots.reduce(function(s,l){return s+(l.qty||0)*(l.price||0)},0);return inv.invested||0;}
 function getInvAvgPrice(inv){if(!invHasLots(inv))return inv.avgPrice||0;var q=getInvQty(inv);return q?getInvInvested(inv)/q:0;}
-function getInvValue(inv){if((inv.type==='SIP'||inv.type==='ELSS')&&inv.totalUnits&&inv.currentNAV)return inv.totalUnits*inv.currentNAV;if(invHasLots(inv)&&inv.livePrice)return getInvQty(inv)*inv.livePrice;return inv.liveValue||inv.value||0;}
+function getInvValue(inv){
+  // Path 1: MF/ELSS — units × NAV
+  if((inv.type==='SIP'||inv.type==='ELSS')&&inv.totalUnits&&inv.currentNAV)
+    return inv.totalUnits*inv.currentNAV;
+  // Path 2: Stocks/ETF — lots × live price
+  if(invHasLots(inv)&&inv.livePrice)return getInvQty(inv)*inv.livePrice;
+  // Path 3: FD/PPF — compound annual
+  if((inv.type==='FD'||inv.type==='PPF')&&inv.returnRate>0&&inv.started&&inv.invested>0){
+    var s3=new Date(inv.started).getTime();
+    if(!isNaN(s3)){
+      var e3=inv.maturityDate?Math.min(Date.now(),new Date(inv.maturityDate).getTime()):Date.now();
+      var y3=(e3-s3)/(1000*60*60*24*365.25);
+      if(y3>0)return Math.round(inv.invested*Math.pow(1+inv.returnRate/100,y3));
+    }
+  }
+  // Path 4: RD — each monthly deposit earns compound interest
+  if(inv.type==='RD'&&inv.returnRate>0&&inv.started&&inv.monthly>0){
+    var s4=new Date(inv.started).getTime();
+    if(!isNaN(s4)){
+      var e4=inv.maturityDate?Math.min(Date.now(),new Date(inv.maturityDate).getTime()):Date.now();
+      var mn4=Math.floor((e4-s4)/(1000*60*60*24*30.44));
+      if(mn4>0){var r4=inv.returnRate/100/12;var tot4=0;for(var n4=1;n4<=mn4;n4++)tot4+=inv.monthly*Math.pow(1+r4,mn4-n4+1);return Math.round(tot4);}
+    }
+  }
+  // Path 5: Gold — grams × live gold price
+  if(inv.type==='Gold'&&(inv.grams||0)>0&&typeof goldPriceData!=='undefined'&&goldPriceData){
+    var gp5=(inv.goldPurity||24)>=24?goldPriceData.price24k:(inv.goldPurity||24)>=22?goldPriceData.price22k:goldPriceData.price18k;
+    return Math.round(inv.grams*gp5);
+  }
+  // Fallback
+  return inv.liveValue||inv.value||0;
+}
 function getInvReturns(inv){return getInvValue(inv)-getInvInvested(inv);}
 function getInvXIRR(inv){var val=getInvValue(inv);var invested=getInvInvested(inv);if(!invested||invested<=0)return 0;if(invHasLots(inv)&&inv.lots.length>0)return calcLotsXIRR(inv.lots,val);if(inv.started){var months=(Date.now()-new Date(inv.started))/(1000*60*60*24*30.44);if(months<0.5)return 0;return(Math.pow(val/invested,12/months)-1)*100;}return(Math.pow(val/invested,12/Math.max(1,S.currentMonth))-1)*100;}
 function calcLotsXIRR(lots,currentValue){if(!lots||!lots.length)return 0;var cfs=lots.map(function(l){return{date:new Date(l.date),amount:-(l.qty*l.price)};});cfs.push({date:new Date(),amount:currentValue});cfs.sort(function(a,b){return a.date-b.date});var first=cfs[0].date;function npv(r){return cfs.reduce(function(s,cf){var y=(cf.date-first)/(365.25*24*3600*1000);return s+cf.amount/Math.pow(1+r,y)},0);}var rate=0.1;for(var i=0;i<100;i++){var f=npv(rate);var df=npv(rate+0.0001);var delta=(df-f)/0.0001;if(Math.abs(delta)<1e-10)break;rate=rate-f/delta;if(rate<-0.999)rate=-0.999;}if(isNaN(rate)||!isFinite(rate))return 0;return rate*100;}
@@ -1995,15 +2026,22 @@ function isMarketHours() {
 
 function startAutoRefresh() {
   stopAutoRefresh();
-  if (!isMarketHours()) return; // no-op outside market hours
+  // Watchdog: checks every 60s if market has opened, then switches to 5-min refresh
   _autoRefreshTimer = setInterval(function() {
-    if (document.visibilityState === 'hidden') return; // don't refresh in background
-    if (isMarketHours()) {
-      refreshAll();
-    } else {
-      stopAutoRefresh(); // market closed — stop timer
-    }
-  }, AUTO_REFRESH_INTERVAL);
+    if (document.visibilityState === 'hidden') return;
+    if (!isMarketHours()) return; // keep watching
+    // Market is open — switch to full 5-min refresh cycle
+    stopAutoRefresh();
+    refreshAll();
+    _autoRefreshTimer = setInterval(function() {
+      if (document.visibilityState === 'hidden') return;
+      if (isMarketHours()) {
+        refreshAll();
+      } else {
+        stopAutoRefresh();
+      }
+    }, AUTO_REFRESH_INTERVAL);
+  }, 60 * 1000);
 }
 
 function stopAutoRefresh() {
@@ -2592,16 +2630,40 @@ function renderAddForm(){var el=document.getElementById('add-sub-form');
 }
 function selectInvType(type){selectedInvType=type;renderAddForm()}
 function buildAddFields(){var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var form=document.getElementById('add-inv-fields');if(!form)return;
-  var h='<div class="fg"><label>Name</label><div style="position:relative"><input class="inp" id="add-name" placeholder="'+t.label+'"';
-  if(t.hasMF)h+=' oninput="searchMF(this.value)"';if(t.id==='Stocks')h+=' oninput="searchStock(this.value)"';
-  h+='><div class="dd" id="'+(t.hasMF?'mf-dd':'stock-dd')+'"></div></div></div>';
+  var ddId=t.hasMF?'mf-dd':(t.id==='Stocks'?'stock-dd':'no-dd');
+  var h='<div class="fg"><label>'+(t.hasMF?'Fund Name':'Name')+'</label><div style="position:relative"><input class="inp" id="add-name" placeholder="'+(t.hasMF?'Search fund...':t.label+' name')+'"';
+  if(t.hasMF)h+=' oninput="searchMF(this.value)" autocomplete="off"';
+  if(t.id==='Stocks')h+=' oninput="searchStock(this.value)" autocomplete="off"';
+  h+='><div class="dd" id="'+ddId+'"></div></div></div>';
   h+='<div class="fr"><div class="fg"><label>Platform</label><select class="inp" id="add-platform"><option value="">Select</option>'+(t.id==='Crypto'?CRYPTO_EXCHANGES:t.id==='FD'||t.id==='RD'||t.id==='PPF'?BANKS:PLATFORMS).map(function(p){return '<option>'+p+'</option>'}).join('')+'</select></div><div class="fg"><label>Started</label><input class="inp" id="add-started" type="date"></div></div>';
-  h+='<div class="fg"><label>Current (₹)</label><input class="inp" id="add-current" type="number"></div>';
-  if(t.id==='Stocks')h+='<div class="fg"><label>NSE Symbol</label><div style="display:flex;gap:5px"><input class="inp" id="add-symbol" placeholder="e.g. NIFTYBEES" style="flex:1" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn-sm" onclick="testSymbol(\'add-symbol\',\'add-sym-result\')">🔍</button></div><div id="add-sym-result" style="font-size:9px;margin-top:3px"></div></div><div class="fg"><label>Sector</label><select class="inp" id="add-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div></div>';
-  if(t.hasMonthly){h+='<div class="fr"><div class="fg"><label>Monthly</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due</label><select class="inp" id="add-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'">'+ordinal(d)+'</option>';h+='</select></div></div><div class="fr"><div class="fg"><label>Step-Up %</label><input class="inp" id="add-stepup" type="number" value="10"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="12"></div></div>'}
-  else h+='<div class="fr"><div class="fg"><label>Invested</label><input class="inp" id="add-invested" type="number"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="8"></div></div>';
-  if(t.hasFD)h+='<div class="fr"><div class="fg"><label>Maturity</label><input class="inp" id="add-maturity" type="date"></div><div class="fg"><label>Rate %</label><input class="inp" id="add-fdrate" type="number" placeholder="7.5"></div></div>';
-  if(t.id==='Stocks')h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="add-qty" type="number"></div><div class="fg"><label>Avg Price</label><input class="inp" id="add-avgprice" type="number"></div></div>';
+  h+='<div class="fg"><label>Current Value (₹)</label><input class="inp" id="add-current" type="number" placeholder="₹"></div>';
+  // --- Stocks-specific: Symbol + Sector ---
+  if(t.id==='Stocks'){
+    h+='<div class="fg"><label>NSE Symbol</label><div style="display:flex;gap:5px"><input class="inp" id="add-symbol" placeholder="e.g. NIFTYBEES" style="flex:1" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn-sm" onclick="testSymbol(\'add-symbol\',\'add-sym-result\')">🔍</button></div><div id="add-sym-result" style="font-size:9px;margin-top:3px"></div></div>';
+    h+='<div class="fg"><label>Sector</label><select class="inp" id="add-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div>';
+  }
+  // --- Owner (all types, family mode) ---
+  if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
+  // --- Gold-specific: Grams + Purity ---
+  if(t.id==='Gold'){
+    h+='<div class="fr"><div class="fg"><label>Weight (grams)</label><input class="inp" id="add-gold-grams" type="number" step="0.01" min="0" placeholder="e.g. 10.5"></div>';
+    h+='<div class="fg"><label>Purity</label><select class="inp" id="add-gold-purity"><option value="24">24K</option><option value="22" selected>22K</option><option value="18">18K</option><option value="0">SGB/ETF</option></select></div></div>';
+  }
+  // --- Monthly types (SIP, ELSS, RD, PPF, NPS) ---
+  if(t.hasMonthly){
+    if(t.hasMF){h+='<div class="fr"><div class="fg"><label>Total Units</label><input class="inp" id="add-total-units" type="number" step="0.001" placeholder="e.g. 2456.789"></div><div class="fg"><label>Scheme Code</label><input class="inp" id="add-scheme-code" placeholder="auto-filled" readonly></div></div>';}
+    h+='<div class="fr"><div class="fg"><label>Monthly SIP (₹)</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'">'+ordinal(d)+'</option>';h+='</select></div></div>';
+    h+='<div class="fr"><div class="fg"><label>Annual Step-Up</label><select class="inp" id="add-stepup" onchange="var w=document.getElementById(\'stepup-custom-wrap-m\');if(w)w.style.display=this.value===\'custom\'?\'\':\'none\';"><option value="0">No Step-Up</option><option value="5">5%/yr</option><option value="10">10%/yr</option><option value="15">15%/yr</option><option value="20">20%/yr</option><option value="custom">Custom</option></select></div><div class="fg" id="stepup-custom-wrap-m" style="display:none"><label>Custom %</label><input class="inp" id="add-stepup-custom" type="number" step="1" min="1" placeholder="e.g. 12"></div></div>';
+    h+='<div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div>';
+  }
+  // --- Stocks-specific: Qty + Price ---
+  if(t.id==='Stocks'){
+    h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="add-qty" type="number" placeholder="e.g. 10"></div><div class="fg"><label>Buy Price (₹)</label><input class="inp" id="add-avgprice" type="number" placeholder="e.g. 1650"></div></div>';
+  } else if(!t.hasMonthly){
+    h+='<div class="fr"><div class="fg"><label>Invested (₹)</label><input class="inp" id="add-invested" type="number"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="8"></div></div>';
+  }
+  // --- FD/RD-specific ---
+  if(t.hasFD)h+='<div class="fr"><div class="fg"><label>Maturity</label><input class="inp" id="add-maturity" type="date"></div><div class="fg"><label>Interest %</label><input class="inp" id="add-fdrate" type="number" placeholder="7.5"></div></div>';
   form.innerHTML=h;
 }
 // MF Search — CORS-proxied, debounced, local fallback database
@@ -2841,8 +2903,17 @@ function renderPendingLots(){var el=document.getElementById('lots-list');if(!el)
 function resetPendingLots(){pendingLots=[];var el=document.getElementById('lots-list');if(el)el.innerHTML='';}
 function editAddLot(){var inv=S.investments.find(function(i){return i.id===editingId;});if(!inv)return;var date=document.getElementById('edit-lot-date')?document.getElementById('edit-lot-date').value:'';var qty=parseFloat(document.getElementById('edit-lot-qty')?document.getElementById('edit-lot-qty').value:0)||0;var price=parseFloat(document.getElementById('edit-lot-price')?document.getElementById('edit-lot-price').value:0)||0;if(!date||!qty||!price){var msg=document.getElementById('edit-lot-msg');if(msg)msg.innerHTML='<span style="color:var(--d)">Fill all fields</span>';return;}if(!inv.lots)inv.lots=[];inv.lots.push({id:uid(),date:date,qty:qty,price:price});inv.lots.sort(function(a,b){return new Date(a.date)-new Date(b.date);});syncInvFromLots(inv);saveS().then(function(){openEditInv(editingId);fireNotif('✅','Lot added','');});}
 function editRemoveLot(invId,lotId){var inv=S.investments.find(function(i){return i.id===invId;});if(!inv||!inv.lots)return;if(!confirm('Remove this lot?'))return;inv.lots=inv.lots.filter(function(l){return l.id!==lotId;});syncInvFromLots(inv);saveS().then(function(){openEditInv(invId);fireNotif('✅','Lot removed','');});}
-function addInvestment(){var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var name=document.getElementById('add-name').value.trim();if(!name){fireNotif('⚠️','Enter name','');return}var started=document.getElementById('add-started').value||'';var currentVal=parseFloat(document.getElementById('add-current').value)||0;var monthly=t.hasMonthly?(parseFloat(document.getElementById('add-monthly').value)||0):0;var dueDate=t.hasMonthly?(document.getElementById('add-due').value||'5'):'';var stepUp=t.hasMonthly?(parseFloat(document.getElementById('add-stepup').value)||0):0;var returnRate=parseFloat(document.getElementById('add-return').value)||0;var invested=t.hasMonthly?currentVal:(parseFloat(document.getElementById('add-invested').value)||currentVal);var platform=document.getElementById('add-platform').value||'';var maturityDate=document.getElementById('add-maturity')?document.getElementById('add-maturity').value:'';var fdRate=document.getElementById('add-fdrate')?parseFloat(document.getElementById('add-fdrate').value)||returnRate:returnRate;var qty=document.getElementById('add-qty')?parseFloat(document.getElementById('add-qty').value)||0:0;var avgPrice=document.getElementById('add-avgprice')?parseFloat(document.getElementById('add-avgprice').value)||0:0;var nseSymbol=document.getElementById('add-symbol')?document.getElementById('add-symbol').value:'';var sector=document.getElementById('add-sector')?document.getElementById('add-sector').value:'';if(t.id==='Stocks'&&!nseSymbol){var look=stockLookup(name);if(look){nseSymbol=look.sym;if(!sector)sector=look.sector}}
-  var inv={id:uid(),type:selectedInvType,label:name,platform:platform,bucket:t.bucket,invested:invested||currentVal,value:currentVal||invested,monthly:monthly,dueDate:dueDate,stepUp:stepUp,returnRate:t.hasFD?fdRate:returnRate,returns:0,owner:'self',started:started,maturityDate:maturityDate,qty:qty,avgPrice:avgPrice,nseSymbol:nseSymbol,sector:sector,livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:[],schemeCode:'',totalUnits:0,currentNAV:0,createdAt:Date.now()};
+function addInvestment(){var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var name=document.getElementById('add-name').value.trim();if(!name){fireNotif('⚠️','Enter name','');return}var started=document.getElementById('add-started').value||'';var currentVal=parseFloat(document.getElementById('add-current').value)||0;var monthly=t.hasMonthly?(parseFloat(document.getElementById('add-monthly').value)||0):0;var dueDate=t.hasMonthly?(document.getElementById('add-due').value||'5'):'';
+  var stepUpEl=document.getElementById('add-stepup');
+  var stepUpRaw=stepUpEl?stepUpEl.value:'0';
+  var stepUp=t.hasMonthly?(stepUpRaw==='custom'?(parseFloat(document.getElementById('add-stepup-custom')?document.getElementById('add-stepup-custom').value:0)||0):parseFloat(stepUpRaw)||0):0;
+  var stepUpFrom=t.hasMonthly?(parseInt(document.getElementById('add-stepup-from')?document.getElementById('add-stepup-from').value:0)||0):0;
+  var returnRate=parseFloat(document.getElementById('add-return')?document.getElementById('add-return').value:0)||0;var invested=t.hasMonthly?currentVal:(parseFloat(document.getElementById('add-invested')?document.getElementById('add-invested').value:0)||currentVal);if(!invested&&currentVal)invested=currentVal;var platform=document.getElementById('add-platform').value||'';
+  var owner=document.getElementById('add-owner')?document.getElementById('add-owner').value:'self';
+  var goldGrams=parseFloat(document.getElementById('add-gold-grams')&&document.getElementById('add-gold-grams').value)||0;
+  var goldPurity=parseInt(document.getElementById('add-gold-purity')&&document.getElementById('add-gold-purity').value)||22;
+  var maturityDate=document.getElementById('add-maturity')?document.getElementById('add-maturity').value:'';var fdRate=document.getElementById('add-fdrate')?parseFloat(document.getElementById('add-fdrate').value)||returnRate:returnRate;var qty=document.getElementById('add-qty')?parseFloat(document.getElementById('add-qty').value)||0:0;var avgPrice=document.getElementById('add-avgprice')?parseFloat(document.getElementById('add-avgprice').value)||0:0;var nseSymbol=document.getElementById('add-symbol')?document.getElementById('add-symbol').value:'';var sector=document.getElementById('add-sector')?document.getElementById('add-sector').value:'';if(t.id==='Stocks'&&!nseSymbol){var look=stockLookup(name);if(look){nseSymbol=look.sym;if(!sector)sector=look.sector}}
+  var inv={id:uid(),type:selectedInvType,label:name,platform:platform,bucket:t.bucket,invested:invested||currentVal,value:currentVal||invested,monthly:monthly,dueDate:dueDate,stepUp:stepUp,stepUpFrom:stepUpFrom||0,returnRate:t.hasFD?fdRate:returnRate,returns:0,owner:owner,started:started,maturityDate:maturityDate,qty:qty,avgPrice:avgPrice,nseSymbol:nseSymbol,sector:sector,livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:[],schemeCode:'',totalUnits:0,currentNAV:0,grams:goldGrams,goldPurity:goldPurity,divCache:[],divCacheDate:0,createdAt:Date.now()};
   if(selectedInvType==='Stocks'){var allLots=pendingLots.slice();if(qty>0&&avgPrice>0)allLots.push({id:uid(),date:started||new Date().toISOString().slice(0,10),qty:qty,price:avgPrice});if(allLots.length>0){allLots.sort(function(a,b){return new Date(a.date)-new Date(b.date)});inv.lots=allLots;syncInvFromLots(inv);}resetPendingLots();}
   if(selectedInvType==='SIP'||selectedInvType==='ELSS'){var scEl=document.getElementById('add-scheme-code');var tuEl=document.getElementById('add-total-units');if(scEl&&scEl.value)inv.schemeCode=scEl.value;if(tuEl&&tuEl.value)inv.totalUnits=parseFloat(tuEl.value)||0;}
 
@@ -3006,6 +3077,8 @@ async function refreshAll(){
   if(typeof fetchIndices==='function') await fetchIndices();
   rMarketM();
   await fetchLivePrices();
+  fetchMFNavs();    // non-blocking
+  fetchGoldPrice(); // non-blocking
   checkAndProcessSIPs();
   rMarketCues();
   await fetchMarketNews();
@@ -3014,7 +3087,7 @@ async function refreshAll(){
 }
 async function fetchLivePrices(){
   var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol});
-  if(!stocks.length){fireNotif('⚠️','No stocks','Add stocks with NSE symbols');return}
+  if(!stocks.length){priceLastFetched=new Date();return}
   fireNotif('🔄','Fetching prices','');var fetched=0;
   for(var idx=0;idx<stocks.length;idx++){
     var inv=stocks[idx];var data=await fetchStockPrice(inv.nseSymbol);
@@ -3036,7 +3109,84 @@ async function fetchLivePrices(){
   else fireNotif('⚠️','Could not fetch','Check symbols or try again');
 }
 
-// ===== MARKET PULSE =====
+// ─── MF NAV Auto-Update (mobile) ────────────────────────────────────────────
+var mfNavLastFetched = 0;
+var MF_NAV_STALE_MS  = 8 * 60 * 60 * 1000;
+
+async function fetchMFNavs() {
+  if (Date.now() - mfNavLastFetched < MF_NAV_STALE_MS) return;
+  var targets = S.investments.filter(function(i) {
+    return (i.type === 'SIP' || i.type === 'ELSS') &&
+           i.schemeCode && String(i.schemeCode).trim().length > 3 &&
+           i.totalUnits > 0;
+  });
+  if (!targets.length) return;
+  var updated = 0;
+  for (var i = 0; i < targets.length; i++) {
+    var inv = targets[i];
+    var navUrl = 'https://api.mfapi.in/mf/' + inv.schemeCode + '/latest';
+    var fetched = false;
+    for (var p = 0; p < CORS_PROXIES.length && !fetched; p++) {
+      try {
+        var proxyUrl = CORS_PROXIES[p] + encodeURIComponent(navUrl);
+        var resp = await fetch(proxyUrl, {
+          signal: AbortSignal.timeout(8000), cache: 'no-store'
+        });
+        if (!resp.ok) continue;
+        var data = await resp.json();
+        if (data && data.status === 'SUCCESS' && data.data && data.data.length > 0) {
+          var nav = parseFloat(data.data[0].nav);
+          if (nav > 0) { inv.currentNAV = nav; updated++; fetched = true; }
+        }
+      } catch(e) { continue; }
+    }
+    await new Promise(function(resolve) { setTimeout(resolve, 200); });
+  }
+  if (updated > 0) {
+    mfNavLastFetched = Date.now();
+    saveS(); renderAll();
+    fireNotif('✅', 'NAV updated for ' + updated + ' fund' + (updated > 1 ? 's' : ''), '');
+  }
+}
+
+// ─── Gold Price Auto-Update (mobile) ─────────────────────────────────────────
+var goldPriceData   = null;
+var goldLastFetched = 0;
+var GOLD_STALE_MS   = 4 * 60 * 60 * 1000;
+
+async function fetchGoldPrice() {
+  if (Date.now() - goldLastFetched < GOLD_STALE_MS) return;
+  try {
+    var resp = await fetch('https://gold-api.com/price/XAU?currency=INR', {
+      signal: AbortSignal.timeout(8000), cache: 'no-store'
+    });
+    if (!resp.ok) return;
+    var data = await resp.json();
+    if (data && data.price_gram_24k > 0) {
+      goldPriceData = {
+        price24k: data.price_gram_24k,
+        price22k: data.price_gram_22k  || +(data.price_gram_24k * (22/24)).toFixed(2),
+        price18k: data.price_gram_18k  || +(data.price_gram_24k * (18/24)).toFixed(2),
+        updatedAt: Date.now()
+      };
+      goldLastFetched = Date.now();
+      var goldInvs = S.investments.filter(function(i) {
+        return i.type === 'Gold' && (i.grams || 0) > 0;
+      });
+      if (goldInvs.length) {
+        goldInvs.forEach(function(inv) {
+          var pur = inv.goldPurity || 24;
+          var pgm = pur >= 24 ? goldPriceData.price24k
+            : pur >= 22       ? goldPriceData.price22k
+            :                   goldPriceData.price18k;
+          inv.value = Math.round(inv.grams * pgm);
+        });
+        saveS(); renderAll();
+        fireNotif('✅', 'Gold price updated', '');
+      }
+    }
+  } catch(e) {}
+}
 function rMarketM(){
   var el=document.getElementById('mp-time-m');if(el)el.textContent=priceLastFetched?priceLastFetched.toLocaleString():'—';
   // Index tiles
@@ -3300,8 +3450,17 @@ function renderScreenerM(){
 
 function initApp(){
   applyTheme();renderAll();rMarketM();rBotPageM();generateAlerts();
-  var hasStocks=S.investments.some(function(i){return i.type==='Stocks'&&i.nseSymbol});
-  if(hasStocks&&(!priceLastFetched||Date.now()-priceLastFetched>30*60*1000))setTimeout(fetchLivePrices,2000);
+
+  // On open: full refresh if stale; else just update NAV + gold price
+  var staleMs = AUTO_REFRESH_INTERVAL;
+  var isStale = !priceLastFetched || (Date.now() - priceLastFetched.getTime() > staleMs);
+  if (isStale) {
+    setTimeout(function() { refreshAll(); }, 200);
+  } else {
+    setTimeout(function() { fetchMFNavs(); fetchGoldPrice(); }, 3000);
+  }
+  startAutoRefresh();
+
   fireNotif('👋','Welcome',S.user.name||'User');
 }
 
