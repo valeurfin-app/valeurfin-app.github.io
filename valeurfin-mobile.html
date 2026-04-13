@@ -663,7 +663,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="cd"><h3>📉 Losers</h3><div id="mp-losers-m"></div></div>
 <div class="cd"><h3>📈 52W High</h3><div id="mp-52high-m"></div></div>
 <div class="cd"><h3>📉 52W Low</h3><div id="mp-52low-m"></div></div>
-<div class="cd"><h3>News</h3><div id="mp-news-m"><div style="padding:8px;font-size:10px;color:var(--txt3)">Tap Refresh to load news</div></div></div>
+<div class="cd"><h3>News</h3><div id="mp-news-m"><div style="padding:8px;font-size:10px;color:var(--txt3)">Loading news…</div></div></div>
 <div class="cd"><h3>🗺️ India Heatmap <span class="cd-badge">NSE</span></h3><div id="tv-heatmap-m" style="min-height:360px"></div></div>
 </div>
 
@@ -1848,7 +1848,7 @@ function timeAgo(ts){
 function rMarketNews(showAll){
   var el=document.getElementById("mp-news"),elM=document.getElementById("mp-news-m");
   if(!marketNewsCache.length){
-    var empty='<div style="padding:12px;font-size:11px;color:var(--txt3)">Tap Refresh to load news</div>';
+    var empty='<div style="padding:12px;font-size:11px;color:var(--txt3)">Loading news…</div>';
     if(el)el.innerHTML=empty;if(elM)elM.innerHTML=empty;return;
   }
   var cnt=showAll?marketNewsCache.length:10;
@@ -1981,32 +1981,44 @@ function isMarketHours() {
 
 function startAutoRefresh() {
   stopAutoRefresh();
-  if (!isMarketHours()) return; // no-op outside market hours
+  // Always start a watchdog timer — fires every minute to check if market
+  // has opened. When open: fires refreshAll immediately, then switches to
+  // a 5-minute interval. This handles opening the app before 9:15 IST.
   _autoRefreshTimer = setInterval(function() {
-    if (document.visibilityState === 'hidden') return; // don't refresh in background
-    if (isMarketHours()) {
-      refreshAll();
-    } else {
-      stopAutoRefresh(); // market closed — stop timer
-    }
-  }, AUTO_REFRESH_INTERVAL);
+    if (document.visibilityState === 'hidden') return; // skip if tab is hidden
+    if (!isMarketHours()) return;                      // market closed — keep watching
+    // Market is open — switch to full 5-min refresh cycle
+    stopAutoRefresh();
+    refreshAll(); // fire immediately now that market is open
+    _autoRefreshTimer = setInterval(function() {
+      if (document.visibilityState === 'hidden') return;
+      if (isMarketHours()) {
+        refreshAll();
+      } else {
+        stopAutoRefresh(); // market closed — stop timer
+      }
+    }, AUTO_REFRESH_INTERVAL);
+  }, 60 * 1000); // check every 60s until market opens
 }
 
 function stopAutoRefresh() {
   if (_autoRefreshTimer) { clearInterval(_autoRefreshTimer); _autoRefreshTimer = null; }
 }
 
-// Restart auto-refresh when tab/app comes back to foreground
+// Restart auto-refresh when tab/app becomes visible
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible') {
-    // If market is open and last fetch was > 5 min ago, refresh immediately
+    // Came back from background — check if stale and restart watchdog
     var stale = !priceLastFetched || (Date.now() - priceLastFetched.getTime() > AUTO_REFRESH_INTERVAL);
     if (isMarketHours() && stale) refreshAll();
-    startAutoRefresh();
+    startAutoRefresh(); // restart watchdog (was stopped on hidden)
   } else {
-    stopAutoRefresh();
+    stopAutoRefresh(); // pause timer — callback checks visibility anyway,
+                       // but stopping saves CPU while app is backgrounded
   }
-});
+})
+
+;
 
 
 // ─── Gold & MF NAV globals ────────────────────────────────────────────────
@@ -2702,6 +2714,7 @@ async function fetchStockPrice(sym){
 }
 
 async function refreshAll(){
+  fetchMarketNews(); // fire immediately — no need to wait for prices
   if(typeof fetchIndices==='function') await fetchIndices();
   rMarketM();
   await fetchLivePrices();
@@ -2709,13 +2722,12 @@ async function refreshAll(){
   fetchGoldPrice(); // non-blocking
   checkAndProcessSIPs();
   rMarketCues();
-  await fetchMarketNews();
   rMarketNews();
   rDashNews();
 }
 async function fetchLivePrices(){
   var stocks=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol});
-  if(!stocks.length){fireNotif('⚠️','No stocks','Add stocks with NSE symbols');return}
+  if(!stocks.length){priceLastFetched=new Date();return}
   fireNotif('🔄','Fetching prices','');var fetched=0;
   for(var idx=0;idx<stocks.length;idx++){
     var inv=stocks[idx];var data=await fetchStockPrice(inv.nseSymbol);
@@ -2756,7 +2768,7 @@ function rMarketM(){
           +'</div>';
       } else {
         idxH+='<div class="mp-idx"><div class="mi-name">'+def.n+'</div><div class="mi-val">—</div>'
-          +'<div class="mi-chg" style="color:var(--txt3)">Tap Refresh</div></div>';
+          +'<div class="mi-chg" style="color:var(--txt3)">Loading…</div></div>';
       }
     });
     idxEl.innerHTML='<div style="display:flex;gap:8px;overflow-x:auto;padding:4px 0">'+idxH+'</div>';
@@ -2982,7 +2994,7 @@ function initApp(){
   var staleMs = AUTO_REFRESH_INTERVAL;
   var isStale = !priceLastFetched || (Date.now() - priceLastFetched.getTime() > staleMs);
   if (isStale) {
-    setTimeout(function() { refreshAll(); }, 1500);
+    setTimeout(function() { refreshAll(); }, 200);
   } else {
     setTimeout(function() { fetchMFNavs(); fetchGoldPrice(); }, 3000);
   }
