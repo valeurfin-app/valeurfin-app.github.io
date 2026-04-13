@@ -2155,7 +2155,21 @@ function getInvValue(inv){
 function getInvReturns(inv){return getInvValue(inv)-getInvInvested(inv);}
 function getInvXIRR(inv){var val=getInvValue(inv);var invested=getInvInvested(inv);if(!invested||invested<=0)return 0;if(invHasLots(inv)&&inv.lots.length>0)return calcLotsXIRR(inv.lots,val);if(inv.started){var months=(Date.now()-new Date(inv.started))/(1000*60*60*24*30.44);if(months<0.5)return 0;return(Math.pow(val/invested,12/months)-1)*100;}return(Math.pow(val/invested,12/Math.max(1,S.currentMonth))-1)*100;}
 function calcLotsXIRR(lots,currentValue){if(!lots||!lots.length)return 0;var cfs=lots.map(function(l){return{date:new Date(l.date),amount:-(l.qty*l.price)};});cfs.push({date:new Date(),amount:currentValue});cfs.sort(function(a,b){return a.date-b.date});var first=cfs[0].date;function npv(r){return cfs.reduce(function(s,cf){var y=(cf.date-first)/(365.25*24*3600*1000);return s+cf.amount/Math.pow(1+r,y)},0);}var rate=0.1;for(var i=0;i<100;i++){var f=npv(rate);var df=npv(rate+0.0001);var delta=(df-f)/0.0001;if(Math.abs(delta)<1e-10)break;rate=rate-f/delta;if(rate<-0.999)rate=-0.999;}if(isNaN(rate)||!isFinite(rate))return 0;return rate*100;}
-function getQtyOnDate(inv,dateStr){var t=new Date(dateStr);if(invHasLots(inv))return inv.lots.filter(function(l){return new Date(l.date)<=t}).reduce(function(s,l){return s+(l.qty||0)},0);return inv.qty||0;}
+function getQtyOnDate(inv,dateStr){
+  var t=new Date(dateStr);
+  // Lot-based: filter to lots purchased on or before the date
+  if(invHasLots(inv)){
+    return inv.lots.filter(function(l){return new Date(l.date)<=t})
+      .reduce(function(s,l){return s+(l.qty||0)},0);
+  }
+  // No lots: use inv.started as the ownership start date
+  // If ex-date is before started date → user didn't own the stock → 0
+  if(inv.started){
+    var startDate=new Date(inv.started);
+    if(t<startDate)return 0;
+  }
+  return inv.qty||0;
+}
 function syncInvFromLots(inv){if(!invHasLots(inv))return;inv.qty=getInvQty(inv);inv.avgPrice=getInvAvgPrice(inv);inv.invested=getInvInvested(inv);inv.value=getInvValue(inv);inv.returns=getInvReturns(inv);}
 
 var LOCK_QUOTES=[
