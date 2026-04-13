@@ -2733,6 +2733,143 @@ function renderAddForm(){var el=document.getElementById('add-sub-form');
   el.innerHTML='<div class="inv-type-grid">'+cards+'</div><div id="add-inv-fields"></div><button class="btn-s" onclick="addInvestment()" style="margin-top:8px">💾 Add Investment</button>';
   buildAddFields();
 }
+
+// ─── Add Investment — Stocks helpers ────────────────────────────────────────
+
+// Debounce timer for symbol auto-test
+var _symTestTimer = null;
+
+function onSymbolInput(val) {
+  // Uppercase the value
+  var el = document.getElementById('add-symbol');
+  if(el) el.value = val.toUpperCase();
+  clearTimeout(_symTestTimer);
+  if(!val || val.length < 2) return;
+  // Auto-test after 900ms pause in typing
+  _symTestTimer = setTimeout(function() {
+    autoTestSymbol();
+  }, 900);
+}
+
+async function autoTestSymbol() {
+  var sym = (document.getElementById('add-symbol')||{}).value;
+  if(!sym) return;
+  var resEl = document.getElementById('add-sym-result');
+  if(resEl) resEl.innerHTML = '<span style="color:var(--txt2)">🔍 Fetching price for '+sym+'...</span>';
+  var data = await fetchStockPrice(sym);
+  if(data && data.price > 0) {
+    if(resEl) resEl.innerHTML = '<span style="color:var(--g)">✅ '+sym
+      +' — ₹'+data.price.toFixed(2)
+      +(data.changePct>=0?' <span style="color:var(--g)">▲':'<span style="color:var(--d)">▼')
+      +Math.abs(data.changePct).toFixed(2)+'%</span></span>';
+    // Auto-fill current stock price field
+    var priceEl = document.getElementById('add-stock-price');
+    if(priceEl && !priceEl.dataset.manualEdit) priceEl.value = data.price.toFixed(2);
+    // Recalculate current value
+    recalcStockCurrentValue();
+  } else {
+    if(resEl) resEl.innerHTML = '<span style="color:var(--d)">❌ '+sym+' not found on NSE/BSE</span>';
+  }
+}
+
+function recalcStockInvested() {
+  var qty   = parseFloat((document.getElementById('add-qty')||{}).value) || 0;
+  var price = parseFloat((document.getElementById('add-avgprice')||{}).value) || 0;
+  var invEl = document.getElementById('add-invested-calc');
+  if(invEl && !invEl.dataset.manualEdit) {
+    var val = qty * price;
+    invEl.value = val > 0 ? val.toFixed(2) : '';
+  }
+  recalcStockReturn();
+  // Also update pending lots display
+  updateStockTotalsFromLots();
+}
+
+function recalcStockCurrentValue() {
+  var qty      = parseFloat((document.getElementById('add-qty')||{}).value) || 0;
+  var liveP    = parseFloat((document.getElementById('add-stock-price')||{}).value) || 0;
+  var curEl    = document.getElementById('add-current');
+  if(curEl && !curEl.dataset.manualEdit) {
+    var val = qty > 0 && liveP > 0 ? (qty * liveP) : 0;
+    if(val > 0) curEl.value = val.toFixed(2);
+  }
+  recalcStockReturn();
+}
+
+function recalcStockReturn() {
+  var invested = parseFloat((document.getElementById('add-invested-calc')||{}).value) || 0;
+  var curVal   = parseFloat((document.getElementById('add-current')||{}).value) || 0;
+  var started  = (document.getElementById('add-started')||{}).value || '';
+  var retEl    = document.getElementById('add-return-display');
+  if(!retEl) return;
+  if(invested <= 0 || curVal <= 0) { retEl.textContent = '—'; return; }
+  // Simple return %
+  var simplePct = ((curVal - invested) / invested * 100);
+  // XIRR if we have started date
+  if(started) {
+    var months = (Date.now() - new Date(started).getTime()) / (1000*60*60*24*30.44);
+    if(months >= 0.5) {
+      var xirr = (Math.pow(curVal/invested, 12/months) - 1) * 100;
+      retEl.textContent = xirr.toFixed(1) + '% XIRR';
+      retEl.style.color = xirr >= 0 ? 'var(--g)' : 'var(--d)';
+      return;
+    }
+  }
+  retEl.textContent = simplePct.toFixed(1) + '%';
+  retEl.style.color = simplePct >= 0 ? 'var(--g)' : 'var(--d)';
+}
+
+function updateStockTotalsFromLots() {
+  // When previous lots are added/removed, update total qty + invested
+  if(!pendingLots.length) return;
+  var currentQty   = parseFloat((document.getElementById('add-qty')||{}).value) || 0;
+  var currentPrice = parseFloat((document.getElementById('add-avgprice')||{}).value) || 0;
+  // All lots including the current one
+  var allLots = pendingLots.slice();
+  if(currentQty > 0 && currentPrice > 0) {
+    allLots.push({qty: currentQty, price: currentPrice});
+  }
+  if(!allLots.length) return;
+  var totalQty  = allLots.reduce(function(s,l){return s+l.qty}, 0);
+  var totalInv  = allLots.reduce(function(s,l){return s+l.qty*l.price}, 0);
+  var avgPrice  = totalQty > 0 ? totalInv/totalQty : 0;
+  var invEl = document.getElementById('add-invested-calc');
+  if(invEl && !invEl.dataset.manualEdit) invEl.value = totalInv.toFixed(2);
+  recalcStockCurrentValue();
+}
+
+function markManualEdit(fieldId) {
+  var el = document.getElementById(fieldId);
+  if(el) el.dataset.manualEdit = '1';
+}
+
+function validateStocksForm() {
+  var errors = [];
+  var mandatory = [
+    {id:'add-name',      label:'Name'},
+    {id:'add-platform',  label:'Platform'},
+    {id:'add-started',   label:'Start Date'},
+    {id:'add-qty',       label:'QTY'},
+    {id:'add-avgprice',  label:'Buy Price'},
+  ];
+  mandatory.forEach(function(f) {
+    var el = document.getElementById(f.id);
+    if(!el) return;
+    var val = el.value ? el.value.trim() : '';
+    if(!val || val === '' || val === '0') {
+      el.style.borderColor = 'var(--d)';
+      errors.push(f.label);
+    } else {
+      el.style.borderColor = '';
+    }
+  });
+  if(errors.length) {
+    toast('Required: ' + errors.join(', '), 'err');
+    return false;
+  }
+  return true;
+}
+
 function selectInvType(type){selectedInvType=type;renderAddForm()}
 function buildAddFields(){var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var form=document.getElementById('add-inv-fields');if(!form)return;
   var h='<div class="fg"><label>Name</label><div style="position:relative"><input class="inp" id="add-name" placeholder="'+t.label+'"';
@@ -2992,12 +3129,20 @@ function selectStock(name,sym,sector){document.getElementById('add-name').value=
 
 var pendingLots=[];
 function addLotRow(){var date=document.getElementById('lot-date')?document.getElementById('lot-date').value:'';var qty=parseFloat(document.getElementById('lot-qty')?document.getElementById('lot-qty').value:0)||0;var price=parseFloat(document.getElementById('lot-price')?document.getElementById('lot-price').value:0)||0;if(!date||!qty||!price){fireNotif('⚠️','Fill fields','Date, qty and price required');return;}pendingLots.push({id:uid(),date:date,qty:qty,price:price});renderPendingLots();['lot-date','lot-qty','lot-price'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});}
-function removePendingLot(idx){pendingLots.splice(idx,1);renderPendingLots();}
+function removePendingLot(idx){pendingLots.splice(idx,1);renderPendingLots();updateStockTotalsFromLots();}
 function renderPendingLots(){var el=document.getElementById('lots-list');if(!el)return;if(!pendingLots.length){el.innerHTML='<div style="font-size:9px;color:var(--txt3)">No previous lots added yet</div>';return;}el.innerHTML=pendingLots.map(function(l,i){var t=l.qty*l.price;return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bdr);font-size:10px"><span style="color:var(--txt2)">'+l.date+'</span><b>'+l.qty+'</b>@₹'+l.price.toLocaleString('en-IN')+'=₹'+t.toLocaleString('en-IN')+'<button onclick="removePendingLot('+i+')" style="background:none;border:none;color:var(--d);cursor:pointer;margin-left:auto">×</button></div>';}).join('');}
 function resetPendingLots(){pendingLots=[];var el=document.getElementById('lots-list');if(el)el.innerHTML='';}
 function editAddLot(){var inv=S.investments.find(function(i){return i.id===editingId;});if(!inv)return;var date=document.getElementById('edit-lot-date')?document.getElementById('edit-lot-date').value:'';var qty=parseFloat(document.getElementById('edit-lot-qty')?document.getElementById('edit-lot-qty').value:0)||0;var price=parseFloat(document.getElementById('edit-lot-price')?document.getElementById('edit-lot-price').value:0)||0;if(!date||!qty||!price){var msg=document.getElementById('edit-lot-msg');if(msg)msg.innerHTML='<span style="color:var(--d)">Fill all fields</span>';return;}if(!inv.lots)inv.lots=[];inv.lots.push({id:uid(),date:date,qty:qty,price:price});inv.lots.sort(function(a,b){return new Date(a.date)-new Date(b.date);});syncInvFromLots(inv);saveS().then(function(){openEditInv(editingId);fireNotif('✅','Lot added','');});}
 function editRemoveLot(invId,lotId){var inv=S.investments.find(function(i){return i.id===invId;});if(!inv||!inv.lots)return;if(!confirm('Remove this lot?'))return;inv.lots=inv.lots.filter(function(l){return l.id!==lotId;});syncInvFromLots(inv);saveS().then(function(){openEditInv(invId);fireNotif('✅','Lot removed','');});}
-function addInvestment(){var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var name=document.getElementById('add-name').value.trim();if(!name){fireNotif('⚠️','Enter name','');return}var started=document.getElementById('add-started').value||'';var currentVal=parseFloat(document.getElementById('add-current').value)||0;var monthly=t.hasMonthly?(parseFloat(document.getElementById('add-monthly').value)||0):0;var dueDate=t.hasMonthly?(document.getElementById('add-due').value||'5'):'';var stepUp=t.hasMonthly?(parseFloat(document.getElementById('add-stepup').value)||0):0;var returnRate=parseFloat(document.getElementById('add-return').value)||0;var invested=t.hasMonthly?currentVal:(parseFloat(document.getElementById('add-invested').value)||currentVal);var platform=document.getElementById('add-platform').value||'';var maturityDate=document.getElementById('add-maturity')?document.getElementById('add-maturity').value:'';var fdRate=document.getElementById('add-fdrate')?parseFloat(document.getElementById('add-fdrate').value)||returnRate:returnRate;var qty=document.getElementById('add-qty')?parseFloat(document.getElementById('add-qty').value)||0:0;var avgPrice=document.getElementById('add-avgprice')?parseFloat(document.getElementById('add-avgprice').value)||0:0;var nseSymbol=document.getElementById('add-symbol')?document.getElementById('add-symbol').value:'';var sector=document.getElementById('add-sector')?document.getElementById('add-sector').value:'';if(t.id==='Stocks'&&!nseSymbol){var look=stockLookup(name);if(look){nseSymbol=look.sym;if(!sector)sector=look.sector}}
+function addInvestment(){
+  var t=INV_TYPES.find(function(x){return x.id===selectedInvType});
+  if(selectedInvType==='Stocks'&&!validateStocksForm())return;
+  var name=document.getElementById('add-name').value.trim();
+  if(!name){fireNotif('\u26a0\ufe0f','Enter name','');return}var started=document.getElementById('add-started').value||'';var currentVal=parseFloat(document.getElementById('add-current').value)||0;var monthly=t.hasMonthly?(parseFloat(document.getElementById('add-monthly').value)||0):0;var dueDate=t.hasMonthly?(document.getElementById('add-due').value||'5'):'';var stepUp=t.hasMonthly?(parseFloat(document.getElementById('add-stepup').value)||0):0;var returnRate=parseFloat(document.getElementById('add-return').value)||0;var investedCalcEl=document.getElementById('add-invested-calc');
+  var invested=t.hasMonthly?currentVal
+    :(investedCalcEl?(parseFloat(investedCalcEl.value)||0)
+    :(parseFloat(document.getElementById('add-invested')?document.getElementById('add-invested').value:0)||currentVal));
+  if(!invested&&currentVal)invested=currentVal;var platform=document.getElementById('add-platform').value||'';var maturityDate=document.getElementById('add-maturity')?document.getElementById('add-maturity').value:'';var fdRate=document.getElementById('add-fdrate')?parseFloat(document.getElementById('add-fdrate').value)||returnRate:returnRate;var qty=document.getElementById('add-qty')?parseFloat(document.getElementById('add-qty').value)||0:0;var avgPrice=document.getElementById('add-avgprice')?parseFloat(document.getElementById('add-avgprice').value)||0:0;var nseSymbol=document.getElementById('add-symbol')?document.getElementById('add-symbol').value:'';var sector=document.getElementById('add-sector')?document.getElementById('add-sector').value:'';if(t.id==='Stocks'&&!nseSymbol){var look=stockLookup(name);if(look){nseSymbol=look.sym;if(!sector)sector=look.sector}}
   var goldGrams  =parseFloat(document.getElementById('add-gold-grams')&&document.getElementById('add-gold-grams').value)||0;
   var goldPurity =parseInt(document.getElementById('add-gold-purity')&&document.getElementById('add-gold-purity').value)||22;
   var inv={id:uid(),type:selectedInvType,label:name,platform:platform,bucket:t.bucket,invested:invested||currentVal,value:currentVal||invested,monthly:monthly,dueDate:dueDate,stepUp:stepUp,returnRate:t.hasFD?fdRate:returnRate,returns:0,owner:'self',started:started,maturityDate:maturityDate,qty:qty,avgPrice:avgPrice,nseSymbol:nseSymbol,sector:sector,livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:[],schemeCode:'',totalUnits:0,currentNAV:0,grams:goldGrams,goldPurity:goldPurity,divCache:[],divCacheDate:0,createdAt:Date.now()};
