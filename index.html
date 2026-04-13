@@ -707,6 +707,8 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <button class="sb-link" onclick="go(this,'pg-screener')"><span class="sbi">🔍</span>Screener</button>
 <button class="sb-link" onclick="go(this,'pg-tax')"><span class="sbi">🧮</span>Tax Calculator</button>
 <button class="sb-link" onclick="go(this,'pg-exit')"><span class="sbi">🚪</span>Exit Signals</button>
+<div class="sb-section">Tools</div>
+<button class="sb-link" onclick="go(this,'pg-import')"><span class="sbi">📥</span>Import Data</button>
 <div class="sb-section">Settings</div>
 <button class="sb-link" onclick="go(this,'pg-security')"><span class="sbi">🔒</span>Security</button>
 <button class="sb-link" onclick="go(this,'pg-family')"><span class="sbi">👨‍👩‍👧‍👦</span>Family</button>
@@ -979,6 +981,83 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 </div>
 </div>
 
+
+<!-- ===== IMPORT DATA ===== -->
+<div class="pg" id="pg-import">
+<div class="cd">
+  <h3>📥 Import Data <span class="cd-badge">CSV</span></h3>
+  <p class="m-sub">Import holdings from your broker. Existing investments are never modified — only new ones are added.</p>
+  <div class="disclaimer-bar">⚠️ Review the preview carefully before importing.</div>
+  <div class="pills" id="import-tabs" style="margin-bottom:14px">
+    <button class="pill on" onclick="switchImportTab(this,'stocks')">📊 Stocks</button>
+    <button class="pill" onclick="switchImportTab(this,'mf')">📈 Mutual Funds</button>
+    <button class="pill" onclick="switchImportTab(this,'crypto')">🪙 Crypto</button>
+  </div>
+  <div id="import-tab-stocks">
+    <p style="font-size:11px;color:var(--txt2);margin-bottom:8px">Supported: <b>Zerodha</b> · <b>Groww</b> · <b>Angel One</b> · <b>Dhan</b> · <b>Upstox</b> · <b>ICICI Direct</b> · <b>HDFC Securities</b> · <b>5Paisa</b> · <b>Motilal Oswal</b></p>
+    <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px;font-size:10px;color:var(--txt2)">
+      <b style="color:var(--txt)">How to export:</b><br>
+      <b>Zerodha:</b> Console → Portfolio → Holdings → Download ↓<br>
+      <b>Groww:</b> Stocks → Portfolio → Export → Download CSV<br>
+      <b>Angel One:</b> Reports → Holdings → Export CSV<br>
+      <b>Dhan:</b> Portfolio → Holdings → Export<br>
+      <b>Upstox:</b> Portfolio → Holdings → Export CSV<br>
+      <b>ICICI Direct:</b> Portfolio → My Holdings → Download<br>
+      <b>HDFC Sec:</b> Portfolio → Holdings → Export to Excel<br>
+      <b>5Paisa:</b> Portfolio → Holdings → Download<br>
+      <b>Motilal:</b> Portfolio → Holdings → Export
+    </div>
+    <label class="btn-s" style="display:inline-block;cursor:pointer;padding:10px 18px">
+      📂 Choose CSV File
+      <input type="file" accept=".csv,.txt" id="import-stocks-file" style="display:none" onchange="handleStocksCSV(this)">
+    </label>
+    <div id="import-stocks-preview" style="display:none;margin-top:12px">
+      <div id="import-stocks-info" style="font-size:11px;color:var(--txt2);margin-bottom:8px"></div>
+      <div style="overflow-x:auto;margin-bottom:10px">
+        <table class="tbl"><thead><tr><th></th><th>Symbol</th><th>Name</th><th>Qty</th><th>Avg Price</th><th>Current</th><th>Sector</th><th>Status</th></tr></thead>
+        <tbody id="import-stocks-tbody"></tbody></table>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-s" id="import-stocks-btn" onclick="confirmImportStocks()">💾 Import Holdings</button>
+        <button class="btn-cancel" onclick="resetImportStocks()">Cancel</button>
+        <span id="import-stocks-count" style="font-size:10px;color:var(--txt2)"></span>
+      </div>
+    </div>
+    <div id="import-stocks-result" style="display:none;margin-top:8px"></div>
+  </div>
+  <div id="import-tab-mf" style="display:none">
+    <p style="font-size:11px;color:var(--txt2);margin-bottom:8px">Supported: <b>Kuvera</b> Portfolio CSV &nbsp;·&nbsp; <b>Groww</b> Mutual Funds CSV</p>
+    <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px;font-size:10px;color:var(--txt2)">
+      <b style="color:var(--txt)">How to export:</b><br>
+      <b>Kuvera:</b> Portfolio → Export → Download CSV<br>
+      <b>Groww:</b> Mutual Funds → Portfolio → Export → Download CSV
+    </div>
+    <label class="btn-s" style="display:inline-block;cursor:pointer;padding:10px 18px">
+      📂 Choose CSV File
+      <input type="file" accept=".csv,.txt" id="import-mf-file" style="display:none" onchange="handleMFCSV(this)">
+    </label>
+    <div id="import-mf-preview" style="display:none;margin-top:12px">
+      <div id="import-mf-info" style="font-size:11px;color:var(--txt2);margin-bottom:8px"></div>
+      <div style="overflow-x:auto;margin-bottom:10px">
+        <table class="tbl"><thead><tr><th></th><th>Fund Name</th><th>Units</th><th>Avg NAV</th><th>Current NAV</th><th>Value</th><th>Status</th></tr></thead>
+        <tbody id="import-mf-tbody"></tbody></table>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-s" id="import-mf-btn" onclick="confirmImportMF()">💾 Import Funds</button>
+        <button class="btn-cancel" onclick="resetImportMF()">Cancel</button>
+        <span id="import-mf-count" style="font-size:10px;color:var(--txt2)"></span>
+      </div>
+    </div>
+    <div id="import-mf-result" style="display:none;margin-top:8px"></div>
+  </div>
+  <div id="import-tab-crypto" style="display:none">
+    <div class="empty-state" style="padding:30px 0">
+      <div class="es-ic">🪙</div><h3>Crypto Import</h3>
+      <p>WazirX, CoinDCX, and Binance CSV import coming soon.</p>
+    </div>
+  </div>
+</div>
+</div>
 </div><!-- end content -->
 </div><!-- end main -->
 
@@ -1646,7 +1725,7 @@ function go(btn,pgId){
   document.getElementById(pgId).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(function(b){b.classList.remove('on')});
   if(btn)btn.classList.add('on');
-  var titles={'pg-dash':'Dashboard','pg-market':'Market Pulse','pg-inv':'Investments','pg-add':'Add Investment','pg-exp':'Expenses','pg-income':'Income','pg-remind':'Reminders','pg-goals':'Goals','pg-ins':'Insurance','pg-bot':'ValeurBot','pg-kpi':'KPIs','pg-div':'Dividends','pg-whatif':'What-If','pg-log':'Transaction Log','pg-screener':'Screener','pg-tax':'Tax Calculator','pg-exit':'Exit Signals','pg-security':'Security','pg-family':'Family','pg-privacy':'Privacy','pg-terms':'Terms','pg-about':'About'};
+  var titles={'pg-dash':'Dashboard','pg-market':'Market Pulse','pg-inv':'Investments','pg-add':'Add Investment','pg-exp':'Expenses','pg-income':'Income','pg-remind':'Reminders','pg-goals':'Goals','pg-ins':'Insurance','pg-bot':'ValeurBot','pg-kpi':'KPIs','pg-div':'Dividends','pg-whatif':'What-If','pg-log':'Transaction Log','pg-screener':'Screener','pg-tax':'Tax Calculator','pg-exit':'Exit Signals','pg-security':'Security','pg-family':'Family','pg-privacy':'Privacy','pg-terms':'Terms','pg-about':'About','pg-import':'Import Data'};
   document.getElementById('pg-title').textContent=titles[pgId]||'Dashboard';
   if(pgId==='pg-screener')renderScreener();
   if(pgId==='pg-tax')renderTax();
@@ -2477,6 +2556,83 @@ async function fetchMFNavs() {
   }
 }
 
+
+// ─── CSV Import ───────────────────────────────────────────────────────────────
+var _importStocksParsed=[],_importMFParsed=[];
+
+function switchImportTab(btn,tab){
+  document.querySelectorAll('#import-tabs .pill').forEach(function(p){p.classList.remove('on');});
+  btn.classList.add('on');
+  ['stocks','mf','crypto'].forEach(function(t){
+    var el=document.getElementById('import-tab-'+t);
+    if(el)el.style.display=(t===tab)?'':'none';
+  });
+}
+function parseCSVLine(line){var result=[],cur='',inQ=false;for(var i=0;i<line.length;i++){var ch=line[i];if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){result.push(cur.trim());cur='';}else{cur+=ch;}}result.push(cur.trim());return result;}
+function cleanNum(s){if(!s)return 0;return parseFloat(String(s).replace(/[^\d.\-]/g,''))||0;}
+function detectBroker(headers){var h=headers.map(function(x){return x.toLowerCase().replace(/[^a-z0-9]/g,'');});if(h.some(function(x){return x==='instrument';})&&h.some(function(x){return x==='qty';}))return 'zerodha-stocks';if(h.some(function(x){return x==='symbol';})&&h.some(function(x){return x==='isin';}))return 'angelone-stocks';if(h.some(function(x){return x==='symbol';})&&h.some(function(x){return x==='buyavgprice';}))return 'dhan-stocks';if(h.some(function(x){return x==='symbol';})&&h.some(function(x){return x==='averagebuyprice';}))return 'upstox-stocks';if(h.some(function(x){return x==='symbol';})&&h.some(function(x){return x==='averageprice';}))return 'groww-stocks';if(h.some(function(x){return x==='scripname';})&&h.some(function(x){return x==='purchaserate';}))return 'icici-stocks';if(h.some(function(x){return x==='scriptname';})&&h.some(function(x){return x==='avgcostprice';}))return 'hdfc-stocks';if(h.some(function(x){return x==='stockname';})&&h.some(function(x){return x==='avgprice';}))return '5paisa-stocks';if(h.some(function(x){return x==='scriptname';})&&h.some(function(x){return x==='avgcost';}))return 'motilal-stocks';if(h.some(function(x){return x==='symbol';})&&h.some(function(x){return x==='quantity'||x==='qty';}))return 'generic-stocks';if(h.some(function(x){return x.indexOf('schemename')!==-1||x.indexOf('fundname')!==-1;})&&h.some(function(x){return x==='units';})&&h.some(function(x){return x.indexOf('nav')!==-1;}))return 'kuvera-mf';if(h.some(function(x){return x.indexOf('scheme')!==-1;})&&h.some(function(x){return x==='units';}))return 'groww-mf';return null;}
+function parseStocksCSV(text){
+  var lines=text.trim().split('\n').filter(function(l){return l.trim();});
+  if(lines.length<2)return{err:'File appears empty or invalid.'};
+  var headers=parseCSVLine(lines[0]);
+  var broker=detectBroker(headers);
+  if(!broker||broker.indexOf('stocks')===-1)return{err:'Not recognised as a stocks CSV. Supported: Zerodha, Groww, Angel One, Dhan, Upstox, ICICI Direct, HDFC Securities, 5Paisa, Motilal Oswal.'};
+  var hL=headers.map(function(h){return h.toLowerCase().replace(/[^a-z0-9]/g,'');});
+  function col(names){for(var i=0;i<names.length;i++){var idx=hL.indexOf(names[i]);if(idx!==-1)return idx;}return -1;}
+  var symC  = col(['instrument','symbol','tradingsymbol','scripname','scriptname','stockname']);
+  var nameC = col(['companyname','name','stockname','scripname','scriptname']);
+  var qtyC  = col(['qty','quantity','qtyowned','holdingqty']);
+  var avgC  = col(['avgcost','averageprice','avgprice','averagecost','avgbuyprice','averagebuyprice','buyavgprice','purchaserate','avgcostprice']);
+  var ltpC  = col(['ltp','currentprice','lastprice','cmp','marketprice','marketrate']);
+  var valC  = col(['curval','currentvalue','portfoliovalue','currentval','marketvalue']);
+  if(symC===-1||qtyC===-1)return{err:'Missing required columns. Check file format.'};
+  var existing=S.investments.filter(function(i){return i.type==='Stocks'&&i.nseSymbol;}).map(function(i){return i.nseSymbol.toUpperCase();});
+  var results=[];
+  for(var i=1;i<lines.length;i++){
+    var row=parseCSVLine(lines[i]);
+    if(row.length<2)continue;
+    var rawVal=(row[symC]||'').trim();
+    var qty=cleanNum(row[qtyC]);
+    if(!rawVal||qty<=0)continue;
+    // Try direct symbol lookup first
+    var rawUp=rawVal.toUpperCase().replace(/\s/g,'');
+    var db=STOCK_DB.find(function(s){return s.sym===rawUp;});
+    // If not found as symbol, try as company name (ICICI, HDFC, 5Paisa, Motilal)
+    if(!db){
+      var nameLow=rawVal.toLowerCase();
+      db=STOCK_DB.find(function(s){return s.name.toLowerCase()===nameLow;});
+    }
+    // Also try nameC column if available
+    if(!db&&nameC!==-1&&row[nameC]){
+      var n2=(row[nameC]||'').trim().toLowerCase();
+      db=STOCK_DB.find(function(s){return s.name.toLowerCase()===n2;});
+    }
+    var sym=db?db.sym:rawUp;
+    var avgP=avgC!==-1?cleanNum(row[avgC]):0;
+    var ltp =ltpC!==-1?cleanNum(row[ltpC]):0;
+    var curV=valC!==-1?cleanNum(row[valC]):(ltp*qty||avgP*qty);
+    results.push({
+      sym:sym, name:db?db.name:rawVal,
+      qty:qty, avgPrice:avgP, ltp:ltp, curVal:curV,
+      invested:avgP*qty, sector:db?db.sector:'Others',
+      isDupe:existing.indexOf(sym)!==-1
+    });
+  }
+  if(!results.length)return{err:'No valid rows found in file.'};
+  return{broker:broker,results:results};
+}
+function parseMFCSV(text){var lines=text.trim().split('\n').filter(function(l){return l.trim();});if(lines.length<2)return{err:'File appears empty or invalid.'};var headers=parseCSVLine(lines[0]);var broker=detectBroker(headers);if(!broker||broker.indexOf('mf')===-1)return{err:'Not recognised as a mutual fund CSV. Supported: Kuvera, Groww MF.'};var hL=headers.map(function(h){return h.toLowerCase().replace(/[^a-z0-9]/g,'');});function col(names){for(var i=0;i<names.length;i++){var idx=hL.indexOf(names[i]);if(idx!==-1)return idx;}return -1;}var nameC=col(['fundname','schemename','mutualfundname','name']),unitsC=col(['units','quantity','totalunits']),avgNC=col(['averagenav','avgcost','averagecost','purchasenav','avgbuyprice']),curNC=col(['currentnav','nav','latestnav','currentprice']),curVC=col(['currentvalue','curval','portfoliovalue']),invC=col(['investedamount','investedvalue','invested','purchasevalue','purchaseamount']);if(nameC===-1||unitsC===-1)return{err:'Missing required columns (Fund Name, Units).'};var existing=S.investments.filter(function(i){return i.type==='SIP'||i.type==='ELSS';}).map(function(i){return i.label.toLowerCase();});var results=[];for(var i=1;i<lines.length;i++){var row=parseCSVLine(lines[i]);if(row.length<2)continue;var name=(row[nameC]||'').trim(),units=cleanNum(row[unitsC]);if(!name||units<=0)continue;var avgN=avgNC!==-1?cleanNum(row[avgNC]):0,curN=curNC!==-1?cleanNum(row[curNC]):0,curV=curVC!==-1?cleanNum(row[curVC]):(curN*units),inv=invC!==-1?cleanNum(row[invC]):(avgN*units);results.push({name:name,units:units,avgNav:avgN,curNav:curN,curVal:curV,invested:inv,isDupe:existing.indexOf(name.toLowerCase())!==-1});}if(!results.length)return{err:'No valid rows found.'};return{broker:broker,results:results};}
+
+function handleStocksCSV(input){var file=input.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(e){var parsed=parseStocksCSV(e.target.result);if(parsed.err){var res=document.getElementById('import-stocks-result');res.style.display='';res.innerHTML='<div style="color:var(--d);background:var(--dbg);padding:10px;border-radius:8px;font-size:11px">❌ '+parsed.err+'</div>';return;}_importStocksParsed=parsed.results;renderStocksPreview(parsed);};reader.readAsText(file);input.value='';}
+function renderStocksPreview(parsed){var newC=parsed.results.filter(function(r){return !r.isDupe;}).length,dupC=parsed.results.filter(function(r){return r.isDupe;}).length,brokerNames={'zerodha-stocks':'Zerodha','groww-stocks':'Groww','angelone-stocks':'Angel One','dhan-stocks':'Dhan','upstox-stocks':'Upstox','icici-stocks':'ICICI Direct','hdfc-stocks':'HDFC Securities','5paisa-stocks':'5Paisa','motilal-stocks':'Motilal Oswal','generic-stocks':'Broker CSV','kuvera-mf':'Kuvera','groww-mf':'Groww MF'},bn=brokerNames[parsed.broker]||parsed.broker;document.getElementById('import-stocks-info').innerHTML='<b>Detected:</b> '+bn+' &nbsp;·&nbsp; <b>'+parsed.results.length+'</b> rows &nbsp;·&nbsp; <span style="color:var(--g)">'+newC+' new</span>'+(dupC?' &nbsp;·&nbsp; <span style="color:var(--w)">'+dupC+' already exist (will skip)</span>':'');document.getElementById('import-stocks-tbody').innerHTML=parsed.results.map(function(r){return '<tr style="opacity:'+(r.isDupe?'0.5':'1')+'"><td>📊</td><td><b>'+r.sym+'</b></td><td style="font-size:10px">'+r.name.substring(0,28)+'</td><td>'+r.qty+'</td><td>'+(r.avgPrice?'₹'+r.avgPrice.toFixed(2):'—')+'</td><td>'+(r.ltp?'₹'+r.ltp.toFixed(2):'—')+'</td><td style="font-size:9px">'+(r.sector||'—')+'</td><td><span style="font-size:9px;padding:2px 5px;border-radius:4px;background:'+(r.isDupe?'var(--wbg)':'var(--gbg)')+';color:'+(r.isDupe?'var(--w)':'var(--g)')+';">'+(r.isDupe?'Skip':'New')+'</span></td></tr>';}).join('');document.getElementById('import-stocks-count').textContent=newC+' holdings will be imported';document.getElementById('import-stocks-btn').disabled=(newC===0);document.getElementById('import-stocks-preview').style.display='';document.getElementById('import-stocks-result').style.display='none';}
+function confirmImportStocks(){var toImport=_importStocksParsed.filter(function(r){return !r.isDupe;});if(!toImport.length){toast('Nothing new to import','warn');return;}toImport.forEach(function(r){S.investments.push({id:uid(),type:'Stocks',label:r.name,platform:'Imported',bucket:'Equity',invested:r.invested||0,value:r.curVal||r.ltp*r.qty||r.avgPrice*r.qty||0,monthly:0,dueDate:'',stepUp:0,stepUpFrom:0,returnRate:0,returns:0,owner:'self',started:'',maturityDate:'',qty:r.qty,avgPrice:r.avgPrice,nseSymbol:r.sym,sector:r.sector,livePrice:r.ltp||null,liveValue:r.ltp?r.ltp*r.qty:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:r.avgPrice>0?[{id:uid(),date:new Date().toISOString().slice(0,10),qty:r.qty,price:r.avgPrice}]:[],schemeCode:'',totalUnits:0,currentNAV:0,grams:0,goldPurity:22,createdAt:Date.now()});});saveS().then(function(){renderAll();document.getElementById('import-stocks-result').style.display='';document.getElementById('import-stocks-result').innerHTML='<div style="color:var(--g);background:var(--gbg);padding:12px;border-radius:8px;font-size:12px;font-weight:600">✅ Imported '+toImport.length+' stock holding'+(toImport.length>1?'s':'')+' successfully!</div>';document.getElementById('import-stocks-preview').style.display='none';_importStocksParsed=[];toast('✅ '+toImport.length+' stocks imported');});}
+function resetImportStocks(){_importStocksParsed=[];document.getElementById('import-stocks-preview').style.display='none';document.getElementById('import-stocks-result').style.display='none';}
+
+function handleMFCSV(input){var file=input.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(e){var parsed=parseMFCSV(e.target.result);if(parsed.err){var res=document.getElementById('import-mf-result');res.style.display='';res.innerHTML='<div style="color:var(--d);background:var(--dbg);padding:10px;border-radius:8px;font-size:11px">❌ '+parsed.err+'</div>';return;}_importMFParsed=parsed.results;renderMFPreview(parsed);};reader.readAsText(file);input.value='';}
+function renderMFPreview(parsed){var newC=parsed.results.filter(function(r){return !r.isDupe;}).length,dupC=parsed.results.filter(function(r){return r.isDupe;}).length,bn=parsed.broker.replace('-',' ').replace(/\b\w/g,function(c){return c.toUpperCase();});document.getElementById('import-mf-info').innerHTML='<b>Detected:</b> '+bn+' &nbsp;·&nbsp; <b>'+parsed.results.length+'</b> rows &nbsp;·&nbsp; <span style="color:var(--g)">'+newC+' new</span>'+(dupC?' &nbsp;·&nbsp; <span style="color:var(--w)">'+dupC+' already exist (will skip)</span>':'');document.getElementById('import-mf-tbody').innerHTML=parsed.results.map(function(r){return '<tr style="opacity:'+(r.isDupe?'0.5':'1')+'"><td>📈</td><td style="font-size:10px"><b>'+r.name.substring(0,38)+'</b></td><td>'+r.units.toFixed(3)+'</td><td>'+(r.avgNav?'₹'+r.avgNav.toFixed(4):'—')+'</td><td>'+(r.curNav?'₹'+r.curNav.toFixed(4):'—')+'</td><td>'+(r.curVal?'₹'+Math.round(r.curVal).toLocaleString('en-IN'):'—')+'</td><td><span style="font-size:9px;padding:2px 5px;border-radius:4px;background:'+(r.isDupe?'var(--wbg)':'var(--gbg)')+';color:'+(r.isDupe?'var(--w)':'var(--g)')+';">'+(r.isDupe?'Skip':'New')+'</span></td></tr>';}).join('');document.getElementById('import-mf-count').textContent=newC+' funds will be imported';document.getElementById('import-mf-btn').disabled=(newC===0);document.getElementById('import-mf-preview').style.display='';document.getElementById('import-mf-result').style.display='none';}
+function confirmImportMF(){var toImport=_importMFParsed.filter(function(r){return !r.isDupe;});if(!toImport.length){toast('Nothing new to import','warn');return;}toImport.forEach(function(r){S.investments.push({id:uid(),type:'SIP',label:r.name,platform:'Imported',bucket:'Equity',invested:r.invested||0,value:r.curVal||0,monthly:0,dueDate:'',stepUp:0,stepUpFrom:0,returnRate:0,returns:0,owner:'self',started:'',maturityDate:'',qty:0,avgPrice:0,nseSymbol:'',sector:'',livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:[],schemeCode:'',totalUnits:r.units,currentNAV:r.curNav||0,grams:0,goldPurity:22,createdAt:Date.now()});});saveS().then(function(){renderAll();document.getElementById('import-mf-result').style.display='';document.getElementById('import-mf-result').innerHTML='<div style="color:var(--g);background:var(--gbg);padding:12px;border-radius:8px;font-size:12px;font-weight:600">✅ Imported '+toImport.length+' fund'+(toImport.length>1?'s':'')+' successfully!</div>';document.getElementById('import-mf-preview').style.display='none';_importMFParsed=[];toast('✅ '+toImport.length+' funds imported');});}
+function resetImportMF(){_importMFParsed=[];document.getElementById('import-mf-preview').style.display='none';document.getElementById('import-mf-result').style.display='none';}
+
 async function boot(){
   console.log('[VF] boot() started');
   try{await openDB();console.log('[VF] IDB opened:',!!DB)}catch(e){DB=null;console.warn('[VF] IDB failed:',e)}
@@ -2815,7 +2971,8 @@ function openEditInv(id){
   h+='<div class="fg"><label>Return %</label><input class="inp" id="edit-return" type="number" value="'+(inv.returnRate||0)+'" step="0.1"></div>';
   if(inv.type==='SIP'||inv.type==='ELSS'){h+='<div style="background:var(--bbg);border:1px solid var(--b);border-radius:10px;padding:12px;margin-top:6px"><div style="font-size:11px;font-weight:700;color:var(--b);margin-bottom:8px">🔄 SWP — Systematic Withdrawal Plan</div><div class="fr"><div class="fg"><label>Monthly Withdrawal (₹) <small style="color:var(--txt2)">(0 = off)</small></label><input class="inp" id="edit-swp" type="number" value="'+(inv.swpAmount||0)+'"></div><div class="fg"><label>SWP Start Date</label><input class="inp" id="edit-swp-start" type="date" value="'+(inv.swpStartDate||'')+'"></div></div><p style="font-size:9px;color:var(--txt2);margin-top:4px">💡 SWP withdraws a fixed amount monthly from this investment and records it as income.</p></div>';}
   if(inv.type==='Stocks'){h+='<div class="fr"><div class="fg"><label>NSE Symbol</label><div style="display:flex;gap:6px"><input class="inp" id="edit-symbol" value="'+(inv.nseSymbol||'')+'" oninput="this.value=this.value.toUpperCase()" style="flex:1"><button type="button" class="btn-sm" onclick="testSymbol(\'edit-symbol\',\'edit-sym-result\')" style="white-space:nowrap">🔍 Test</button></div><div id="edit-sym-result" style="font-size:9px;margin-top:3px"></div></div><div class="fg"><label>Sector</label><select class="inp" id="edit-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option '+(inv.sector===s?'selected':'')+'>'+s+'</option>'}).join('')+'</select></div></div>';h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="edit-qty" type="number" value="'+(inv.qty||0)+'"></div><div class="fg"><label>Avg Price</label><input class="inp" id="edit-avgprice" type="number" value="'+(inv.avgPrice||0)+'"></div></div>'}
-  if(inv.type==='FD'||inv.type==='RD'){h+='<div class="fg"><label>Maturity Date</label><input class="inp" id="edit-maturity" type="date" value="'+(inv.maturityDate||'')+'"></div>'}
+  if(inv.type==='FD'||inv.type==='RD'){h+='<div class="fg"><label>Maturity Date</label><input class="inp" id="edit-maturity" type="date" value="'+(inv.maturityDate||'')+'"></div>';}
+  if(inv.type==='Gold'){h+='<div class="fr"><div class="fg"><label>Weight (grams)</label><input class="inp" id="edit-gold-grams" type="number" step="0.01" min="0" placeholder="e.g. 10.5" value="'+(inv.grams||0)+'"></div><div class="fg"><label>Purity</label><select class="inp" id="edit-gold-purity"><option value="24" '+(inv.goldPurity>=24?'selected':'')+'>24K (999 / Pure)</option><option value="22" '+((inv.goldPurity||22)===22?'selected':'')+'>22K (916 / Hallmark)</option><option value="18" '+(inv.goldPurity===18?'selected':'')+'>18K (750 / Jewellery)</option><option value="0" '+(inv.goldPurity===0?'selected':'')+'>SGB / ETF (no purity)</option></select></div></div>';}
   h+='<div class="fr"><div class="fg"><label>Target Return %</label><input class="inp" id="edit-target" type="number" value="'+(inv.targetReturn||'')+'"></div><div class="fg"><label>Stop Loss %</label><input class="inp" id="edit-stoploss" type="number" value="'+(inv.stopLoss||'')+'"></div></div>';
   if(S.user.mode==='family'){h+='<div class="fg"><label>Owner</label><select class="inp" id="edit-owner"><option value="self">'+S.user.name+'</option>'+S.family.map(function(f){return '<option value="'+f.id+'" '+(inv.owner===f.id?'selected':'')+'>'+f.name+'</option>'}).join('')+'</select></div>'}
   document.getElementById('em-form').innerHTML=h;document.getElementById('em-del-confirm').style.display='none';document.getElementById('edit-modal').classList.add('open');
@@ -2835,6 +2992,8 @@ function saveEdit(){
     var eq=document.getElementById('edit-qty');if(eq)inv.qty=parseFloat(eq.value)||inv.qty;
     var ea=document.getElementById('edit-avgprice');if(ea)inv.avgPrice=parseFloat(ea.value)||inv.avgPrice;
     var emat=document.getElementById('edit-maturity');if(emat)inv.maturityDate=emat.value||inv.maturityDate;
+    var egg=document.getElementById('edit-gold-grams');if(egg)inv.grams=parseFloat(egg.value)||0;
+    var egp=document.getElementById('edit-gold-purity');if(egp)inv.goldPurity=parseInt(egp.value)||22;
     var eow=document.getElementById('edit-owner');if(eow)inv.owner=eow.value;
     var et=document.getElementById('edit-target');inv.targetReturn=et?parseFloat(et.value)||null:inv.targetReturn;
     var esl=document.getElementById('edit-stoploss');inv.stopLoss=esl?parseFloat(esl.value)||null:inv.stopLoss;
