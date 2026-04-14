@@ -2850,6 +2850,8 @@ async function boot(){
 
 function renderAll(){
   renderFamilyDD();rDash();rInv();rExp();rIncome();rReminders();rGoals();rInsurance();rKPI();rDividends();rWhatIf();rLog();rFamily();rSecurity();renderAddForm();rBotPageChips();
+  // Re-render projector if it's visible
+  try { renderProjection(); } catch(e) {}
   document.getElementById('tb-month').textContent=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
   document.getElementById('sb-avatar').textContent=(S.user.name||'U').charAt(0).toUpperCase();
   document.getElementById('sb-uname').textContent=S.user.name||'User';
@@ -2986,10 +2988,10 @@ function rDash(){
   rDashAlerts();
   renderMemberPills('dash-member-pills');
   rFamilyOverview();
-  rDashCashFlow(totalInc,totalSpend,monthlySIP);
-  rDashFIRE(nw,totalSpend);
-  rDashEstNW();
-  rDashEvents();
+  try { rDashCashFlow(totalInc,totalSpend,monthlySIP); } catch(e) {}
+  try { rDashFIRE(nw,totalSpend); } catch(e) {}
+  try { rDashEstNW(); } catch(e) { console.warn('rDashEstNW error:', e); }
+  try { rDashEvents(); } catch(e) {}
 }
 
 function rDashTips(nw,invested,returns,mSpend,mIncome,inv){
