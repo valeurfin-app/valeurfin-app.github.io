@@ -42,8 +42,8 @@ function shouldSkipCache(url) {
 // ── INSTALL ──────────────────────────────────────────────────────────────────
 // Use Promise.allSettled (NOT Promise.all) so that if one file fails to cache
 // (e.g. valeurfin-mobile.html not yet uploaded), the SW still installs cleanly.
-// NOTE: We do NOT call skipWaiting() here. The new SW stays in "waiting" state
-// until the app sends a SKIP_WAITING message (user clicks "Update Now" banner).
+// skipWaiting() ensures the new SW activates immediately — the HTML page
+// then detects 'controllerchange' and shows the "Update Now" banner.
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
@@ -54,6 +54,8 @@ self.addEventListener('install', function(event) {
           });
         })
       );
+    }).then(function() {
+      return self.skipWaiting();
     })
   );
 });
