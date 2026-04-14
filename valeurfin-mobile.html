@@ -778,10 +778,12 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
     <button class="pill" onclick="setProjectionHorizon(this,15)">15Y</button>
     <button class="pill" onclick="setProjectionHorizon(this,20)">20Y</button>
   </div>
+  <div id="proj-member-pills" style="margin-bottom:8px"></div>
   <div class="fr" style="margin-bottom:10px">
     <div class="fg"><label>Inflation %</label><input class="inp" id="proj-inflation" type="number" value="6" step="0.5" onchange="renderProjection()"></div>
     <div class="fg"><label>Gold Growth %</label><input class="inp" id="proj-gold-rate" type="number" value="8" step="0.5" onchange="renderProjection()"></div>
   </div>
+  <div class="fg" style="margin-bottom:10px"><label>Expected Return % <span style="font-size:9px;color:var(--txt2);font-weight:400">(optional — overrides auto rates)</span></label><input class="inp" id="proj-override-rate" type="number" placeholder="Leave blank for auto" step="0.5" onchange="renderProjection()"></div>
   <div id="proj-summary"></div>
   <div id="proj-breakdown"></div>
   <div id="proj-table"></div>
@@ -3538,11 +3540,27 @@ function setProjectionHorizon(btn, years) {
   renderProjection();
 }
 
-function calcProjectedValue(inv, years, goldRate) {
+function calcProjectedValue(inv, years, goldRate, overrideRate) {
   var val = getInvValue(inv);
   var invested = getInvInvested(inv);
   var type = inv.type;
   var rate = inv.returnRate || 0;
+  // Override rate: if set, use for all types
+  if (overrideRate && overrideRate > 0) {
+    if ((type === 'SIP' || type === 'ELSS') && inv.monthly > 0) {
+      var oMr = overrideRate / 12 / 100;
+      var oCorpus = val * Math.pow(1 + overrideRate/100, years);
+      var oNew = 0; var oM = inv.monthly || 0; var oSU = inv.stepUp || 0;
+      for (var oy = 0; oy < years; oy++) { var oYm = oM * Math.pow(1 + oSU/100, oy); for (var om = 0; om < 12; om++) oNew += oYm * Math.pow(1 + oMr, (years - oy) * 12 - om); }
+      return { current: val, projected: oCorpus + oNew, rate: overrideRate, newContrib: oM * 12 * years };
+    }
+    if (type === 'RD' && inv.monthly > 0) {
+      var oRm = overrideRate / 12 / 100; var oT = val;
+      for (var on = 1; on <= years * 12; on++) oT = oT * (1 + oRm) + (inv.monthly || 0);
+      return { current: val, projected: oT, rate: overrideRate, newContrib: (inv.monthly || 0) * years * 12 };
+    }
+    return { current: val, projected: val * Math.pow(1 + overrideRate/100, years), rate: overrideRate, newContrib: 0 };
+  }
   if (type === 'Stocks') {
     var cagr = 12;
     if (inv.started && invested > 0) {
@@ -3594,10 +3612,13 @@ function calcProjectedTax(inv, gain, years) {
 }
 
 function renderProjection() {
+  renderMemberPills('proj-member-pills');
+
   var inv = filterByMember(S.investments);
   var years = _projHorizon;
   var inflationRate = parseFloat((document.getElementById('proj-inflation') || {}).value) || 6;
   var goldRate = parseFloat((document.getElementById('proj-gold-rate') || {}).value) || 8;
+  var overrideRate = parseFloat((document.getElementById('proj-override-rate') || {}).value) || 0;
 
   if (!inv.length) {
     var el = document.getElementById('proj-summary');
@@ -3610,7 +3631,7 @@ function renderProjection() {
   var typeGroups = {};
 
   inv.forEach(function(i) {
-    var p = calcProjectedValue(i, years, goldRate);
+    var p = calcProjectedValue(i, years, goldRate, overrideRate);
     var gain = p.projected - p.current;
     var tax = calcProjectedTax(i, gain, years);
     totalCurrent += p.current;
@@ -3664,7 +3685,7 @@ function renderProjection() {
     for (var y = 1; y <= years; y++) {
       var yP = 0, yT = 0;
       inv.forEach(function(i) {
-        var p = calcProjectedValue(i, y, goldRate);
+        var p = calcProjectedValue(i, y, goldRate, overrideRate);
         yP += p.projected;
         yT += calcProjectedTax(i, p.projected - p.current, y);
       });
