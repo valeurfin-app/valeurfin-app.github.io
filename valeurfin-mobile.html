@@ -649,7 +649,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="more-item" onclick="goMore('pg-screener')"><span class="mi-ic">🔍</span>Screener</div>
 <div class="more-item" onclick="goMore('pg-family')"><span class="mi-ic">👨‍👩‍👧‍👦</span>Family</div>
 <div class="more-item" onclick="goMore('pg-security')"><span class="mi-ic">🔒</span>Security</div>
-<div class="mi-item" onclick="goMore('pg-import')" id="more-import-link"><div class="mi-ic">📥</div><div class="mi-label">Import</div></div>
+<div class="more-item" onclick="goMore('pg-import')" id="more-import-link"><span class="mi-ic">📥</span>Import</div>
 <div class="more-item" onclick="goMore('pg-about')"><span class="mi-ic">💎</span>About</div>
 <div class="more-item" id="install-btn" onclick="installApp()" style="display:none"><span class="mi-ic">📲</span>Install App</div>
 </div>
@@ -1468,6 +1468,7 @@ function remLabel(id){var c=REMINDER_TYPES.find(function(x){return x.id===id});r
 function insIcon(id){var c=INS_TYPES.find(function(x){return x.id===id});return c?c.icon:'📋'}
 function insLabel(id){var c=INS_TYPES.find(function(x){return x.id===id});return c?c.label:id}
 function invIcon(id){var c=INV_TYPES.find(function(x){return x.id===id});return c?c.icon:'📋'}
+function invLabel(id){var c=INV_TYPES.find(function(x){return x.id===id});return c?c.label:id}
 function invBucket(id){var c=INV_TYPES.find(function(x){return x.id===id});return c?c.bucket:'Alternatives'}
 function getOwnerName(oid){if(!oid||oid==='self')return S.user.name||'Self';var m=S.family.find(function(f){return f.id===oid});return m?m.name:S.user.name}
 function filterByMember(arr){if(currentMember==='all')return arr;return arr.filter(function(x){return(x.owner||'self')===currentMember})}
