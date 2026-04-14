@@ -1,9 +1,10 @@
-// ValeurFin v4.0 — Service Worker
-// Strategy: Network-First with offline fallback
-// Cache name — increment suffix (v4c → v4d) when pushing updates
-// to force old caches to be deleted on next visit
+// ValeurFin v4.1 — Service Worker
+// Strategy: Network-First with cache-busting for app files
+// CACHE_NAME change forces old caches to be deleted
+// skipWaiting + clients.claim ensures instant activation
 
-var CACHE_NAME = 'valeurfin-v5g';
+var CACHE_NAME = 'valeurfin-v5h';
+var APP_VERSION = 'v4.1.5h';
 
 // Files to cache for offline use
 var CACHE_FILES = [
@@ -92,7 +93,12 @@ self.addEventListener('fetch', function(event) {
   if (!url.startsWith('http')) return;
 
   event.respondWith(
-    fetch(event.request)
+    // For HTML files, use cache-busting to bypass CDN/browser HTTP cache
+    (function(){
+      var isHTML = url.indexOf('.html') !== -1 || url.endsWith('/') || url === event.request.referrer;
+      var fetchOpts = isHTML ? { cache: 'no-cache' } : {};
+      return fetch(event.request, fetchOpts);
+    })()
       .then(function(networkResponse) {
         // Network success — clone and store in cache for offline use
         if (networkResponse && networkResponse.status === 200) {
