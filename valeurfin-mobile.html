@@ -2659,8 +2659,11 @@ function saveGoalFromAdd(){var n=document.getElementById('ag-name').value.trim()
 
 // ===== ADD INVESTMENT =====
 function renderAddForm(){var el=document.getElementById('add-sub-form');
-  var pills=INV_TYPES.map(function(t){return '<button class="pill '+(t.id===selectedInvType?'on':'')+'" onclick="selectInvType(\''+t.id+'\')">'+t.icon+'</button>'}).join('');
-  el.innerHTML='<div class="pills" style="margin-bottom:8px">'+pills+'</div><div id="add-inv-fields"></div><button class="btn-s" onclick="addInvestment()" style="margin-top:8px">💾 Add Investment</button>';
+  var pills=INV_TYPES.map(function(t){
+    var shortLabel={'SIP':'SIP','Stocks':'Stocks','FD':'FD','RD':'RD','PPF':'PPF','NPS':'NPS','Gold':'Gold','Crypto':'Crypto','Land':'Land','ELSS':'ELSS','Bonds':'Bonds','Others':'Other'};
+    return '<button class="pill '+(t.id===selectedInvType?'on':'')+'" onclick="selectInvType(\''+t.id+'\')">'+t.icon+' '+(shortLabel[t.id]||t.id)+'</button>';
+  }).join('');
+  el.innerHTML='<div class="pills" style="margin-bottom:8px;gap:4px">'+pills+'</div><div id="add-inv-fields"></div><button class="btn-s" onclick="addInvestment()" style="margin-top:8px">💾 Add Investment</button>';
   buildAddFields();
 }
 function selectInvType(type){selectedInvType=type;renderAddForm()}
