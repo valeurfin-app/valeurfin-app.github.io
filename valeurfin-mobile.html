@@ -3947,7 +3947,7 @@ function initApp(){
 // └─────────────────────────────────────────────────────────────────┘
 var APP_VERSION = 'v4.1.5j';
 
-function showUpdateBanner(waitingWorker) {
+function showUpdateBanner() {
   if(document.getElementById('sw-update-banner')) return;
   var banner = document.createElement('div');
   banner.id = 'sw-update-banner';
@@ -3966,8 +3966,8 @@ function showUpdateBanner(waitingWorker) {
     + 'font-size:16px;cursor:pointer;padding:0 2px">✕</button>';
   document.body.appendChild(banner);
   document.getElementById('sw-update-btn').onclick = function() {
-    if(waitingWorker) waitingWorker.postMessage({ type: 'SKIP_WAITING' });
     banner.remove();
+    window.location.reload();
   };
   document.getElementById('sw-dismiss-btn').onclick = function() {
     banner.remove();
@@ -3979,19 +3979,13 @@ if('serviceWorker' in navigator){
     // Cache-busting: ?v= forces browser to download fresh sw.js on every version bump
     navigator.serviceWorker.register('sw.js?v=' + APP_VERSION).then(function(reg){
       reg.update();
-      if(reg.waiting){ showUpdateBanner(reg.waiting); }
-      reg.addEventListener('updatefound', function(){
-        var nw = reg.installing; if(!nw) return;
-        nw.addEventListener('statechange', function(){
-          if(nw.state === 'installed' && navigator.serviceWorker.controller){
-            showUpdateBanner(nw);
-          }
-        });
-      });
     }).catch(function(){});
+    // When new SW activates (skipWaiting runs in sw.js install),
+    // show banner — user clicks to reload and get new version
     var refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', function(){
-      if(refreshing) return; refreshing = true; window.location.reload();
+      if(refreshing) return;
+      showUpdateBanner();
     });
   });
 }
