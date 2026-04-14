@@ -584,6 +584,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="cd"><h3>📈 Market <span class="cd-badge">LIVE</span></h3><div id="home-market"></div></div>
 <div id="dash-cashflow"></div>
 <div id="dash-fire"></div>
+<div id="dash-est-nw"></div>
 <div id="dash-events"></div>
 <div class="cd"><h3>📈 Timeline</h3><div class="timeline" id="home-tl"></div></div>
 <div class="cd"><h3>🍩 Allocation</h3><div class="donut-wrap" id="home-donut"></div></div>
@@ -644,6 +645,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="more-item" onclick="goMore('pg-log')"><span class="mi-ic">📋</span>Log</div>
 <div class="more-item" onclick="goMore('pg-tax')"><span class="mi-ic">🧮</span>Tax</div>
 <div class="more-item" onclick="goMore('pg-exit')"><span class="mi-ic">🚪</span>Exit Signals</div>
+<div class="more-item" onclick="goMore('pg-projector')"><span class="mi-ic">🔮</span>Projector</div>
 <div class="more-item" onclick="goMore('pg-screener')"><span class="mi-ic">🔍</span>Screener</div>
 <div class="more-item" onclick="goMore('pg-family')"><span class="mi-ic">👨‍👩‍👧‍👦</span>Family</div>
 <div class="more-item" onclick="goMore('pg-security')"><span class="mi-ic">🔒</span>Security</div>
@@ -759,6 +761,30 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="cd"><h3>🚪 Exit Signals</h3>
 <div id="exit-list-m"></div>
 <div id="exit-empty-m" class="empty-state" style="display:none"><div class="es-ic">🚪</div><h3>No Signals</h3></div>
+</div>
+</div>
+
+<!-- WEALTH PROJECTOR -->
+<div class="pg" id="pg-projector">
+<button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
+<div class="cd">
+  <h3>🔮 Wealth Projector <span class="cd-badge">Estimated</span></h3>
+  <p class="m-sub">Project your net worth with tax & inflation adjustments</p>
+  <div class="pills" id="proj-horizon" style="margin-bottom:8px">
+    <button class="pill on" onclick="setProjectionHorizon(this,1)">1Y</button>
+    <button class="pill" onclick="setProjectionHorizon(this,3)">3Y</button>
+    <button class="pill" onclick="setProjectionHorizon(this,5)">5Y</button>
+    <button class="pill" onclick="setProjectionHorizon(this,10)">10Y</button>
+    <button class="pill" onclick="setProjectionHorizon(this,15)">15Y</button>
+    <button class="pill" onclick="setProjectionHorizon(this,20)">20Y</button>
+  </div>
+  <div class="fr" style="margin-bottom:10px">
+    <div class="fg"><label>Inflation %</label><input class="inp" id="proj-inflation" type="number" value="6" step="0.5" onchange="renderProjection()"></div>
+    <div class="fg"><label>Gold Growth %</label><input class="inp" id="proj-gold-rate" type="number" value="8" step="0.5" onchange="renderProjection()"></div>
+  </div>
+  <div id="proj-summary"></div>
+  <div id="proj-breakdown"></div>
+  <div id="proj-table"></div>
 </div>
 </div>
 
@@ -914,8 +940,8 @@ var INV_TYPES=[
   {id:'Stocks',icon:'📊',label:'Stocks / ETF',bucket:'Equity',hasMonthly:false},
   {id:'FD',icon:'🏦',label:'Fixed Deposit',bucket:'Debt',hasMonthly:false,hasFD:true},
   {id:'RD',icon:'🏦',label:'Recurring Deposit',bucket:'Debt',hasMonthly:true},
-  {id:'PPF',icon:'🏛️',label:'PPF',bucket:'Debt',hasMonthly:true},
-  {id:'NPS',icon:'🏛️',label:'NPS',bucket:'Hybrid',hasMonthly:true},
+  {id:'PPF',icon:'🏛️',label:'PPF',bucket:'Debt',hasMonthly:false},
+  {id:'NPS',icon:'🏛️',label:'NPS',bucket:'Hybrid',hasMonthly:false},
   {id:'Gold',icon:'🥇',label:'Gold / SGB',bucket:'Alternatives',hasMonthly:false},
   {id:'Crypto',icon:'₿',label:'Crypto',bucket:'Alternatives',hasMonthly:false},
   {id:'Land',icon:'🏠',label:'Real Estate',bucket:'Alternatives',hasMonthly:false},
@@ -1457,7 +1483,7 @@ function applyTheme(){document.documentElement.setAttribute('data-theme',S.theme
 
 // ===== NAVIGATION =====
 function goNav(tab){var map={home:'pg-home',inv:'pg-inv',exp:'pg-exp',add:'pg-add',more:'pg-more'};document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active')});document.getElementById(map[tab]).classList.add('active');document.querySelectorAll('.bnav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('nav-'+tab).classList.add('on');if(tab==='add')renderAddSubForms()}
-function goMore(pgId){document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active')});document.getElementById(pgId).classList.add('active');document.querySelectorAll('.bnav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('nav-more').classList.add('on');if(pgId==='pg-tax')renderTaxM();if(pgId==='pg-exit')renderExitM();if(pgId==='pg-screener')renderScreenerM();if(pgId==='pg-div'){rDividends();loadAllDividends();}if(pgId==='pg-bot')rBotPageChipsM();if(pgId==='pg-import'){}}
+function goMore(pgId){document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active')});document.getElementById(pgId).classList.add('active');document.querySelectorAll('.bnav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('nav-more').classList.add('on');if(pgId==='pg-tax')renderTaxM();if(pgId==='pg-exit')renderExitM();if(pgId==='pg-screener')renderScreenerM();if(pgId==='pg-div'){rDividends();loadAllDividends();}if(pgId==='pg-bot')rBotPageChipsM();if(pgId==='pg-projector')renderProjection();if(pgId==='pg-import'){}}
 
 // ===== FAMILY =====
 function switchMember(val){currentMember=val||'all';renderAll();}
@@ -1465,12 +1491,12 @@ function renderFamilyDD(){
   var dd=document.getElementById('family-dd');
   var bar=document.getElementById('family-bar');
   var ct=document.getElementById('content');
-  if(S.user.mode==='family'&&S.family.length>0){
+  if(S.user.mode==='family'){
     if(bar)bar.classList.add('show');
     if(ct)ct.classList.add('with-family');
     dd.innerHTML='<option value="all">👨‍👩‍👧‍👦 All Members</option>'
       +'<option value="self">'+S.user.name+' (You)</option>'
-      +S.family.map(function(f){
+      +(S.family||[]).map(function(f){
         return '<option value="'+f.id+'">'+f.name+' ('+f.relation+')</option>';
       }).join('');
     dd.value=currentMember||'all';
@@ -1478,7 +1504,7 @@ function renderFamilyDD(){
   }else{
     if(bar)bar.classList.remove('show');
     if(ct)ct.classList.remove('with-family');
-    if(S.user.mode!=='family')currentMember='all';
+    currentMember='all';
   }
 }
 
@@ -1739,10 +1765,10 @@ function releaseFocus(overlayEl){
 function renderMemberPills(containerId){
   var el=document.getElementById(containerId);
   if(!el)return;
-  if(S.user.mode!=="family"||!S.family||!S.family.length){el.innerHTML="";return;}
+  if(S.user.mode!=="family"){el.innerHTML="";return;}
   var AF="👨‍👩‍👧‍👦";var P="👤";
   var members=[{id:"all",name:"All Family",icon:AF},{id:"self",name:S.user.name,icon:P}]
-    .concat(S.family.map(function(f){return{id:f.id,name:f.name,icon:P};}));
+    .concat((S.family||[]).map(function(f){return{id:f.id,name:f.name,icon:P};}));
   var html='<div style="margin-bottom:12px">'
     +'<div style="font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Viewing portfolio for</div>'
     +'<div class="member-pills">'
@@ -1757,9 +1783,9 @@ function renderMemberPills(containerId){
 function rFamilyOverview(){
   var el=document.getElementById("dash-family-overview");
   if(!el)return;
-  if(currentMember!=="all"||!S.family||!S.family.length){el.innerHTML="";return;}
+  if(currentMember!=="all"){el.innerHTML="";return;}
   var allM=[{id:"self",name:S.user.name}]
-    .concat(S.family.map(function(f){return{id:f.id,name:f.name};}));
+    .concat((S.family||[]).map(function(f){return{id:f.id,name:f.name};}));
   var cards=allM.map(function(mb){
     var mInv=S.investments.filter(function(i){return(i.owner||"self")===mb.id;});
     var nw=mInv.reduce(function(s,i){return s+getInvValue(i);},0);
@@ -2118,7 +2144,7 @@ async function loadAllDividends() {
       // Proxy failed — stamp a short retry window (5 min) so loading
       // spinner clears and user isn't stuck seeing 'Loading...' forever
       // We use a negative sentinel: divCacheDate = 1 (non-zero so
-      // stocksLoading check passes, but < 5min so retry happens soon)
+      // loading check clears, but < 5min so retry happens soon)
       if (!inv.divCacheDate) inv.divCacheDate = 1;
     }
     // Small stagger to avoid hammering proxies
@@ -2227,14 +2253,17 @@ function rDividends() {
   var stocksWithSymbols = S.investments.filter(function(i) {
     return i.type === 'Stocks' && i.nseSymbol;
   });
-  // stocksLoading: true only if fetch has never been attempted
-  // divCacheDate=0: never tried  divCacheDate=1: tried but proxy failed
-  // divCacheDate>1: successful fetch (real timestamp)
-  var stocksLoading = stocksWithSymbols.some(function(i) {
+  // divCacheDate=0: never tried → show "Loading..."
+  // divCacheDate=1: tried but all proxies failed → show "Unavailable" with Retry
+  // divCacheDate>1: successful fetch
+  var stocksNeverTried = stocksWithSymbols.some(function(i) {
     return !i.divCacheDate && (i.divCache||[]).length === 0;
   });
+  var stocksFailedProxy = !stocksNeverTried && stocksWithSymbols.some(function(i) {
+    return i.divCacheDate === 1 && (i.divCache||[]).length === 0;
+  });
 
-  if (!divs.length && stockDivTotal <= 0 && !stocksLoading) {
+  if (!divs.length && stockDivTotal <= 0 && !stocksNeverTried && !stocksFailedProxy) {
     el.innerHTML = ''; empty.style.display = 'block'; summary.innerHTML = ''; return;
   }
   empty.style.display = 'none';
@@ -2310,12 +2339,14 @@ function rDividends() {
   if (stockRows) {
     html += '<div class="cd" style="margin-bottom:12px">'
       + '<h3 style="font-size:13px">📊 From Your Holdings <span class="cd-badge">Auto</span></h3>'
-      + (stocksLoading ? '<p style="font-size:10px;color:var(--txt3)">🔄 Fetching dividend data...</p>' : '')
+      + (stocksNeverTried ? '<p style="font-size:10px;color:var(--txt3)">🔄 Fetching dividend data...</p>' : '')
       + '<div style="overflow-x:auto"><table class="div-tbl"><thead><tr>'
       + '<th>Stock</th><th>Payments</th><th>Last DPS</th><th>Last Ex-Date</th><th>Your Total</th>'
       + '</tr></thead><tbody>' + stockRows + '</tbody></table></div></div>';
-  } else if (stocksLoading) {
+  } else if (stocksNeverTried) {
     html += '<div class="cd"><p style="font-size:11px;color:var(--txt3);padding:8px">🔄 Loading dividend history for your stocks...</p></div>';
+  } else if (stocksFailedProxy) {
+    html += '<div class="cd"><p style="font-size:11px;color:var(--txt3);padding:8px">⚠️ Dividend data unavailable — proxy busy. <button class="btn-sm" onclick="S.investments.forEach(function(i){if(i.type===\'Stocks\')i.divCacheDate=0;});loadAllDividends();" style="margin-left:4px">🔄 Retry</button></p></div>';
   }
 
   // Manual entries
@@ -2533,7 +2564,10 @@ function rHome(){
   var wScore=calcWealthScore(nw,invested,returns,mExp,mInc,inv);var iScore=calcInsuranceScore();
 
   var h='<div class="sg">';
-  h+='<div class="st hero"><div class="lbl">NET WORTH'+(priceLastFetched?' <span class="live-badge up"><span class="live-dot"></span> LIVE</span>':'')+'</div><div class="val">'+(nw>0?fmtFull(nw):'₹0')+'</div>'+(nw>0?'<span class="sub '+(returns>=0?'up':'dn')+'">'+fS(returns)+' ('+pct(retPct)+')</span>':'<span class="sub info">Add investments</span>')+'</div>';
+  var viewingLabel='NET WORTH';
+  if(currentMember==='self')viewingLabel=(S.user.name||'YOUR').toUpperCase()+'\'S NET WORTH';
+  else if(currentMember!=='all'){var _fm=(S.family||[]).find(function(f){return f.id===currentMember;});if(_fm)viewingLabel=_fm.name.toUpperCase()+'\'S NET WORTH';}
+  h+='<div class="st hero"><div class="lbl">'+viewingLabel+(priceLastFetched?' <span class="live-badge up"><span class="live-dot"></span> LIVE</span>':'')+'</div><div class="val">'+(nw>0?fmtFull(nw):'₹0')+'</div>'+(nw>0?'<span class="sub '+(returns>=0?'up':'dn')+'">'+fS(returns)+' ('+pct(retPct)+')</span>':'<span class="sub info">Add investments</span>')+'</div>';
   h+='<div class="st"><div class="lbl">SIP</div><div class="val">'+fmt(monthlySIP)+'</div></div>';
   h+='<div class="st"><div class="lbl">EXPENSES</div><div class="val">'+fmt(mExp)+'</div></div>';
   h+='<div class="st"><div class="lbl">INVESTED</div><div class="val">'+fmt(invested)+'</div></div>';
@@ -2557,6 +2591,7 @@ function rHome(){
   rFamilyOverview();
   rDashCashFlow(mInc,mExp,monthlySIP);
   rDashFIRE(nw,mExp);
+  rDashEstNW();
   rDashEvents();
 }
 
@@ -2619,7 +2654,7 @@ function renderAddSubForms(){var el=document.getElementById('add-sub-form');if(!
 function saveExpenseFromAdd(){var l=document.getElementById('ae-label').value.trim(),c=document.getElementById('ae-cat').value,a=parseFloat(document.getElementById('ae-amount').value)||0,f=document.getElementById('ae-freq').value;if(!l||!a){fireNotif('⚠️','Fill fields','');return}S.expenses.push({id:uid(),label:l,category:c,amount:a,frequency:f,owner:'self',createdAt:Date.now()});saveS().then(function(){renderAll();fireNotif('✅','Expense added','')})}
 function saveIncomeFromAdd(){var l=document.getElementById('ai-label').value.trim(),c=document.getElementById('ai-cat').value,a=parseFloat(document.getElementById('ai-amount').value)||0,f=document.getElementById('ai-freq').value;if(!l||!a){fireNotif('⚠️','Fill fields','');return}S.income.push({id:uid(),label:l,category:c,amount:a,frequency:f,owner:'self',createdAt:Date.now()});saveS().then(function(){renderAll();fireNotif('✅','Income added','')})}
 function saveReminderFromAdd(){var l=document.getElementById('ar-label').value.trim(),t=document.getElementById('ar-type').value,a=parseFloat(document.getElementById('ar-amount').value)||0,d=document.getElementById('ar-due')?document.getElementById('ar-due').value:'5';if(!l||!a){fireNotif('⚠️','Fill fields','');return}S.reminders.push({id:uid(),label:l,remType:t,amount:a,frequency:'monthly',dueDate:d,createdAt:Date.now()});saveS().then(function(){renderAll();fireNotif('✅','Reminder added','')})}
-function saveInsuranceFromAdd(){var l=document.getElementById('ains-label').value.trim(),t=document.getElementById('ains-type').value,co=document.getElementById('ains-co').value,sa=parseFloat(document.getElementById('ains-sum').value)||0,pr=parseFloat(document.getElementById('ains-prem').value)||0;if(!l||!sa){fireNotif('⚠️','Fill fields','');return}S.insurance.push({id:uid(),label:l,insType:t,company:co,sumAssured:sa,premium:pr,premFreq:'yearly',premDueDate:'5',status:'active',owner:'self',createdAt:Date.now()});saveS().then(function(){renderAll();fireNotif('✅','Policy added','')})}
+function saveInsuranceFromAdd(){var l=document.getElementById('ains-label').value.trim(),t=document.getElementById('ains-type').value,co=document.getElementById('ains-co').value,sa=parseFloat(document.getElementById('ains-sum').value)||0,pr=parseFloat(document.getElementById('ains-prem').value)||0;if(!l||!sa){fireNotif('⚠️','Fill fields','');return}S.insurance.push({id:uid(),label:l,insType:t,company:co,sumAssured:sa,premium:pr,premFreq:'yearly',premDueDate:'',premDueMonth:'',status:'active',owner:'self',createdAt:Date.now()});saveS().then(function(){renderAll();fireNotif('✅','Policy added','')})}
 function saveGoalFromAdd(){var n=document.getElementById('ag-name').value.trim(),t=parseFloat(document.getElementById('ag-target').value)||0,c=parseFloat(document.getElementById('ag-current').value)||0,d=document.getElementById('ag-deadline').value;if(!n||!t){fireNotif('⚠️','Fill fields','');return}S.goals=S.goals||[];S.goals.push({id:uid(),name:n,target:t,current:c,deadline:d,icon:'🎯',createdAt:Date.now()});saveS().then(function(){renderAll();fireNotif('✅','Goal added','')})}
 
 // ===== ADD INVESTMENT =====
@@ -2643,23 +2678,36 @@ function buildAddFields(){var t=INV_TYPES.find(function(x){return x.id===selecte
     h+='<div class="fg"><label>Sector</label><select class="inp" id="add-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div>';
   }
   // --- Owner (all types, family mode) ---
-  if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
+  if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
   // --- Gold-specific: Grams + Purity ---
   if(t.id==='Gold'){
     h+='<div class="fr"><div class="fg"><label>Weight (grams)</label><input class="inp" id="add-gold-grams" type="number" step="0.01" min="0" placeholder="e.g. 10.5"></div>';
     h+='<div class="fg"><label>Purity</label><select class="inp" id="add-gold-purity"><option value="24">24K</option><option value="22" selected>22K</option><option value="18">18K</option><option value="0">SGB/ETF</option></select></div></div>';
   }
-  // --- Monthly types (SIP, ELSS, RD, PPF, NPS) ---
+  // --- Monthly types: SIP, ELSS, RD ---
   if(t.hasMonthly){
     if(t.hasMF){h+='<div class="fr"><div class="fg"><label>Total Units</label><input class="inp" id="add-total-units" type="number" step="0.001" placeholder="e.g. 2456.789"></div><div class="fg"><label>Scheme Code</label><input class="inp" id="add-scheme-code" placeholder="auto-filled" readonly></div></div>';}
-    h+='<div class="fr"><div class="fg"><label>Monthly SIP (₹)</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'">'+ordinal(d)+'</option>';h+='</select></div></div>';
-    h+='<div class="fr"><div class="fg"><label>Annual Step-Up</label><select class="inp" id="add-stepup" onchange="var w=document.getElementById(\'stepup-custom-wrap-m\');if(w)w.style.display=this.value===\'custom\'?\'\':\'none\';"><option value="0">No Step-Up</option><option value="5">5%/yr</option><option value="10">10%/yr</option><option value="15">15%/yr</option><option value="20">20%/yr</option><option value="custom">Custom</option></select></div><div class="fg" id="stepup-custom-wrap-m" style="display:none"><label>Custom %</label><input class="inp" id="add-stepup-custom" type="number" step="1" min="1" placeholder="e.g. 12"></div></div>';
-    h+='<div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div>';
+    var monthlyLabel=t.id==='RD'?'Monthly Amount (₹)':'Monthly SIP (₹)';
+    h+='<div class="fr"><div class="fg"><label>'+monthlyLabel+'</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'">'+ordinal(d)+'</option>';h+='</select></div></div>';
+    if(t.id!=='RD'){
+      h+='<div class="fr"><div class="fg"><label>Annual Step-Up</label><select class="inp" id="add-stepup" onchange="var w=document.getElementById(\'stepup-custom-wrap-m\');if(w)w.style.display=this.value===\'custom\'?\'\':\'none\';"><option value="0">No Step-Up</option><option value="5">5%/yr</option><option value="10">10%/yr</option><option value="15">15%/yr</option><option value="20">20%/yr</option><option value="custom">Custom</option></select></div><div class="fg" id="stepup-custom-wrap-m" style="display:none"><label>Custom %</label><input class="inp" id="add-stepup-custom" type="number" step="1" min="1" placeholder="e.g. 12"></div></div>';
+      h+='<div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div>';
+    }
   }
-  // --- Stocks-specific: Qty + Price ---
-  if(t.id==='Stocks'){
-    h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="add-qty" type="number" placeholder="e.g. 10"></div><div class="fg"><label>Buy Price (₹)</label><input class="inp" id="add-avgprice" type="number" placeholder="e.g. 1650"></div></div>';
-  } else if(!t.hasMonthly){
+  // --- PPF: Current Balance + Rate ---
+  if(t.id==='PPF'){
+    h+='<div class="fr"><div class="fg"><label>Current Balance (₹)</label><input class="inp" id="add-invested" type="number" placeholder="e.g. 1000000"></div>'
+     +'<div class="fg"><label>Rate of Interest %</label><input class="inp" id="add-return" type="number" value="7.1" step="0.1"></div></div>'
+     +'<div style="background:var(--gbg);border-radius:8px;padding:8px;margin-top:4px;font-size:10px;color:var(--g)">🏛️ PPF: Annual compound. Tax exempt. Update balance yearly.</div>';
+  }
+  // --- NPS: Current Balance + Return ---
+  else if(t.id==='NPS'){
+    h+='<div class="fr"><div class="fg"><label>Current Balance (₹)</label><input class="inp" id="add-invested" type="number" placeholder="e.g. 500000"></div>'
+     +'<div class="fg"><label>Expected Return %</label><input class="inp" id="add-return" type="number" value="10" step="0.5"></div></div>'
+     +'<div style="background:var(--bbg);border-radius:8px;padding:8px;margin-top:4px;font-size:10px;color:var(--b)">🏛️ NPS: 60% tax-free on maturity. Update balance yearly.</div>';
+  }
+  // --- Non-Stocks, Non-Monthly, Non-PPF, Non-NPS ---
+  else if(t.id!=='Stocks'&&!t.hasMonthly){
     h+='<div class="fr"><div class="fg"><label>Invested (₹)</label><input class="inp" id="add-invested" type="number"></div><div class="fg"><label>Return %</label><input class="inp" id="add-return" type="number" placeholder="8"></div></div>';
   }
   // --- FD/RD-specific ---
@@ -2955,6 +3003,8 @@ function rInsurance(){var policies=filterByMember(S.insurance);var el=document.g
   if(!policies.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';
   el.innerHTML=policies.map(function(p){var t=INS_TYPES.find(function(x){return x.id===p.insType});return '<div class="ins-card"><div class="ins-top"><div class="ins-ic" style="background:'+(p.status==='active'?'var(--gbg)':'var(--dbg)')+'">'+(t?t.icon:'🛡️')+'</div><div class="ins-info"><h4>'+p.label+'</h4><p>'+(t?t.label:'')+' · '+p.company+' · <b>'+p.status.toUpperCase()+'</b></p></div></div><div class="ins-grid"><div class="ig-k">Sum</div><div class="ig-v">'+fmtFull(p.sumAssured)+'</div><div class="ig-k">Premium</div><div class="ig-v">'+fmtFull(p.premium)+'</div></div><div style="margin-top:4px;text-align:right"><button class="btn-sm" onclick="deleteIns(\''+p.id+'\')">🗑️</button></div></div>'}).join('')}
 function openInsModal(){
+  var dateOpts='<option value="">Not set</option>';for(var d=1;d<=31;d++)dateOpts+='<option value="'+d+'">'+ordinal(d)+'</option>';
+  var monthOpts='<option value="">Every month</option><option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option><option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>';
   document.getElementById('ism-form').innerHTML=
     '<div class="fg"><label>Policy Name</label><input class="inp" id="ins-label"></div>'
     +'<div class="fr"><div class="fg"><label>Type</label>'
@@ -2976,7 +3026,11 @@ function openInsModal(){
     +'<option value="monthly">Monthly</option></select></div>'
     +'<div class="fg"><label>Status</label>'
     +'<select class="inp" id="ins-status"><option value="active">Active</option>'
-    +'<option value="lapsed">Lapsed</option></select></div></div>';
+    +'<option value="lapsed">Lapsed</option></select></div></div>'
+    +'<div class="fr"><div class="fg"><label>Premium Due Day</label>'
+    +'<select class="inp" id="ins-prem-day">'+dateOpts+'</select></div>'
+    +'<div class="fg"><label>Due Month</label>'
+    +'<select class="inp" id="ins-prem-month">'+monthOpts+'</select></div></div>';
   document.getElementById('ins-modal').classList.add('open');
 }
 
@@ -2988,9 +3042,11 @@ function saveInsurance(){
   var pr=parseFloat(document.getElementById('ins-prem').value)||0;
   var pf=document.getElementById('ins-prem-freq')?document.getElementById('ins-prem-freq').value:'yearly';
   var st=document.getElementById('ins-status').value;
+  var premDay=document.getElementById('ins-prem-day')?document.getElementById('ins-prem-day').value:'';
+  var premMonth=document.getElementById('ins-prem-month')?document.getElementById('ins-prem-month').value:'';
   if(!l||!sa){fireNotif('⚠️','Fill fields','');return;}
   S.insurance.push({id:uid(),label:l,insType:t,company:co,sumAssured:sa,premium:pr,
-    premFreq:pf,premDueDate:'5',status:st,owner:'self',createdAt:Date.now()});
+    premFreq:pf,premDueDate:premDay,premDueMonth:premMonth,status:st,owner:'self',createdAt:Date.now()});
   saveS().then(function(){renderAll();closeInsModal();fireNotif('✅','Saved','');});
 }
 
@@ -3290,6 +3346,24 @@ function generateAlerts(){
   });
   var exits=getExitSignals(S.investments);
   exits.filter(function(s){return s.level==='sell'}).forEach(function(s){alertList.push({icon:s.icon,title:s.inv.label,desc:s.reason,priority:0});});
+  // --- INSURANCE PREMIUM DUE (3-day window) ---
+  (S.insurance||[]).filter(function(p){return p.status==='active'&&p.premDueDate}).forEach(function(p){
+    var dueDay=parseInt(p.premDueDate);if(!dueDay||dueDay<1||dueDay>31)return;
+    var nowDate=new Date();var thisMonth=nowDate.getMonth()+1;var freq=p.premFreq||'yearly';
+    var dueMonth=parseInt(p.premDueMonth)||0;
+    var dueMonths=[];
+    if(freq==='monthly'){dueMonths=[thisMonth];}
+    else if(freq==='quarterly'&&dueMonth){for(var qm=dueMonth;qm<=12;qm+=3)dueMonths.push(qm);}
+    else if(freq==='half-yearly'&&dueMonth){dueMonths=[dueMonth];var hm2=dueMonth+6;if(hm2>12)hm2-=12;dueMonths.push(hm2);}
+    else if(freq==='yearly'&&dueMonth){dueMonths=[dueMonth];}
+    else{dueMonths=[thisMonth];}
+    if(dueMonths.indexOf(thisMonth)===-1)return;
+    var diff=dueDay-nowDate.getDate();
+    if(diff>=0&&diff<=3){
+      var daysLabel=diff===0?'Today':diff===1?'Tomorrow':diff+'d';
+      alertList.push({icon:'🛡️',title:p.label+' Premium',desc:fmtFull(p.premium)+' — '+daysLabel,priority:diff===0?0:1});
+    }
+  });
   var insT=(S.insurance||[]).filter(function(p){return p.status==='active'}).map(function(p){return p.insType});
   if(!insT.includes('term_life'))alertList.push({icon:'🛡️',title:'No Term Insurance',desc:'Essential',priority:3});
   if(!insT.includes('health'))alertList.push({icon:'❤️',title:'No Health Insurance',desc:'Get covered',priority:3});
@@ -3446,6 +3520,193 @@ function renderScreenerM(){
     +'<div class="st"><div class="lbl">Current</div><div class="val">'+fmt(tV)+'</div></div>'
     +'<div class="st"><div class="lbl">Returns</div><div class="val" style="color:'+(tR>=0?'var(--g)':'var(--d)')+'">'+fS(tR)+'</div></div>'
     +'</div>';
+}
+
+// ====================================================
+// 🔮 WEALTH PROJECTOR — Mobile
+// ====================================================
+
+var _projHorizon = 1;
+
+function setProjectionHorizon(btn, years) {
+  _projHorizon = years;
+  document.querySelectorAll('#proj-horizon .pill').forEach(function(p){ p.classList.remove('on'); });
+  if(btn) btn.classList.add('on');
+  renderProjection();
+}
+
+function calcProjectedValue(inv, years, goldRate) {
+  var val = getInvValue(inv);
+  var invested = getInvInvested(inv);
+  var type = inv.type;
+  var rate = inv.returnRate || 0;
+  if (type === 'Stocks') {
+    var cagr = 12;
+    if (inv.started && invested > 0) {
+      var yrsHeld = (Date.now() - new Date(inv.started).getTime()) / (365.25*24*3600*1000);
+      if (yrsHeld > 0.25 && val > 0) cagr = (Math.pow(val/invested, 1/yrsHeld) - 1) * 100;
+      if (cagr < -50 || cagr > 100) cagr = 12;
+    }
+    return { current: val, projected: val * Math.pow(1 + cagr/100, years), rate: cagr, newContrib: 0 };
+  }
+  if (type === 'SIP' || type === 'ELSS') {
+    var sipRate = rate > 0 ? rate : 12;
+    var mr = sipRate / 12 / 100;
+    var corpusGrowth = val * Math.pow(1 + sipRate/100, years);
+    var newContrib = 0;
+    var monthly = inv.monthly || 0;
+    var stepUp = inv.stepUp || 0;
+    for (var yr = 0; yr < years; yr++) {
+      var yearlyMonthly = monthly * Math.pow(1 + stepUp/100, yr);
+      for (var mo = 0; mo < 12; mo++) {
+        var monthsRemaining = (years - yr) * 12 - mo;
+        newContrib += yearlyMonthly * Math.pow(1 + mr, monthsRemaining);
+      }
+    }
+    return { current: val, projected: corpusGrowth + newContrib, rate: sipRate, newContrib: monthly * 12 * years };
+  }
+  if (type === 'RD') {
+    var rdRate = rate > 0 ? rate : 7;
+    var rdMr = rdRate / 12 / 100;
+    var rdTotal = val;
+    var rdMonthly = inv.monthly || 0;
+    for (var n = 1; n <= years * 12; n++) rdTotal = rdTotal * (1 + rdMr) + rdMonthly;
+    return { current: val, projected: rdTotal, rate: rdRate, newContrib: rdMonthly * years * 12 };
+  }
+  if (type === 'FD') { var fdR = rate > 0 ? rate : 7; return { current: val, projected: val * Math.pow(1 + fdR/100, years), rate: fdR, newContrib: 0 }; }
+  if (type === 'PPF') { var ppfR = rate > 0 ? rate : 7.1; return { current: val, projected: val * Math.pow(1 + ppfR/100, years), rate: ppfR, newContrib: 0 }; }
+  if (type === 'NPS') { var npsR = rate > 0 ? rate : 10; return { current: val, projected: val * Math.pow(1 + npsR/100, years), rate: npsR, newContrib: 0 }; }
+  if (type === 'Gold') { var gr = goldRate || 8; return { current: val, projected: val * Math.pow(1 + gr/100, years), rate: gr, newContrib: 0 }; }
+  return { current: val, projected: val, rate: 0, newContrib: 0 };
+}
+
+function calcProjectedTax(inv, gain, years) {
+  if (gain <= 0) return 0;
+  var rules = getTaxRules(inv.type, 365 * years);
+  if (rules.isExempt) return 0;
+  if (rules.isSlab) return gain * 0.2;
+  if (rules.isFlat) return gain * rules.stRate / 100;
+  if (rules.isLong) return Math.max(0, gain - (rules.ltExempt || 0)) * rules.ltRate / 100;
+  return gain * rules.stRate / 100;
+}
+
+function renderProjection() {
+  var inv = filterByMember(S.investments);
+  var years = _projHorizon;
+  var inflationRate = parseFloat((document.getElementById('proj-inflation') || {}).value) || 6;
+  var goldRate = parseFloat((document.getElementById('proj-gold-rate') || {}).value) || 8;
+
+  if (!inv.length) {
+    var el = document.getElementById('proj-summary');
+    if (el) el.innerHTML = '<div class="empty-state"><div class="es-ic">🔮</div><h3>No Investments</h3><p>Add investments to see projections</p></div>';
+    ['proj-breakdown','proj-table'].forEach(function(id){var e=document.getElementById(id);if(e)e.innerHTML='';});
+    return;
+  }
+
+  var totalCurrent = 0, totalProjected = 0, totalTax = 0;
+  var typeGroups = {};
+
+  inv.forEach(function(i) {
+    var p = calcProjectedValue(i, years, goldRate);
+    var gain = p.projected - p.current;
+    var tax = calcProjectedTax(i, gain, years);
+    totalCurrent += p.current;
+    totalProjected += p.projected;
+    totalTax += tax;
+    var t = i.type;
+    if (!typeGroups[t]) typeGroups[t] = { current: 0, projected: 0, items: 0 };
+    typeGroups[t].current += p.current;
+    typeGroups[t].projected += p.projected;
+    typeGroups[t].items++;
+  });
+
+  var afterTax = totalProjected - totalTax;
+  var inflFactor = Math.pow(1 + inflationRate/100, years);
+  var inflAdj = totalProjected / inflFactor;
+  var realVal = afterTax / inflFactor;
+  var totalGain = totalProjected - totalCurrent;
+
+  // Summary
+  var summaryEl = document.getElementById('proj-summary');
+  if (summaryEl) {
+    summaryEl.innerHTML = '<div class="sg">'
+      + '<div class="st hero" style="background:linear-gradient(135deg,#1a1a35,#0f1829)">'
+      + '<div class="lbl" style="color:rgba(255,255,255,.5)">ESTIMATED (' + years + 'Y)</div>'
+      + '<div class="val" style="color:#fff">' + fmtFull(totalProjected) + '</div>'
+      + '<span class="sub up">+' + fmtFull(totalGain) + '</span></div>'
+      + '<div class="st"><div class="lbl">AFTER TAX</div><div class="val" style="color:var(--g)">' + fmtFull(afterTax) + '</div></div>'
+      + '<div class="st"><div class="lbl">INFLATION ADJ.</div><div class="val" style="color:var(--b)">' + fmtFull(inflAdj) + '</div></div>'
+      + '<div class="st"><div class="lbl">REAL VALUE</div><div class="val" style="color:var(--w)">' + fmtFull(realVal) + '</div></div>'
+      + '</div>';
+  }
+
+  // Breakdown
+  var breakdownEl = document.getElementById('proj-breakdown');
+  if (breakdownEl) {
+    var bH = '';
+    Object.keys(typeGroups).forEach(function(t) {
+      var g = typeGroups[t];
+      bH += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bdr);font-size:11px">'
+        + '<span>' + invIcon(t) + ' ' + invLabel(t) + '</span>'
+        + '<span>' + fmt(g.current) + ' → <b style="color:var(--g)">' + fmt(g.projected) + '</b></span></div>';
+    });
+    breakdownEl.innerHTML = bH;
+  }
+
+  // Year-by-year table
+  var tableEl = document.getElementById('proj-table');
+  if (tableEl) {
+    var tH = '<div style="margin-top:12px;overflow-x:auto"><table class="tbl" style="font-size:10px"><thead><tr>'
+      + '<th>Yr</th><th>Value</th><th>Tax</th><th>After Tax</th><th>Real</th></tr></thead><tbody>';
+    for (var y = 1; y <= years; y++) {
+      var yP = 0, yT = 0;
+      inv.forEach(function(i) {
+        var p = calcProjectedValue(i, y, goldRate);
+        yP += p.projected;
+        yT += calcProjectedTax(i, p.projected - p.current, y);
+      });
+      var yIF = Math.pow(1 + inflationRate/100, y);
+      tH += '<tr><td>' + y + '</td><td>' + fmt(yP) + '</td><td style="color:var(--d)">' + fmt(yT) + '</td>'
+        + '<td>' + fmt(yP - yT) + '</td><td style="color:var(--w)">' + fmt((yP - yT)/yIF) + '</td></tr>';
+    }
+    tH += '</tbody></table></div>';
+    tableEl.innerHTML = tH;
+  }
+}
+
+function rDashEstNW() {
+  var el = document.getElementById('dash-est-nw');
+  if (!el) return;
+  var inv = filterByMember(S.investments);
+  if (!inv.length) { el.innerHTML = ''; return; }
+  var totalCurrent = 0, totalProjected = 0, totalTax = 0;
+  var typeGroups = {};
+  inv.forEach(function(i) {
+    var p = calcProjectedValue(i, 1, 8);
+    var gain = p.projected - p.current;
+    totalCurrent += p.current;
+    totalProjected += p.projected;
+    totalTax += calcProjectedTax(i, gain, 1);
+    var t = i.type;
+    if (!typeGroups[t]) typeGroups[t] = { current: 0, projected: 0 };
+    typeGroups[t].current += p.current;
+    typeGroups[t].projected += p.projected;
+  });
+  var afterTax = totalProjected - totalTax;
+  var inflAdj = totalProjected / 1.06;
+  var h = '<div class="cd"><h3 style="font-size:13px">🔮 Est. Net Worth (1Y) <button class="btn-sm" onclick="goMore(\'pg-projector\')" style="margin-left:auto;font-size:9px">Explore →</button></h3>';
+  h += '<div class="sg">'
+    + '<div class="st"><div class="lbl">ESTIMATED</div><div class="val" style="color:var(--p)">' + fmtFull(totalProjected) + '</div></div>'
+    + '<div class="st"><div class="lbl">AFTER TAX</div><div class="val" style="color:var(--g)">' + fmtFull(afterTax) + '</div></div>'
+    + '</div>';
+  var types = Object.keys(typeGroups);
+  if (types.length) {
+    h += '<div style="font-size:10px;color:var(--txt2)">';
+    types.forEach(function(t) { var g = typeGroups[t]; h += '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>' + invIcon(t) + ' ' + invLabel(t) + '</span><span>' + fmt(g.current) + ' → <b style="color:var(--g)">' + fmt(g.projected) + '</b></span></div>'; });
+    h += '</div>';
+  }
+  h += '</div>';
+  el.innerHTML = h;
 }
 
 function initApp(){
