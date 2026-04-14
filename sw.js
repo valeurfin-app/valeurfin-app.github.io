@@ -3,8 +3,8 @@
 // CACHE_NAME change forces old caches to be deleted
 // skipWaiting + clients.claim ensures instant activation
 
-var CACHE_NAME = 'valeurfin-v5i';
-var APP_VERSION = 'v4.1.5i';
+var CACHE_NAME = 'valeurfin-v5j';
+var APP_VERSION = 'v4.1.5j';
 
 // Files to cache for offline use
 var CACHE_FILES = [
@@ -42,6 +42,8 @@ function shouldSkipCache(url) {
 // ── INSTALL ──────────────────────────────────────────────────────────────────
 // Use Promise.allSettled (NOT Promise.all) so that if one file fails to cache
 // (e.g. valeurfin-mobile.html not yet uploaded), the SW still installs cleanly.
+// NOTE: We do NOT call skipWaiting() here. The new SW stays in "waiting" state
+// until the app sends a SKIP_WAITING message (user clicks "Update Now" banner).
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
@@ -52,9 +54,6 @@ self.addEventListener('install', function(event) {
           });
         })
       );
-    }).then(function() {
-      // Activate immediately — don't wait for old SW to expire
-      return self.skipWaiting();
     })
   );
 });
