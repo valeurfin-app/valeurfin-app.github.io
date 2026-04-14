@@ -162,6 +162,14 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 .pill{padding:5px 10px;border:1.5px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:clamp(10px,2.8vw,13px);font-weight:600;color:var(--txt2);cursor:pointer;background:transparent;display:flex;align-items:center;gap:3px}
 .pill.on{border-color:var(--p);background:var(--pbg);color:var(--p)}
 
+/* === INVESTMENT TYPE GRID (Add Investment Page) === */
+.inv-type-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.inv-type-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 4px;border:1.5px solid var(--bdr);border-radius:10px;background:var(--card);cursor:pointer;font-family:inherit;min-height:56px;transition:all .15s}
+.inv-type-card .itc-icon{font-size:clamp(18px,5vw,24px);line-height:1}
+.inv-type-card .itc-label{font-size:clamp(9px,2.4vw,11px);font-weight:600;color:var(--txt2);text-align:center;line-height:1.1}
+.inv-type-card.on{border-color:var(--p);background:var(--pbg)}
+.inv-type-card.on .itc-label{color:var(--p)}
+
 /* === ITEMS === */
 .exp-item,.inc-item,.rem-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bdr)}
 .exp-item:last-child,.inc-item:last-child,.rem-item:last-child{border-bottom:none}
@@ -2692,26 +2700,64 @@ function saveGoalFromAdd(){var n=document.getElementById('ag-name').value.trim()
 
 // ===== ADD INVESTMENT =====
 function renderAddForm(){var el=document.getElementById('add-sub-form');
-  var pills=INV_TYPES.map(function(t){
-    var shortLabel={'SIP':'SIP','Stocks':'Stocks','FD':'FD','RD':'RD','PPF':'PPF','NPS':'NPS','Gold':'Gold','Crypto':'Crypto','Land':'Land','ELSS':'ELSS','Bonds':'Bonds','Others':'Other'};
-    return '<button class="pill '+(t.id===selectedInvType?'on':'')+'" onclick="selectInvType(\''+t.id+'\')">'+t.icon+' '+(shortLabel[t.id]||t.id)+'</button>';
+  var cards=INV_TYPES.map(function(t){
+    var isOn=t.id===selectedInvType;
+    return '<button class="inv-type-card'+(isOn?' on':'')+'" onclick="selectInvType(\''+t.id+'\')">'
+      +'<span class="itc-icon">'+t.icon+'</span>'
+      +'<span class="itc-label">'+t.label+'</span>'
+      +'</button>';
   }).join('');
-  el.innerHTML='<div class="pills" style="margin-bottom:8px;gap:4px">'+pills+'</div><div id="add-inv-fields"></div><button class="btn-s" onclick="addInvestment()" style="margin-top:8px">💾 Add Investment</button>';
+  el.innerHTML='<div class="inv-type-grid">'+cards+'</div><div id="add-inv-fields" style="margin-top:10px"></div><button class="btn-s" onclick="addInvestment()" style="margin-top:8px">💾 Add Investment</button>';
   buildAddFields();
 }
 function selectInvType(type){selectedInvType=type;renderAddForm()}
 function buildAddFields(){var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var form=document.getElementById('add-inv-fields');if(!form)return;
   var ddId=t.hasMF?'mf-dd':(t.id==='Stocks'?'stock-dd':'no-dd');
+  // 1. Name
   var h='<div class="fg"><label>'+(t.hasMF?'Fund Name':'Name')+'</label><div style="position:relative"><input class="inp" id="add-name" placeholder="'+(t.hasMF?'Search fund...':t.label+' name')+'"';
   if(t.hasMF)h+=' oninput="searchMF(this.value)" autocomplete="off"';
   if(t.id==='Stocks')h+=' oninput="searchStock(this.value)" autocomplete="off"';
   h+='><div class="dd" id="'+ddId+'"></div></div></div>';
+  // 2. Platform + 3. Started
   h+='<div class="fr"><div class="fg"><label>Platform</label><select class="inp" id="add-platform"><option value="">Select</option>'+(t.id==='Crypto'?CRYPTO_EXCHANGES:t.id==='FD'||t.id==='RD'||t.id==='PPF'?BANKS:PLATFORMS).map(function(p){return '<option>'+p+'</option>'}).join('')+'</select></div><div class="fg"><label>Started</label><input class="inp" id="add-started" type="date"></div></div>';
-  h+='<div class="fg"><label>Current Value (₹)</label><input class="inp" id="add-current" type="number" placeholder="₹"></div>';
-  // --- Stocks-specific: Symbol + Sector ---
+  // 4. Current Value — NON-Stocks only
+  if(t.id!=='Stocks'){
+    h+='<div class="fg"><label>Current Value (₹)</label><input class="inp" id="add-current" type="number" placeholder="₹"></div>';
+  }
+  // === STOCKS SPECIFIC FIELDS (exact order matching desktop) ===
   if(t.id==='Stocks'){
-    h+='<div class="fg"><label>NSE Symbol</label><div style="display:flex;gap:5px"><input class="inp" id="add-symbol" placeholder="e.g. NIFTYBEES" style="flex:1" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn-sm" onclick="testSymbol(\'add-symbol\',\'add-sym-result\')">🔍</button></div><div id="add-sym-result" style="font-size:9px;margin-top:3px"></div></div>';
+    // 5. NSE Symbol (with auto-fetch)
+    h+='<div class="fg"><label>NSE Symbol <span style="font-size:9px;color:var(--txt2)">(auto-fetches price)</span></label>'
+     +'<div style="display:flex;gap:5px"><input class="inp" id="add-symbol" placeholder="e.g. HDFCBANK" style="flex:1" '
+     +'oninput="onSymbolInput(this.value)" autocomplete="off">'
+     +'<button type="button" class="btn-sm" onclick="testSymbol(\'add-symbol\',\'add-sym-result\')">🔍</button></div>'
+     +'<div id="add-sym-result" style="font-size:9px;margin-top:3px"></div></div>';
+    // 6. Sector
     h+='<div class="fg"><label>Sector</label><select class="inp" id="add-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option>'+s+'</option>'}).join('')+'</select></div>';
+    // 7. QTY + 8. Buy Price
+    h+='<div class="fr">'
+     +'<div class="fg"><label>QTY <span style="color:var(--d)">*</span></label>'
+     +'<input class="inp" id="add-qty" type="number" min="0" step="1" placeholder="e.g. 10" '
+     +'oninput="recalcStockInvested()"></div>'
+     +'<div class="fg"><label>Buy Price (₹) <span style="color:var(--d)">*</span></label>'
+     +'<input class="inp" id="add-avgprice" type="number" min="0" step="0.01" placeholder="e.g. 1650" '
+     +'oninput="recalcStockInvested()"></div></div>';
+    // 9. Invested Amount + 10. Current Stock Price
+    h+='<div class="fr">'
+     +'<div class="fg"><label>Invested (₹) <span style="font-size:9px;color:var(--txt2)">auto=qty×price</span></label>'
+     +'<input class="inp" id="add-invested-calc" type="number" placeholder="auto" '
+     +'oninput="markManualEdit(\'add-invested-calc\');recalcStockReturn()"></div>'
+     +'<div class="fg"><label>Live Price (₹) <span style="font-size:9px;color:var(--txt2)">fetched</span></label>'
+     +'<input class="inp" id="add-stock-price" type="number" placeholder="auto" '
+     +'oninput="markManualEdit(\'add-stock-price\');recalcStockCurrentValue()"></div></div>';
+    // 11. Current Value + 12. Return %
+    h+='<div class="fr">'
+     +'<div class="fg"><label>Current Value (₹) <span style="font-size:9px;color:var(--txt2)">auto=qty×live</span></label>'
+     +'<input class="inp" id="add-current" type="number" placeholder="auto" '
+     +'oninput="markManualEdit(\'add-current\');recalcStockReturn()"></div>'
+     +'<div class="fg"><label>Return % <span style="font-size:9px;color:var(--txt2)">XIRR</span></label>'
+     +'<div style="padding:8px;border:2px solid var(--bdr);border-radius:9px;font-size:12px;font-weight:700;background:var(--bg)" id="add-return-display">—</div>'
+     +'<input type="hidden" id="add-return" value="0"></div></div>';
   }
   // --- Owner (all types, family mode) ---
   if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
@@ -2748,8 +2794,115 @@ function buildAddFields(){var t=INV_TYPES.find(function(x){return x.id===selecte
   }
   // --- FD/RD-specific ---
   if(t.hasFD)h+='<div class="fr"><div class="fg"><label>Maturity</label><input class="inp" id="add-maturity" type="date"></div><div class="fg"><label>Interest %</label><input class="inp" id="add-fdrate" type="number" placeholder="7.5"></div></div>';
+  // --- Stocks: Previous Purchases ---
+  if(t.id==='Stocks'){h+='<div style="background:var(--bbg);border:1px solid var(--bdr);border-radius:10px;padding:8px;margin-top:4px"><div style="font-size:10px;font-weight:700;color:var(--b);margin-bottom:4px">Previous Purchases <span style="font-size:9px;font-weight:400;color:var(--txt2)">(optional)</span></div><div id="lots-list" style="margin-bottom:4px"></div><div class="fr" style="gap:4px"><input class="inp" id="lot-date" type="date" style="flex:1"><input class="inp" id="lot-qty" type="number" style="flex:1" placeholder="Qty"><input class="inp" id="lot-price" type="number" style="flex:1" placeholder="Price"><button class="btn-sm" onclick="addLotRow()" style="white-space:nowrap">+ Add</button></div></div>';}
   form.innerHTML=h;
 }
+// ─── Stocks Form Helpers (matching desktop) ─────────────────────────────────
+var _symTestTimer = null;
+
+function markManualEdit(fieldId) {
+  var el = document.getElementById(fieldId);
+  if(el) el.dataset.manualEdit = '1';
+}
+
+function recalcStockInvested() {
+  var qty   = parseFloat((document.getElementById('add-qty')||{}).value) || 0;
+  var price = parseFloat((document.getElementById('add-avgprice')||{}).value) || 0;
+  var invEl = document.getElementById('add-invested-calc');
+  if(invEl && !invEl.dataset.manualEdit) {
+    var val = qty * price;
+    invEl.value = val > 0 ? val.toFixed(2) : '';
+  }
+  recalcStockReturn();
+  updateStockTotalsFromLots();
+}
+
+function recalcStockCurrentValue() {
+  var qty   = parseFloat((document.getElementById('add-qty')||{}).value) || 0;
+  var liveP = parseFloat((document.getElementById('add-stock-price')||{}).value) || 0;
+  var curEl = document.getElementById('add-current');
+  if(curEl && !curEl.dataset.manualEdit) {
+    var val = qty > 0 && liveP > 0 ? (qty * liveP) : 0;
+    if(val > 0) curEl.value = val.toFixed(2);
+  }
+  recalcStockReturn();
+}
+
+function recalcStockReturn() {
+  var invested = parseFloat((document.getElementById('add-invested-calc')||{}).value) || 0;
+  var curVal   = parseFloat((document.getElementById('add-current')||{}).value) || 0;
+  var started  = (document.getElementById('add-started')||{}).value || '';
+  var retEl    = document.getElementById('add-return-display');
+  if(!retEl) return;
+  if(invested <= 0 || curVal <= 0) { retEl.textContent = '—'; return; }
+  var simplePct = ((curVal - invested) / invested * 100);
+  if(started) {
+    var months = (Date.now() - new Date(started).getTime()) / (1000*60*60*24*30.44);
+    if(months >= 0.5) {
+      var xirr = (Math.pow(curVal/invested, 12/months) - 1) * 100;
+      retEl.textContent = xirr.toFixed(1) + '% XIRR';
+      retEl.style.color = xirr >= 0 ? 'var(--g)' : 'var(--d)';
+      return;
+    }
+  }
+  retEl.textContent = simplePct.toFixed(1) + '%';
+  retEl.style.color = simplePct >= 0 ? 'var(--g)' : 'var(--d)';
+}
+
+function onSymbolInput(val) {
+  var el = document.getElementById('add-symbol');
+  if(el) el.value = val.toUpperCase();
+  clearTimeout(_symTestTimer);
+  if(!val || val.length < 2) return;
+  _symTestTimer = setTimeout(function() { autoTestSymbol(); }, 900);
+}
+
+async function autoTestSymbol() {
+  var sym = (document.getElementById('add-symbol')||{}).value;
+  if(!sym) return;
+  var resEl = document.getElementById('add-sym-result');
+  if(resEl) resEl.innerHTML = '<span style="color:var(--txt2)">🔍 Fetching '+sym+'...</span>';
+  var data = await fetchStockPrice(sym);
+  if(data && data.price > 0) {
+    if(resEl) resEl.innerHTML = '<span style="color:var(--g)">✅ '+sym
+      +' — ₹'+data.price.toFixed(2)
+      +(data.changePct>=0?' <span style="color:var(--g)">▲':'<span style="color:var(--d)">▼')
+      +Math.abs(data.changePct).toFixed(2)+'%</span></span>';
+    var priceEl = document.getElementById('add-stock-price');
+    if(priceEl && !priceEl.dataset.manualEdit) priceEl.value = data.price.toFixed(2);
+    recalcStockCurrentValue();
+  } else {
+    if(resEl) resEl.innerHTML = '<span style="color:var(--d)">❌ '+sym+' not found</span>';
+  }
+}
+
+function validateStocksForm() {
+  var errors = [];
+  [{id:'add-name',label:'Name'},{id:'add-qty',label:'QTY'},{id:'add-avgprice',label:'Buy Price'}].forEach(function(f) {
+    var el = document.getElementById(f.id);
+    if(!el) return;
+    var val = el.value ? el.value.trim() : '';
+    if(!val || val === '0') { el.style.borderColor = 'var(--d)'; errors.push(f.label); }
+    else { el.style.borderColor = ''; }
+  });
+  if(errors.length) { fireNotif('⚠️','Required',errors.join(', ')); return false; }
+  return true;
+}
+
+function updateStockTotalsFromLots() {
+  if(!pendingLots.length) return;
+  var currentQty   = parseFloat((document.getElementById('add-qty')||{}).value) || 0;
+  var currentPrice = parseFloat((document.getElementById('add-avgprice')||{}).value) || 0;
+  var allLots = pendingLots.slice();
+  if(currentQty > 0 && currentPrice > 0) allLots.push({qty: currentQty, price: currentPrice});
+  if(!allLots.length) return;
+  var totalInv = allLots.reduce(function(s,l){return s+l.qty*l.price}, 0);
+  var invEl = document.getElementById('add-invested-calc');
+  if(invEl && !invEl.dataset.manualEdit) invEl.value = totalInv.toFixed(2);
+  recalcStockCurrentValue();
+}
+
 // MF Search — CORS-proxied, debounced, local fallback database
 // mfapi.in does NOT send CORS headers, so direct fetch is blocked
 // by all browsers. We route through the same CORS proxies used
@@ -2987,7 +3140,9 @@ function renderPendingLots(){var el=document.getElementById('lots-list');if(!el)
 function resetPendingLots(){pendingLots=[];var el=document.getElementById('lots-list');if(el)el.innerHTML='';}
 function editAddLot(){var inv=S.investments.find(function(i){return i.id===editingId;});if(!inv)return;var date=document.getElementById('edit-lot-date')?document.getElementById('edit-lot-date').value:'';var qty=parseFloat(document.getElementById('edit-lot-qty')?document.getElementById('edit-lot-qty').value:0)||0;var price=parseFloat(document.getElementById('edit-lot-price')?document.getElementById('edit-lot-price').value:0)||0;if(!date||!qty||!price){var msg=document.getElementById('edit-lot-msg');if(msg)msg.innerHTML='<span style="color:var(--d)">Fill all fields</span>';return;}if(!inv.lots)inv.lots=[];inv.lots.push({id:uid(),date:date,qty:qty,price:price});inv.lots.sort(function(a,b){return new Date(a.date)-new Date(b.date);});syncInvFromLots(inv);saveS().then(function(){openEditInv(editingId);fireNotif('✅','Lot added','');});}
 function editRemoveLot(invId,lotId){var inv=S.investments.find(function(i){return i.id===invId;});if(!inv||!inv.lots)return;if(!confirm('Remove this lot?'))return;inv.lots=inv.lots.filter(function(l){return l.id!==lotId;});syncInvFromLots(inv);saveS().then(function(){openEditInv(invId);fireNotif('✅','Lot removed','');});}
-function addInvestment(){var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var name=document.getElementById('add-name').value.trim();if(!name){fireNotif('⚠️','Enter name','');return}var started=document.getElementById('add-started').value||'';var currentVal=parseFloat((document.getElementById('add-current')||{}).value)||0;var monthly=t.hasMonthly?(parseFloat((document.getElementById('add-monthly')||{}).value)||0):0;var dueDate=t.hasMonthly?((document.getElementById('add-due')||{}).value||'5'):'';
+function addInvestment(){var t=INV_TYPES.find(function(x){return x.id===selectedInvType});
+  if(selectedInvType==='Stocks'&&!validateStocksForm())return;
+  var name=document.getElementById('add-name').value.trim();if(!name){fireNotif('⚠️','Enter name','');return}var started=document.getElementById('add-started').value||'';var currentVal=parseFloat((document.getElementById('add-current')||{}).value)||0;var monthly=t.hasMonthly?(parseFloat((document.getElementById('add-monthly')||{}).value)||0):0;var dueDate=t.hasMonthly?((document.getElementById('add-due')||{}).value||'5'):'';
   var stepUpEl=document.getElementById('add-stepup');
   var stepUpRaw=stepUpEl?stepUpEl.value:'0';
   var stepUp=t.hasMonthly?(stepUpRaw==='custom'?(parseFloat(document.getElementById('add-stepup-custom')?document.getElementById('add-stepup-custom').value:0)||0):parseFloat(stepUpRaw)||0):0;
@@ -3781,6 +3936,15 @@ function initApp(){
 }
 
 // ===== SERVICE WORKER + UPDATE BANNER =====
+// ┌─────────────────────────────────────────────────────────────────┐
+// │ HOW AUTO-UPDATE WORKS:                                          │
+// │ 1. Change APP_VERSION below (e.g. 'v4.1.6a')                   │
+// │ 2. Also change CACHE_NAME in sw.js to match                    │
+// │ 3. Push all 3 files (index.html, mobile.html, sw.js)           │
+// │ 4. Users see "New version available - Update Now" banner        │
+// │ The ?v= parameter forces browsers to download fresh sw.js.     │
+// │ That's it — no other steps needed.                              │
+// └─────────────────────────────────────────────────────────────────┘
 var APP_VERSION = 'v4.1.5j';
 
 function showUpdateBanner(waitingWorker) {
@@ -3812,7 +3976,8 @@ function showUpdateBanner(waitingWorker) {
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js').then(function(reg){
+    // Cache-busting: ?v= forces browser to download fresh sw.js on every version bump
+    navigator.serviceWorker.register('sw.js?v=' + APP_VERSION).then(function(reg){
       reg.update();
       if(reg.waiting){ showUpdateBanner(reg.waiting); }
       reg.addEventListener('updatefound', function(){
