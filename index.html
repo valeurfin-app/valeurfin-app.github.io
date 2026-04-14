@@ -5534,10 +5534,36 @@ function initApp(){
 
 document.addEventListener('DOMContentLoaded',boot);
 
-// ===== SERVICE WORKER REGISTRATION =====
+// ===== SERVICE WORKER + AUTO-UPDATE =====
+var APP_VERSION = 'v4.1.5g';
+
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      // Check for updates immediately on every page load
+      reg.update();
+
+      // When a new SW is found and installed
+      reg.addEventListener('updatefound', function(){
+        var newWorker = reg.installing;
+        if(!newWorker) return;
+        newWorker.addEventListener('statechange', function(){
+          // New SW is active and controlling — reload to get fresh files
+          if(newWorker.state === 'activated' && navigator.serviceWorker.controller){
+            toast('🔄 App updated! Refreshing...', 'info');
+            setTimeout(function(){ window.location.reload(); }, 1500);
+          }
+        });
+      });
+    }).catch(function(){});
+
+    // If SW controller changes (another tab triggered update), reload
+    var refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
   });
 }
 
