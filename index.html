@@ -5537,6 +5537,15 @@ function initApp(){
 document.addEventListener('DOMContentLoaded',boot);
 
 // ===== SERVICE WORKER + UPDATE BANNER =====
+// ┌─────────────────────────────────────────────────────────────────┐
+// │ HOW AUTO-UPDATE WORKS:                                          │
+// │ 1. Change APP_VERSION below (e.g. 'v4.1.6a')                   │
+// │ 2. Also change CACHE_NAME in sw.js to match                    │
+// │ 3. Push all 3 files (index.html, mobile.html, sw.js)           │
+// │ 4. Users see "New version available - Update Now" banner        │
+// │ The ?v= parameter forces browsers to download fresh sw.js.     │
+// │ That's it — no other steps needed.                              │
+// └─────────────────────────────────────────────────────────────────┘
 var APP_VERSION = 'v4.1.5j';
 
 function showUpdateBanner(waitingWorker) {
@@ -5568,7 +5577,8 @@ function showUpdateBanner(waitingWorker) {
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js').then(function(reg){
+    // Cache-busting: ?v= forces browser to download fresh sw.js on every version bump
+    navigator.serviceWorker.register('sw.js?v=' + APP_VERSION).then(function(reg){
       // Check for updates immediately on every page load
       reg.update();
 
