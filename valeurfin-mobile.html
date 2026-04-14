@@ -2501,6 +2501,7 @@ async function boot(){
 
 function renderAll(){
   renderFamilyDD();rHome();rInv();rExp();rIncome();rReminders();rGoals();rInsurance();rKPI();rDividends();rWhatIf();rLog();rFamily();rSecurity();renderAddSubForms();
+  try { renderProjection(); } catch(e) {}
 }
 
 // ===== SCORE FUNCTIONS =====
@@ -2591,10 +2592,10 @@ function rHome(){
   rHomeExpBars(exps);rHomeHoldings(inv,nw);rHomeExitCues(inv);rHomeAlerts();
   renderMemberPills('dash-member-pills');
   rFamilyOverview();
-  rDashCashFlow(mInc,mExp,monthlySIP);
-  rDashFIRE(nw,mExp);
-  rDashEstNW();
-  rDashEvents();
+  try { rDashCashFlow(mInc,mExp,monthlySIP); } catch(e) {}
+  try { rDashFIRE(nw,mExp); } catch(e) {}
+  try { rDashEstNW(); } catch(e) { console.warn('rDashEstNW error:', e); }
+  try { rDashEvents(); } catch(e) {}
 }
 
 function rHomeTips(nw,invested,returns,mExp,mInc,inv){
