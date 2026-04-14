@@ -3361,7 +3361,7 @@ function buildAddFields(){
   h+='<div class="fg"><label>Started</label><input class="inp" id="add-started" type="date"></div></div>';
   // 4. Current Value — NON-Stocks only
   if(t.id!=='Stocks'){
-    h+='<div class="fg"><label>Current Value (\u20b9)</label><input class="inp" id="add-current" type="number" placeholder="\u20b9"></div>';
+    h+='<div class="fg"><label>Current Value (₹)</label><input class="inp" id="add-current" type="number" placeholder="₹"></div>';
   }
   // === STOCKS SPECIFIC FIELDS (exact order per spec) ===
   if(t.id==='Stocks'){
@@ -3380,24 +3380,24 @@ function buildAddFields(){
      +'<div class="fg"><label>QTY <span style="color:var(--d)">*</span></label>'
      +'<input class="inp" id="add-qty" type="number" min="0" step="1" placeholder="e.g. 10" '
      +'oninput="recalcStockInvested()"></div>'
-     +'<div class="fg"><label>Buy Price (\u20b9/share) <span style="color:var(--d)">*</span></label>'
+     +'<div class="fg"><label>Buy Price (₹/share) <span style="color:var(--d)">*</span></label>'
      +'<input class="inp" id="add-avgprice" type="number" min="0" step="0.01" placeholder="e.g. 1650" '
      +'oninput="recalcStockInvested()"></div></div>';
     // 9. Invested Amount + 10. Current Stock Price
     h+='<div class="fr">'
-     +'<div class="fg"><label>Invested Amount (\u20b9) <span style="font-size:9px;color:var(--txt2);font-weight:400">auto = qty \u00d7 buy price</span></label>'
+     +'<div class="fg"><label>Invested Amount (₹) <span style="font-size:9px;color:var(--txt2);font-weight:400">auto = qty × buy price</span></label>'
      +'<input class="inp" id="add-invested-calc" type="number" placeholder="auto-calculated" '
      +'oninput="markManualEdit(\'add-invested-calc\');recalcStockReturn()"></div>'
-     +'<div class="fg"><label>Current Stock Price (\u20b9) <span style="font-size:9px;color:var(--txt2);font-weight:400">auto-fetched, editable</span></label>'
+     +'<div class="fg"><label>Current Stock Price (₹) <span style="font-size:9px;color:var(--txt2);font-weight:400">auto-fetched, editable</span></label>'
      +'<input class="inp" id="add-stock-price" type="number" placeholder="fetched on symbol" '
      +'oninput="markManualEdit(\'add-stock-price\');recalcStockCurrentValue()"></div></div>';
     // 11. Current Value + 12. Return %
     h+='<div class="fr">'
-     +'<div class="fg"><label>Current Value (\u20b9) <span style="font-size:9px;color:var(--txt2);font-weight:400">auto = qty \u00d7 current price</span></label>'
+     +'<div class="fg"><label>Current Value (₹) <span style="font-size:9px;color:var(--txt2);font-weight:400">auto = qty × current price</span></label>'
      +'<input class="inp" id="add-current" type="number" placeholder="auto-calculated" '
      +'oninput="markManualEdit(\'add-current\');recalcStockReturn()"></div>'
-     +'<div class="fg"><label>Return % <span style="font-size:9px;color:var(--txt2);font-weight:400">(XIRR \u2014 calculated)</span></label>'
-     +'<div style="padding:9px 12px;border:2px solid var(--bdr);border-radius:9px;font-size:13px;font-weight:700;background:var(--bg)" id="add-return-display">\u2014</div>'
+     +'<div class="fg"><label>Return % <span style="font-size:9px;color:var(--txt2);font-weight:400">(XIRR — calculated)</span></label>'
+     +'<div style="padding:9px 12px;border:2px solid var(--bdr);border-radius:9px;font-size:13px;font-weight:700;background:var(--bg)" id="add-return-display">—</div>'
      +'<input type="hidden" id="add-return" value="0"></div></div>';
   }
   // --- Owner (all types, family mode) ---
@@ -3406,7 +3406,7 @@ function buildAddFields(){
   if(t.id==='Gold'){
     h+='<div class="fr"><div class="fg">'
       +'<label>Weight (grams) '
-      +'<span style="font-size:9px;color:var(--txt2);font-weight:400">optional \u2014 enables auto price</span></label>'
+      +'<span style="font-size:9px;color:var(--txt2);font-weight:400">optional — enables auto price</span></label>'
       +'<input class="inp" id="add-gold-grams" type="number" step="0.01" min="0" placeholder="e.g. 10.5"></div>'
       +'<div class="fg"><label>Purity</label>'
       +'<select class="inp" id="add-gold-purity">'
@@ -3417,12 +3417,12 @@ function buildAddFields(){
       +'</select></div></div>';
   }
   // --- Monthly types (SIP, ELSS, RD, PPF, NPS) ---
-  if(t.hasMonthly){if(t.hasMF){h+='<div class="fr"><div class="fg"><label>Total Units Held <span style="font-size:9px;color:var(--txt2);font-weight:400">(from broker/CAMS)</span></label><input class="inp" id="add-total-units" type="number" step="0.001" placeholder="e.g. 2456.789"></div><div class="fg"><label>Scheme Code <span style="font-size:9px;color:var(--txt2);font-weight:400">(auto-filled)</span></label><input class="inp" id="add-scheme-code" placeholder="e.g. 118989" readonly></div></div>';}h+='<div class="fr"><div class="fg"><label>Monthly SIP (\u20b9)</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';
+  if(t.hasMonthly){if(t.hasMF){h+='<div class="fr"><div class="fg"><label>Total Units Held <span style="font-size:9px;color:var(--txt2);font-weight:400">(from broker/CAMS)</span></label><input class="inp" id="add-total-units" type="number" step="0.001" placeholder="e.g. 2456.789"></div><div class="fg"><label>Scheme Code <span style="font-size:9px;color:var(--txt2);font-weight:400">(auto-filled)</span></label><input class="inp" id="add-scheme-code" placeholder="e.g. 118989" readonly></div></div>';}h+='<div class="fr"><div class="fg"><label>Monthly SIP (₹)</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';
     for(var d=1;d<=31;d++)h+='<option value="'+d+'">'+ordinal(d)+'</option>';
     h+='</select></div></div>';h+='<div class="fr"><div class="fg"><label>Annual Step-Up</label><select class="inp" id="add-stepup" onchange="toggleStepUpCustom(this.value)"><option value="0">No Step-Up</option><option value="5">5% per year</option><option value="10">10% per year</option><option value="15">15% per year</option><option value="20">20% per year</option><option value="custom">Custom %</option></select></div><div class="fg" id="stepup-custom-wrap" style="display:none"><label>Custom %</label><input class="inp" id="add-stepup-custom" type="number" step="1" min="1" placeholder="e.g. 12"></div></div>';h+='<div class="fr"><div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start (Month 1)</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div><div class="fg"></div></div>';}
   // --- Non-Stocks, Non-Monthly: Invested + Return ---
   if(t.id!=='Stocks'&&!t.hasMonthly){
-    h+='<div class="fr"><div class="fg"><label>Invested (\u20b9)</label>'
+    h+='<div class="fr"><div class="fg"><label>Invested (₹)</label>'
      +'<input class="inp" id="add-invested" type="number"></div>'
      +'<div class="fg"><label>Return %</label>'
      +'<input class="inp" id="add-return" type="number" placeholder="8"></div></div>';
