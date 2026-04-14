@@ -707,6 +707,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <button class="sb-link" onclick="go(this,'pg-screener')"><span class="sbi">🔍</span>Screener</button>
 <button class="sb-link" onclick="go(this,'pg-tax')"><span class="sbi">🧮</span>Tax Calculator</button>
 <button class="sb-link" onclick="go(this,'pg-exit')"><span class="sbi">🚪</span>Exit Signals</button>
+<button class="sb-link" onclick="go(this,'pg-projector')"><span class="sbi">🔮</span>Wealth Projector</button>
 <div class="sb-section">Tools</div>
 <button class="sb-link" onclick="go(this,'pg-import')"><span class="sbi">📥</span>Import Data</button>
 <div class="sb-section">Settings</div>
@@ -786,6 +787,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="cd"><h3>📈 Market Overview <span class="cd-badge">LIVE</span></h3><div id="dash-market"></div></div>
 <div id="dash-cashflow"></div>
 <div id="dash-fire"></div>
+<div id="dash-est-nw"></div>
 <div id="dash-events"></div>
 <div class="cd"><h3>↗ Net Worth History</h3><div class="timeline" id="dash-tl"></div></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -964,6 +966,29 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 </div>
 </div>
 
+<!-- ===== WEALTH PROJECTOR ===== -->
+<div class="pg" id="pg-projector">
+<div class="cd">
+  <h3>🔮 Wealth Projector <span class="cd-badge">Estimated</span></h3>
+  <p class="m-sub">Project your net worth over time — with tax & inflation adjustments</p>
+  <div class="pills" id="proj-horizon" style="margin-bottom:10px">
+    <button class="pill on" onclick="setProjectionHorizon(this,1)">1Y</button>
+    <button class="pill" onclick="setProjectionHorizon(this,3)">3Y</button>
+    <button class="pill" onclick="setProjectionHorizon(this,5)">5Y</button>
+    <button class="pill" onclick="setProjectionHorizon(this,10)">10Y</button>
+    <button class="pill" onclick="setProjectionHorizon(this,15)">15Y</button>
+    <button class="pill" onclick="setProjectionHorizon(this,20)">20Y</button>
+  </div>
+  <div class="fr" style="margin-bottom:12px">
+    <div class="fg"><label>Inflation Rate %</label><input class="inp" id="proj-inflation" type="number" value="6" step="0.5" min="0" max="20" onchange="renderProjection()"></div>
+    <div class="fg"><label>Gold Growth %</label><input class="inp" id="proj-gold-rate" type="number" value="8" step="0.5" min="0" max="30" onchange="renderProjection()"></div>
+  </div>
+  <div id="proj-summary"></div>
+  <div id="proj-breakdown"></div>
+  <div id="proj-table"></div>
+</div>
+</div>
+
 <!-- ===== SECURITY ===== -->
 <div class="pg" id="pg-security">
 <div class="cd"><h3>🔒 Security & Data Protection</h3><p class="m-sub">Your data stays on your device</p>
@@ -1122,8 +1147,8 @@ var INV_TYPES=[
   {id:'Stocks',icon:'📊',label:'Stocks / ETF',bucket:'Equity',hasMonthly:false,hasMF:false},
   {id:'FD',icon:'🏦',label:'Fixed Deposit',bucket:'Debt',hasMonthly:false,hasMF:false,hasFD:true},
   {id:'RD',icon:'🏦',label:'Recurring Deposit',bucket:'Debt',hasMonthly:true,hasMF:false},
-  {id:'PPF',icon:'🏛️',label:'PPF',bucket:'Debt',hasMonthly:true,hasMF:false},
-  {id:'NPS',icon:'🏛️',label:'NPS',bucket:'Hybrid',hasMonthly:true,hasMF:false},
+  {id:'PPF',icon:'🏛️',label:'PPF',bucket:'Debt',hasMonthly:false,hasMF:false},
+  {id:'NPS',icon:'🏛️',label:'NPS',bucket:'Hybrid',hasMonthly:false,hasMF:false},
   {id:'Gold',icon:'🥇',label:'Gold / SGB',bucket:'Alternatives',hasMonthly:false,hasMF:false},
   {id:'Crypto',icon:'₿',label:'Crypto',bucket:'Alternatives',hasMonthly:false,hasMF:false},
   {id:'Land',icon:'🏠',label:'Real Estate / Land',bucket:'Alternatives',hasMonthly:false,hasMF:false},
@@ -1758,11 +1783,12 @@ function go(btn,pgId){
   document.getElementById(pgId).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(function(b){b.classList.remove('on')});
   if(btn)btn.classList.add('on');
-  var titles={'pg-dash':'Dashboard','pg-market':'Market Pulse','pg-inv':'Investments','pg-add':'Add Investment','pg-exp':'Expenses','pg-income':'Income','pg-remind':'Reminders','pg-goals':'Goals','pg-ins':'Insurance','pg-bot':'ValeurBot','pg-kpi':'KPIs','pg-div':'Dividends','pg-whatif':'SIP Calculator','pg-log':'Transaction Log','pg-screener':'Screener','pg-tax':'Tax Calculator','pg-exit':'Exit Signals','pg-security':'Security','pg-family':'Family','pg-privacy':'Privacy','pg-terms':'Terms','pg-about':'About','pg-import':'Import Data'};
+  var titles={'pg-dash':'Dashboard','pg-market':'Market Pulse','pg-inv':'Investments','pg-add':'Add Investment','pg-exp':'Expenses','pg-income':'Income','pg-remind':'Reminders','pg-goals':'Goals','pg-ins':'Insurance','pg-bot':'ValeurBot','pg-kpi':'KPIs','pg-div':'Dividends','pg-whatif':'SIP Calculator','pg-log':'Transaction Log','pg-screener':'Screener','pg-tax':'Tax Calculator','pg-exit':'Exit Signals','pg-projector':'Wealth Projector','pg-security':'Security','pg-family':'Family','pg-privacy':'Privacy','pg-terms':'Terms','pg-about':'About','pg-import':'Import Data'};
   document.getElementById('pg-title').textContent=titles[pgId]||'Dashboard';
   if(pgId==='pg-screener')renderScreener();
   if(pgId==='pg-tax')renderTax();
   if(pgId==='pg-exit')renderExitSignals();
+  if(pgId==='pg-projector')renderProjection();
   if(pgId==='pg-div'){rDividends();loadAllDividends();}
   if(pgId==='pg-bot'){rBotPageChips();}
 }
@@ -2960,6 +2986,7 @@ function rDash(){
   rFamilyOverview();
   rDashCashFlow(totalInc,totalSpend,monthlySIP);
   rDashFIRE(nw,totalSpend);
+  rDashEstNW();
   rDashEvents();
 }
 
@@ -3416,12 +3443,39 @@ function buildAddFields(){
       +'<option value="0">SGB / ETF (no purity)</option>'
       +'</select></div></div>';
   }
-  // --- Monthly types (SIP, ELSS, RD, PPF, NPS) ---
-  if(t.hasMonthly){if(t.hasMF){h+='<div class="fr"><div class="fg"><label>Total Units Held <span style="font-size:9px;color:var(--txt2);font-weight:400">(from broker/CAMS)</span></label><input class="inp" id="add-total-units" type="number" step="0.001" placeholder="e.g. 2456.789"></div><div class="fg"><label>Scheme Code <span style="font-size:9px;color:var(--txt2);font-weight:400">(auto-filled)</span></label><input class="inp" id="add-scheme-code" placeholder="e.g. 118989" readonly></div></div>';}h+='<div class="fr"><div class="fg"><label>Monthly SIP (₹)</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';
+  // --- Monthly types: SIP, ELSS, RD (each has custom fields) ---
+  if(t.hasMonthly){
+    if(t.hasMF){h+='<div class="fr"><div class="fg"><label>Total Units Held <span style="font-size:9px;color:var(--txt2);font-weight:400">(from broker/CAMS)</span></label><input class="inp" id="add-total-units" type="number" step="0.001" placeholder="e.g. 2456.789"></div><div class="fg"><label>Scheme Code <span style="font-size:9px;color:var(--txt2);font-weight:400">(auto-filled)</span></label><input class="inp" id="add-scheme-code" placeholder="e.g. 118989" readonly></div></div>';}
+    var monthlyLabel=t.id==='RD'?'Monthly Amount (₹)':'Monthly SIP (₹)';
+    h+='<div class="fr"><div class="fg"><label>'+monthlyLabel+'</label><input class="inp" id="add-monthly" type="number" placeholder="5000"></div><div class="fg"><label>Due Date</label><select class="inp" id="add-due">';
     for(var d=1;d<=31;d++)h+='<option value="'+d+'">'+ordinal(d)+'</option>';
-    h+='</select></div></div>';h+='<div class="fr"><div class="fg"><label>Annual Step-Up</label><select class="inp" id="add-stepup" onchange="toggleStepUpCustom(this.value)"><option value="0">No Step-Up</option><option value="5">5% per year</option><option value="10">10% per year</option><option value="15">15% per year</option><option value="20">20% per year</option><option value="custom">Custom %</option></select></div><div class="fg" id="stepup-custom-wrap" style="display:none"><label>Custom %</label><input class="inp" id="add-stepup-custom" type="number" step="1" min="1" placeholder="e.g. 12"></div></div>';h+='<div class="fr"><div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start (Month 1)</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div><div class="fg"></div></div>';}
-  // --- Non-Stocks, Non-Monthly: Invested + Return ---
-  if(t.id!=='Stocks'&&!t.hasMonthly){
+    h+='</select></div></div>';
+    // Step-Up only for SIP and ELSS (not RD)
+    if(t.id!=='RD'){
+      h+='<div class="fr"><div class="fg"><label>Annual Step-Up</label><select class="inp" id="add-stepup" onchange="toggleStepUpCustom(this.value)"><option value="0">No Step-Up</option><option value="5">5% per year</option><option value="10">10% per year</option><option value="15">15% per year</option><option value="20">20% per year</option><option value="custom">Custom %</option></select></div><div class="fg" id="stepup-custom-wrap" style="display:none"><label>Custom %</label><input class="inp" id="add-stepup-custom" type="number" step="1" min="1" placeholder="e.g. 12"></div></div>';
+      h+='<div class="fr"><div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start (Month 1)</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div><div class="fg"></div></div>';
+    }
+  }
+  // --- PPF: Current Balance + Rate of Interest ---
+  if(t.id==='PPF'){
+    h+='<div class="fr"><div class="fg"><label>Current Balance (₹)</label>'
+     +'<input class="inp" id="add-invested" type="number" placeholder="e.g. 1000000"></div>'
+     +'<div class="fg"><label>Rate of Interest % <span style="font-size:9px;color:var(--txt2);font-weight:400">annual compound</span></label>'
+     +'<input class="inp" id="add-return" type="number" value="7.1" step="0.1"></div></div>'
+     +'<div style="background:var(--gbg);border-radius:8px;padding:8px;margin-top:4px;font-size:10px;color:var(--g)">'
+     +'🏛️ PPF: Annual compound interest. Tax exempt under Section 80C. Update balance yearly.</div>';
+  }
+  // --- NPS: Current Balance + Expected Return ---
+  else if(t.id==='NPS'){
+    h+='<div class="fr"><div class="fg"><label>Current Balance (₹)</label>'
+     +'<input class="inp" id="add-invested" type="number" placeholder="e.g. 500000"></div>'
+     +'<div class="fg"><label>Expected Return % <span style="font-size:9px;color:var(--txt2);font-weight:400">annual</span></label>'
+     +'<input class="inp" id="add-return" type="number" value="10" step="0.5"></div></div>'
+     +'<div style="background:var(--bbg);border-radius:8px;padding:8px;margin-top:4px;font-size:10px;color:var(--b)">'
+     +'🏛️ NPS: 60% tax-free on maturity. Update balance yearly.</div>';
+  }
+  // --- Non-Stocks, Non-Monthly, Non-PPF, Non-NPS: Invested + Return ---
+  else if(t.id!=='Stocks'&&!t.hasMonthly){
     h+='<div class="fr"><div class="fg"><label>Invested (₹)</label>'
      +'<input class="inp" id="add-invested" type="number"></div>'
      +'<div class="fg"><label>Return %</label>'
@@ -3746,7 +3800,7 @@ function addInvestment(){
   var stepUpEl=document.getElementById('add-stepup');
   var stepUpRaw=stepUpEl?stepUpEl.value:'0';
   var stepUp=t.hasMonthly?(stepUpRaw==='custom'?(parseFloat(document.getElementById('add-stepup-custom')?document.getElementById('add-stepup-custom').value:0)||0):parseFloat(stepUpRaw)||0):0;var stepUpFrom=t.hasMonthly?(parseInt(document.getElementById('add-stepup-from')?document.getElementById('add-stepup-from').value:0)||0):0;
-  var returnRate=parseFloat(document.getElementById('add-return').value)||0;
+  var returnRate=parseFloat((document.getElementById('add-return')||{}).value)||0;
   var investedCalcEl=document.getElementById('add-invested-calc');
   var invested=t.hasMonthly?currentVal
     :(investedCalcEl?(parseFloat(investedCalcEl.value)||0)
@@ -5132,6 +5186,275 @@ function rSwpSummary(inv){
     + '<span style="color:var(--b)">-₹'+Math.round(total).toLocaleString('en-IN')+'/mo</span>'
     + '</div>';
   }
+}
+
+// ====================================================
+// 🔮 WEALTH PROJECTOR — Estimated Net Worth Engine
+// Projects net worth with tax & inflation adjustments
+// ====================================================
+
+var _projHorizon = 1; // default 1 year
+
+function setProjectionHorizon(btn, years) {
+  _projHorizon = years;
+  document.querySelectorAll('#proj-horizon .pill').forEach(function(p){ p.classList.remove('on'); });
+  if(btn) btn.classList.add('on');
+  renderProjection();
+}
+
+function calcProjectedValue(inv, years, goldRate) {
+  var val = getInvValue(inv);
+  var invested = getInvInvested(inv);
+  var type = inv.type;
+  var rate = inv.returnRate || 0;
+
+  // Stocks/ETF: use CAGR if available, else 12%
+  if (type === 'Stocks') {
+    var cagr = 12;
+    if (inv.started && invested > 0) {
+      var yrsHeld = (Date.now() - new Date(inv.started).getTime()) / (365.25*24*3600*1000);
+      if (yrsHeld > 0.25 && val > 0) cagr = (Math.pow(val/invested, 1/yrsHeld) - 1) * 100;
+      if (cagr < -50 || cagr > 100) cagr = 12; // sanity cap
+    }
+    return { current: val, projected: val * Math.pow(1 + cagr/100, years), rate: cagr, newContrib: 0 };
+  }
+
+  // SIP/ELSS: existing corpus growth + future SIP contributions with step-up
+  if (type === 'SIP' || type === 'ELSS') {
+    var sipRate = rate > 0 ? rate : 12;
+    var mr = sipRate / 12 / 100;
+    var corpusGrowth = val * Math.pow(1 + sipRate/100, years);
+    var newContrib = 0;
+    var monthly = inv.monthly || 0;
+    var stepUp = inv.stepUp || 0;
+    for (var yr = 0; yr < years; yr++) {
+      var yearlyMonthly = monthly * Math.pow(1 + stepUp/100, yr);
+      for (var mo = 0; mo < 12; mo++) {
+        var monthsRemaining = (years - yr) * 12 - mo;
+        newContrib += yearlyMonthly * Math.pow(1 + mr, monthsRemaining);
+      }
+    }
+    return { current: val, projected: corpusGrowth + newContrib, rate: sipRate, newContrib: monthly * 12 * years };
+  }
+
+  // RD: monthly deposits compounded
+  if (type === 'RD') {
+    var rdRate = rate > 0 ? rate : 7;
+    var rdMr = rdRate / 12 / 100;
+    var rdMonths = years * 12;
+    var rdTotal = val; // existing corpus
+    var rdMonthly = inv.monthly || 0;
+    for (var n = 1; n <= rdMonths; n++) rdTotal = rdTotal * (1 + rdMr) + rdMonthly;
+    return { current: val, projected: rdTotal, rate: rdRate, newContrib: rdMonthly * rdMonths };
+  }
+
+  // FD: compound at rate
+  if (type === 'FD') {
+    var fdRate = rate > 0 ? rate : 7;
+    return { current: val, projected: val * Math.pow(1 + fdRate/100, years), rate: fdRate, newContrib: 0 };
+  }
+
+  // PPF: compound annual at stored rate
+  if (type === 'PPF') {
+    var ppfRate = rate > 0 ? rate : 7.1;
+    return { current: val, projected: val * Math.pow(1 + ppfRate/100, years), rate: ppfRate, newContrib: 0 };
+  }
+
+  // NPS: compound annual at stored rate
+  if (type === 'NPS') {
+    var npsRate = rate > 0 ? rate : 10;
+    return { current: val, projected: val * Math.pow(1 + npsRate/100, years), rate: npsRate, newContrib: 0 };
+  }
+
+  // Gold: user-defined growth rate
+  if (type === 'Gold') {
+    var gr = goldRate || 8;
+    return { current: val, projected: val * Math.pow(1 + gr/100, years), rate: gr, newContrib: 0 };
+  }
+
+  // Crypto/Land/Others: no reliable projection, keep flat
+  return { current: val, projected: val, rate: 0, newContrib: 0 };
+}
+
+function calcProjectedTax(inv, gain, years) {
+  // Estimate tax on projected gains at the horizon
+  if (gain <= 0) return 0;
+  var holdDays = 365 * years; // projected holding period
+  var rules = getTaxRules(inv.type, holdDays);
+  if (rules.isExempt) return 0;
+  if (rules.isSlab) return gain * 0.2; // approximate slab at 20%
+  if (rules.isFlat) return gain * rules.stRate / 100;
+  if (rules.isLong) return Math.max(0, gain - (rules.ltExempt || 0)) * rules.ltRate / 100;
+  return gain * rules.stRate / 100;
+}
+
+function renderProjection() {
+  var inv = filterByMember(S.investments);
+  var years = _projHorizon;
+  var inflationRate = parseFloat((document.getElementById('proj-inflation') || {}).value) || 6;
+  var goldRate = parseFloat((document.getElementById('proj-gold-rate') || {}).value) || 8;
+
+  if (!inv.length) {
+    var el = document.getElementById('proj-summary');
+    if (el) el.innerHTML = '<div class="empty-state"><div class="es-ic">🔮</div><h3>No Investments</h3><p>Add investments to see projections</p></div>';
+    var bk = document.getElementById('proj-breakdown'); if (bk) bk.innerHTML = '';
+    var tb = document.getElementById('proj-table'); if (tb) tb.innerHTML = '';
+    return;
+  }
+
+  var totalCurrent = 0, totalProjected = 0, totalTax = 0, totalNewContrib = 0;
+  var rows = [];
+
+  // Group by type
+  var typeGroups = {};
+  inv.forEach(function(i) {
+    var p = calcProjectedValue(i, years, goldRate);
+    var gain = p.projected - p.current;
+    var tax = calcProjectedTax(i, gain, years);
+    totalCurrent += p.current;
+    totalProjected += p.projected;
+    totalTax += tax;
+    totalNewContrib += p.newContrib;
+    var t = i.type;
+    if (!typeGroups[t]) typeGroups[t] = { current: 0, projected: 0, tax: 0, rate: p.rate, items: 0 };
+    typeGroups[t].current += p.current;
+    typeGroups[t].projected += p.projected;
+    typeGroups[t].tax += tax;
+    typeGroups[t].items++;
+    rows.push({ label: i.label, type: t, current: p.current, projected: p.projected, gain: gain, tax: tax, rate: p.rate });
+  });
+
+  var afterTax = totalProjected - totalTax;
+  var inflationFactor = Math.pow(1 + inflationRate/100, years);
+  var inflationAdj = totalProjected / inflationFactor;
+  var afterTaxInflAdj = afterTax / inflationFactor;
+  var totalGain = totalProjected - totalCurrent;
+
+  // Summary tiles
+  var summaryEl = document.getElementById('proj-summary');
+  if (summaryEl) {
+    summaryEl.innerHTML = '<div class="sg">'
+      + '<div class="st hero" style="background:linear-gradient(135deg,#1a1a35,#0f1829)">'
+      + '<div class="lbl" style="color:rgba(255,255,255,.5)">ESTIMATED NET WORTH (' + years + 'Y)</div>'
+      + '<div class="val" style="color:#fff;font-size:28px">' + fmtFull(totalProjected) + '</div>'
+      + '<span class="sub up">+' + fmtFull(totalGain) + ' from today</span></div>'
+      + '<div class="st"><div class="lbl">AFTER TAX</div><div class="val" style="color:var(--g)">' + fmtFull(afterTax) + '</div>'
+      + '<span class="sub dn">-' + fmtFull(totalTax) + ' est. tax</span></div>'
+      + '<div class="st"><div class="lbl">INFLATION ADJUSTED</div><div class="val" style="color:var(--b)">' + fmtFull(inflationAdj) + '</div>'
+      + '<span class="sub info">at ' + inflationRate + '% inflation</span></div>'
+      + '<div class="st"><div class="lbl">REAL VALUE (TAX + INFLATION)</div><div class="val" style="color:var(--w)">' + fmtFull(afterTaxInflAdj) + '</div>'
+      + '<span class="sub info">purchasing power</span></div>'
+      + '</div>';
+  }
+
+  // Breakdown by type
+  var breakdownEl = document.getElementById('proj-breakdown');
+  if (breakdownEl) {
+    var bHtml = '<div style="margin-top:12px">';
+    Object.keys(typeGroups).forEach(function(t) {
+      var g = typeGroups[t];
+      var gain = g.projected - g.current;
+      var pct = g.current > 0 ? (gain / g.current * 100) : 0;
+      bHtml += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bdr)">'
+        + '<span style="font-size:14px">' + invIcon(t) + '</span>'
+        + '<div style="flex:1"><div style="font-size:12px;font-weight:600">' + invLabel(t) + ' <small style="color:var(--txt3)">(' + g.items + ')</small></div></div>'
+        + '<div style="text-align:right;min-width:80px"><div style="font-size:11px;color:var(--txt2)">' + fmt(g.current) + '</div>'
+        + '<div style="font-size:12px;font-weight:700;color:var(--g)">' + fmt(g.projected) + '</div></div>'
+        + '<div style="text-align:right;min-width:60px"><div style="font-size:10px;color:' + (pct >= 0 ? 'var(--g)' : 'var(--d)') + '">+' + pct.toFixed(1) + '%</div></div>'
+        + '</div>';
+    });
+    bHtml += '</div>';
+    breakdownEl.innerHTML = bHtml;
+  }
+
+  // Year-by-year table
+  var tableEl = document.getElementById('proj-table');
+  if (tableEl) {
+    var tHtml = '<div style="margin-top:16px"><h3 style="font-size:13px;margin-bottom:8px">Year-by-Year Projection</h3>'
+      + '<div style="overflow-x:auto"><table class="tbl"><thead><tr>'
+      + '<th>Year</th><th>Est. Value</th><th>Growth</th><th>Est. Tax</th><th>After Tax</th><th>Inflation Adj.</th><th>Real Value</th>'
+      + '</tr></thead><tbody>';
+    for (var y = 1; y <= years; y++) {
+      var yProj = 0, yTax = 0;
+      inv.forEach(function(i) {
+        var p = calcProjectedValue(i, y, goldRate);
+        var g = p.projected - p.current;
+        yProj += p.projected;
+        yTax += calcProjectedTax(i, g, y);
+      });
+      var yGain = yProj - totalCurrent;
+      var yAfterTax = yProj - yTax;
+      var yInflFactor = Math.pow(1 + inflationRate/100, y);
+      var yInflAdj = yProj / yInflFactor;
+      var yReal = yAfterTax / yInflFactor;
+      tHtml += '<tr>'
+        + '<td style="font-weight:700">Year ' + y + '</td>'
+        + '<td>' + fmt(yProj) + '</td>'
+        + '<td style="color:var(--g)">+' + fmt(yGain) + '</td>'
+        + '<td style="color:var(--d)">' + fmt(yTax) + '</td>'
+        + '<td style="font-weight:600">' + fmt(yAfterTax) + '</td>'
+        + '<td style="color:var(--b)">' + fmt(yInflAdj) + '</td>'
+        + '<td style="color:var(--w);font-weight:600">' + fmt(yReal) + '</td>'
+        + '</tr>';
+    }
+    tHtml += '</tbody></table></div></div>';
+    tableEl.innerHTML = tHtml;
+  }
+}
+
+// Dashboard compact version
+function rDashEstNW() {
+  var el = document.getElementById('dash-est-nw');
+  if (!el) return;
+  var inv = filterByMember(S.investments);
+  if (!inv.length) { el.innerHTML = ''; return; }
+
+  var years = 1; // dashboard always shows 1Y
+  var inflationRate = 6;
+  var goldRate = 8;
+  var totalCurrent = 0, totalProjected = 0, totalTax = 0;
+  var typeGroups = {};
+
+  inv.forEach(function(i) {
+    var p = calcProjectedValue(i, years, goldRate);
+    var gain = p.projected - p.current;
+    var tax = calcProjectedTax(i, gain, years);
+    totalCurrent += p.current;
+    totalProjected += p.projected;
+    totalTax += tax;
+    var t = i.type;
+    if (!typeGroups[t]) typeGroups[t] = { current: 0, projected: 0 };
+    typeGroups[t].current += p.current;
+    typeGroups[t].projected += p.projected;
+  });
+
+  var afterTax = totalProjected - totalTax;
+  var inflAdj = totalProjected / Math.pow(1 + inflationRate/100, years);
+  var totalGain = totalProjected - totalCurrent;
+
+  var h = '<div class="cd"><h3>🔮 Estimated Net Worth (1Y) <span class="cd-badge">Projected</span> '
+    + '<button class="btn-sm" onclick="go(document.querySelector(\'[onclick*=pg-projector]\'),\'pg-projector\')" style="margin-left:auto;font-size:9px">Explore →</button></h3>';
+  h += '<div class="sg" style="margin-bottom:8px">'
+    + '<div class="st"><div class="lbl">ESTIMATED</div><div class="val" style="color:var(--p)">' + fmtFull(totalProjected) + '</div>'
+    + '<span class="sub up">+' + fmtFull(totalGain) + '</span></div>'
+    + '<div class="st"><div class="lbl">AFTER TAX</div><div class="val" style="color:var(--g)">' + fmtFull(afterTax) + '</div></div>'
+    + '<div class="st"><div class="lbl">INFLATION ADJ.</div><div class="val" style="color:var(--b)">' + fmtFull(inflAdj) + '</div></div>'
+    + '</div>';
+
+  // Mini breakdown
+  var types = Object.keys(typeGroups);
+  if (types.length) {
+    h += '<div style="font-size:10px;color:var(--txt2)">';
+    types.forEach(function(t) {
+      var g = typeGroups[t];
+      h += '<div style="display:flex;justify-content:space-between;padding:2px 0">'
+        + '<span>' + invIcon(t) + ' ' + invLabel(t) + '</span>'
+        + '<span>' + fmt(g.current) + ' → <b style="color:var(--g)">' + fmt(g.projected) + '</b></span></div>';
+    });
+    h += '</div>';
+  }
+  h += '</div>';
+  el.innerHTML = h;
 }
 
 function initApp(){
