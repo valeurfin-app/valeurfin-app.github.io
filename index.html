@@ -2003,7 +2003,7 @@ function showMemberSwitcher(){
   var members=[
     {id:'all', name:'All Family',        icon:ALL_FAM},
     {id:'self',name:S.user.name+' (You)',icon:PERSON}
-  ].concat(S.family.map(function(f){return{id:f.id,name:f.name,icon:PERSON};}));
+  ].concat((S.family||[]).map(function(f){return{id:f.id,name:f.name,icon:PERSON};}));
   var existing=document.getElementById('member-switcher-popup');
   if(existing){existing.remove();return;}
   var popup=document.createElement('div');
@@ -2048,7 +2048,7 @@ function switchMember(val){
   }
 }
 
-function removeFamily(id){if(!confirm('Remove?'))return;S.family=S.family.filter(function(f){return f.id!==id});saveS().then(function(){renderAll()})}
+function removeFamily(id){if(!confirm('Remove?'))return;S.family=(S.family||[]).filter(function(f){return f.id!==id});saveS().then(function(){renderAll()})}
 
 // ===== DATE-AWARE SIP PROCESSING =====
 // Replaces manual "Process Month" — SIPs auto-add on their due date, once per calendar month
@@ -2302,9 +2302,9 @@ function renderMemberPills(containerId){
 function rFamilyOverview(){
   var el=document.getElementById("dash-family-overview");
   if(!el)return;
-  if(currentMember!=="all"||!S.family||!S.family.length){el.innerHTML="";return;}
+  if(currentMember!=="all"){el.innerHTML="";return;}
   var allM=[{id:"self",name:S.user.name}]
-    .concat(S.family.map(function(f){return{id:f.id,name:f.name};}));
+    .concat((S.family||[]).map(function(f){return{id:f.id,name:f.name};}));
   var cards=allM.map(function(mb){
     var mInv=S.investments.filter(function(i){return(i.owner||"self")===mb.id;});
     var nw=mInv.reduce(function(s,i){return s+getInvValue(i);},0);
@@ -3123,7 +3123,7 @@ function openEditInv(id){
   if(inv.type==='Gold'){h+='<div class="fr"><div class="fg"><label>Weight (grams)</label><input class="inp" id="edit-gold-grams" type="number" step="0.01" min="0" placeholder="e.g. 10.5" value="'+(inv.grams||0)+'"></div><div class="fg"><label>Purity</label><select class="inp" id="edit-gold-purity"><option value="24" '+(inv.goldPurity>=24?'selected':'')+'>24K (999 / Pure)</option><option value="22" '+((inv.goldPurity||22)===22?'selected':'')+'>22K (916 / Hallmark)</option><option value="18" '+(inv.goldPurity===18?'selected':'')+'>18K (750 / Jewellery)</option><option value="0" '+(inv.goldPurity===0?'selected':'')+'>SGB / ETF (no purity)</option></select></div></div>';}
 
   h+='<div class="fr"><div class="fg"><label>Target Return %</label><input class="inp" id="edit-target" type="number" value="'+(inv.targetReturn||'')+'"></div><div class="fg"><label>Stop Loss %</label><input class="inp" id="edit-stoploss" type="number" value="'+(inv.stopLoss||'')+'"></div></div>';
-  if(S.user.mode==='family'){h+='<div class="fg"><label>Owner</label><select class="inp" id="edit-owner"><option value="self">'+S.user.name+'</option>'+S.family.map(function(f){return '<option value="'+f.id+'" '+(inv.owner===f.id?'selected':'')+'>'+f.name+'</option>'}).join('')+'</select></div>'}
+  if(S.user.mode==='family'){h+='<div class="fg"><label>Owner</label><select class="inp" id="edit-owner"><option value="self">'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'" '+(inv.owner===f.id?'selected':'')+'>'+f.name+'</option>'}).join('')+'</select></div>'}
   document.getElementById('em-form').innerHTML=h;document.getElementById('em-del-confirm').style.display='none';document.getElementById('edit-modal').classList.add('open');
   trapFocus(document.getElementById('edit-modal'));
 }
@@ -3401,7 +3401,7 @@ function buildAddFields(){
      +'<input type="hidden" id="add-return" value="0"></div></div>';
   }
   // --- Owner (all types, family mode) ---
-  if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+S.family.map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
+  if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
   // --- Gold: Grams + Purity ---
   if(t.id==='Gold'){
     h+='<div class="fr"><div class="fg">'
@@ -5137,7 +5137,7 @@ function rSwpSummary(inv){
 function initApp(){
   setTimeout(function(){
     var ind=document.getElementById('member-indicator');
-    if(ind&&S&&S.user.mode==='family'&&(S.family||[]).length>0){
+    if(ind&&S&&S.user.mode==='family'){
       ind.style.display='inline';
       ind.textContent='👨‍👩‍👧‍👦 All';
     }
