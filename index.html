@@ -5536,8 +5536,35 @@ function initApp(){
 
 document.addEventListener('DOMContentLoaded',boot);
 
-// ===== SERVICE WORKER + AUTO-UPDATE =====
-var APP_VERSION = 'v4.1.5g';
+// ===== SERVICE WORKER + UPDATE BANNER =====
+var APP_VERSION = 'v4.1.5j';
+
+function showUpdateBanner(waitingWorker) {
+  // Don't show if banner already exists
+  if(document.getElementById('sw-update-banner')) return;
+  var banner = document.createElement('div');
+  banner.id = 'sw-update-banner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;'
+    + 'background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;'
+    + 'padding:12px 16px;display:flex;align-items:center;gap:10px;'
+    + 'font-family:system-ui,sans-serif;font-size:13px;font-weight:600;'
+    + 'box-shadow:0 4px 20px rgba(0,0,0,.3);animation:slideDown .3s ease';
+  banner.innerHTML = '<span style="font-size:18px">🔄</span>'
+    + '<span style="flex:1">New version available!</span>'
+    + '<button id="sw-update-btn" style="background:#fff;color:#6C5CE7;border:none;'
+    + 'padding:6px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">'
+    + 'Update Now</button>'
+    + '<button id="sw-dismiss-btn" style="background:none;border:none;color:rgba(255,255,255,.6);'
+    + 'font-size:18px;cursor:pointer;padding:0 4px">✕</button>';
+  document.body.appendChild(banner);
+  document.getElementById('sw-update-btn').onclick = function() {
+    if(waitingWorker) waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+    banner.remove();
+  };
+  document.getElementById('sw-dismiss-btn').onclick = function() {
+    banner.remove();
+  };
+}
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
@@ -5545,21 +5572,25 @@ if('serviceWorker' in navigator){
       // Check for updates immediately on every page load
       reg.update();
 
-      // When a new SW is found and installed
+      // If a new SW is already waiting (from a previous visit), show banner now
+      if(reg.waiting){
+        showUpdateBanner(reg.waiting);
+      }
+
+      // When a new SW is found and enters installing state
       reg.addEventListener('updatefound', function(){
         var newWorker = reg.installing;
         if(!newWorker) return;
         newWorker.addEventListener('statechange', function(){
-          // New SW is active and controlling — reload to get fresh files
-          if(newWorker.state === 'activated' && navigator.serviceWorker.controller){
-            toast('🔄 App updated! Refreshing...', 'info');
-            setTimeout(function(){ window.location.reload(); }, 1500);
+          // New SW finished installing and is now waiting
+          if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+            showUpdateBanner(newWorker);
           }
         });
       });
     }).catch(function(){});
 
-    // If SW controller changes (another tab triggered update), reload
+    // When the new SW takes over (after user clicks Update), reload the page
     var refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', function(){
       if(refreshing) return;
