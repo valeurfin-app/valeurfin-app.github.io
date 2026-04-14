@@ -47,7 +47,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
 
 /* === NOTIF === */
-.notif-bar{position:fixed;top:0;left:0;right:0;background:linear-gradient(135deg,var(--p),#0984E3);color:#fff;padding:10px 14px;z-index:200;transform:translateY(-100%);transition:transform .3s;display:flex;align-items:center;gap:8px;font-size:clamp(12px,3.3vw,15px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.notif-bar{position:fixed;top:0;left:0;right:0;background:linear-gradient(135deg,var(--p),#0984E3);color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;z-index:200;transform:translateY(-100%);transition:transform .3s;display:flex;align-items:center;gap:8px;font-size:clamp(12px,3.3vw,15px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
 .notif-bar.show{transform:translateY(0)}
 .notif-bar .n-ic{font-size:clamp(16px,4.8vw,22px);flex-shrink:0}.notif-bar .n-body{flex:1}.notif-bar .n-body b{display:block;font-size:clamp(13px,3.5vw,16px)}.notif-bar .n-body small{font-size:clamp(10px,2.8vw,13px);opacity:.8}
 .notif-bar .n-close{background:none;border:none;color:#fff;font-size:clamp(15px,4.2vw,20px);opacity:.6}
@@ -337,7 +337,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 .chat-bubble-m{width:46px;height:46px;background:linear-gradient(135deg,var(--p),#0984E3);border:none;border-radius:50%;font-size:clamp(18px,5vw,24px);cursor:pointer;box-shadow:0 4px 14px rgba(108,92,231,.4);display:flex;align-items:center;justify-content:center}
 .chat-window-m{position:fixed;bottom:0;left:0;right:0;top:0;background:var(--card);z-index:500;display:none;flex-direction:column}
 .chat-window-m.open{display:flex}
-.chat-head-m{display:flex;align-items:center;gap:8px;padding:12px;background:linear-gradient(135deg,var(--p),#0984E3);color:#fff}
+.chat-head-m{display:flex;align-items:center;gap:8px;padding:calc(12px + env(safe-area-inset-top,0px)) 12px 12px;background:linear-gradient(135deg,var(--p),#0984E3);color:#fff}
 .chat-head-m .ch-avatar{width:28px;height:28px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:clamp(14px,3.8vw,18px)}
 .chat-head-m .ch-info h4{font-size:clamp(12px,3.3vw,15px);font-weight:700}.chat-head-m .ch-info p{font-size:clamp(9px,2.2vw,11px);opacity:.7}
 .chat-head-m .ch-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:clamp(15px,4.2vw,20px);margin-left:auto}
@@ -651,7 +651,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="more-item" onclick="goMore('pg-security')"><span class="mi-ic">🔒</span>Security</div>
 <div class="more-item" onclick="goMore('pg-import')" id="more-import-link"><span class="mi-ic">📥</span>Import</div>
 <div class="more-item" onclick="goMore('pg-about')"><span class="mi-ic">💎</span>About</div>
-<div class="more-item" id="install-btn" onclick="installApp()" style="display:none"><span class="mi-ic">📲</span>Install App</div>
+<div class="more-item" id="install-btn" onclick="installApp()"><span class="mi-ic">📲</span>Install App</div>
 </div>
 </div>
 
@@ -2637,7 +2637,36 @@ function openEditInv(id){var inv=S.investments.find(function(i){return i.id===id
   if(inv.type==='FD'||inv.type==='RD')h+='<div class="fg"><label>Maturity</label><input class="inp" id="edit-maturity" type="date" value="'+(inv.maturityDate||'')+'"></div>';
   h+='<div class="fr"><div class="fg"><label>Target %</label><input class="inp" id="edit-target" type="number" value="'+(inv.targetReturn||'')+'"></div><div class="fg"><label>Stop Loss %</label><input class="inp" id="edit-stoploss" type="number" value="'+(inv.stopLoss||'')+'"></div></div>';
   document.getElementById('em-form').innerHTML=h;document.getElementById('em-del-confirm').style.display='none';document.getElementById('edit-modal').classList.add('open');trapFocus(document.getElementById('edit-modal'))}
-function saveEdit(){if(editingType==='investment'){var inv=S.investments.find(function(i){return i.id===editingId});if(!inv)return;inv.label=document.getElementById('edit-name').value.trim()||inv.label;inv.invested=parseFloat(document.getElementById('edit-invested').value)||inv.invested;inv.value=parseFloat(document.getElementById('edit-value').value)||inv.value;var sd=document.getElementById('edit-started');if(sd)inv.started=sd.value||inv.started;inv.returnRate=parseFloat(document.getElementById('edit-return').value)||inv.returnRate;var es=document.getElementById('edit-symbol');if(es)inv.nseSymbol=es.value.trim();var esc=document.getElementById('edit-sector');if(esc)inv.sector=esc.value;var eq=document.getElementById('edit-qty');if(eq)inv.qty=parseFloat(eq.value)||inv.qty;var ea=document.getElementById('edit-avgprice');if(ea)inv.avgPrice=parseFloat(ea.value)||inv.avgPrice;var em=document.getElementById('edit-maturity');if(em)inv.maturityDate=em.value||inv.maturityDate;var et=document.getElementById('edit-target');inv.targetReturn=et?parseFloat(et.value)||null:inv.targetReturn;var esl=document.getElementById('edit-stoploss');inv.stopLoss=esl?parseFloat(esl.value)||null:inv.stopLoss;inv.returns=inv.value-inv.invested}saveS().then(function(){renderAll();closeEditModal();fireNotif('✅','Saved','')})}
+function openAddFamilyMember(){
+  var h='<div class="fg"><label>Member Name</label>'
+    +'<input class="inp" id="fam-new-name" placeholder="e.g. Priya" maxlength="40"></div>';
+  h+='<div class="fg"><label>Relation</label>'
+    +'<select class="inp" id="fam-new-relation">'
+    +'<option value="">Select relation</option>'
+    +'<option>Spouse</option><option>Father</option><option>Mother</option>'
+    +'<option>Son</option><option>Daughter</option><option>Brother</option>'
+    +'<option>Sister</option><option>Grandparent</option><option>Other</option>'
+    +'</select></div>';
+  document.getElementById('em-form').innerHTML=h;
+  document.getElementById('em-title').textContent='Add Family Member';
+  document.getElementById('em-sub').textContent='Track investments for this member';
+  document.getElementById('em-del-confirm').style.display='none';
+  editingId=null;editingType='family';
+  document.getElementById('edit-modal').classList.add('open');
+  trapFocus(document.getElementById('edit-modal'));
+}
+function saveEdit(){
+  if(editingType==='family'){
+    var name=(document.getElementById('fam-new-name').value||'').trim();
+    var rel=document.getElementById('fam-new-relation').value;
+    if(!name){fireNotif('⚠️','Enter name','');return;}
+    if(!rel){fireNotif('⚠️','Select relation','');return;}
+    S.family=S.family||[];
+    S.family.push({id:uid(),name:name,relation:rel,age:''});
+    saveS().then(function(){renderAll();closeEditModal();fireNotif('✅',name+' added','Family member saved');});
+    return;
+  }
+  if(editingType==='investment'){var inv=S.investments.find(function(i){return i.id===editingId});if(!inv)return;inv.label=document.getElementById('edit-name').value.trim()||inv.label;inv.invested=parseFloat(document.getElementById('edit-invested').value)||inv.invested;inv.value=parseFloat(document.getElementById('edit-value').value)||inv.value;var sd=document.getElementById('edit-started');if(sd)inv.started=sd.value||inv.started;inv.returnRate=parseFloat(document.getElementById('edit-return').value)||inv.returnRate;var es=document.getElementById('edit-symbol');if(es)inv.nseSymbol=es.value.trim();var esc=document.getElementById('edit-sector');if(esc)inv.sector=esc.value;var eq=document.getElementById('edit-qty');if(eq)inv.qty=parseFloat(eq.value)||inv.qty;var ea=document.getElementById('edit-avgprice');if(ea)inv.avgPrice=parseFloat(ea.value)||inv.avgPrice;var em=document.getElementById('edit-maturity');if(em)inv.maturityDate=em.value||inv.maturityDate;var et=document.getElementById('edit-target');inv.targetReturn=et?parseFloat(et.value)||null:inv.targetReturn;var esl=document.getElementById('edit-stoploss');inv.stopLoss=esl?parseFloat(esl.value)||null:inv.stopLoss;inv.returns=inv.value-inv.invested}saveS().then(function(){renderAll();closeEditModal();fireNotif('✅','Saved','')})}
 function showDeleteConfirm(){document.getElementById('em-del-confirm').style.display='block'}
 function cancelDelete(){document.getElementById('em-del-confirm').style.display='none'}
 function confirmDelete(){if(editingType==='investment')S.investments=S.investments.filter(function(i){return i.id!==editingId});saveS().then(function(){renderAll();closeEditModal();fireNotif('🗑️','Deleted','')})}
@@ -2958,7 +2987,7 @@ function renderPendingLots(){var el=document.getElementById('lots-list');if(!el)
 function resetPendingLots(){pendingLots=[];var el=document.getElementById('lots-list');if(el)el.innerHTML='';}
 function editAddLot(){var inv=S.investments.find(function(i){return i.id===editingId;});if(!inv)return;var date=document.getElementById('edit-lot-date')?document.getElementById('edit-lot-date').value:'';var qty=parseFloat(document.getElementById('edit-lot-qty')?document.getElementById('edit-lot-qty').value:0)||0;var price=parseFloat(document.getElementById('edit-lot-price')?document.getElementById('edit-lot-price').value:0)||0;if(!date||!qty||!price){var msg=document.getElementById('edit-lot-msg');if(msg)msg.innerHTML='<span style="color:var(--d)">Fill all fields</span>';return;}if(!inv.lots)inv.lots=[];inv.lots.push({id:uid(),date:date,qty:qty,price:price});inv.lots.sort(function(a,b){return new Date(a.date)-new Date(b.date);});syncInvFromLots(inv);saveS().then(function(){openEditInv(editingId);fireNotif('✅','Lot added','');});}
 function editRemoveLot(invId,lotId){var inv=S.investments.find(function(i){return i.id===invId;});if(!inv||!inv.lots)return;if(!confirm('Remove this lot?'))return;inv.lots=inv.lots.filter(function(l){return l.id!==lotId;});syncInvFromLots(inv);saveS().then(function(){openEditInv(invId);fireNotif('✅','Lot removed','');});}
-function addInvestment(){var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var name=document.getElementById('add-name').value.trim();if(!name){fireNotif('⚠️','Enter name','');return}var started=document.getElementById('add-started').value||'';var currentVal=parseFloat(document.getElementById('add-current').value)||0;var monthly=t.hasMonthly?(parseFloat(document.getElementById('add-monthly').value)||0):0;var dueDate=t.hasMonthly?(document.getElementById('add-due').value||'5'):'';
+function addInvestment(){var t=INV_TYPES.find(function(x){return x.id===selectedInvType});var name=document.getElementById('add-name').value.trim();if(!name){fireNotif('⚠️','Enter name','');return}var started=document.getElementById('add-started').value||'';var currentVal=parseFloat((document.getElementById('add-current')||{}).value)||0;var monthly=t.hasMonthly?(parseFloat((document.getElementById('add-monthly')||{}).value)||0):0;var dueDate=t.hasMonthly?((document.getElementById('add-due')||{}).value||'5'):'';
   var stepUpEl=document.getElementById('add-stepup');
   var stepUpRaw=stepUpEl?stepUpEl.value:'0';
   var stepUp=t.hasMonthly?(stepUpRaw==='custom'?(parseFloat(document.getElementById('add-stepup-custom')?document.getElementById('add-stepup-custom').value:0)||0):parseFloat(stepUpRaw)||0):0;
@@ -3751,19 +3780,46 @@ function initApp(){
   fireNotif('👋','Welcome',S.user.name||'User');
 }
 
-// ===== SERVICE WORKER =====
-// ===== SERVICE WORKER + AUTO-UPDATE =====
-var APP_VERSION = 'v4.1.5g';
+// ===== SERVICE WORKER + UPDATE BANNER =====
+var APP_VERSION = 'v4.1.5j';
+
+function showUpdateBanner(waitingWorker) {
+  if(document.getElementById('sw-update-banner')) return;
+  var banner = document.createElement('div');
+  banner.id = 'sw-update-banner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;'
+    + 'background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;'
+    + 'padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;'
+    + 'display:flex;align-items:center;gap:8px;'
+    + 'font-family:system-ui,sans-serif;font-size:12px;font-weight:600;'
+    + 'box-shadow:0 4px 20px rgba(0,0,0,.3)';
+  banner.innerHTML = '<span style="font-size:16px">🔄</span>'
+    + '<span style="flex:1">New version available!</span>'
+    + '<button id="sw-update-btn" style="background:#fff;color:#6C5CE7;border:none;'
+    + 'padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">'
+    + 'Update Now</button>'
+    + '<button id="sw-dismiss-btn" style="background:none;border:none;color:rgba(255,255,255,.6);'
+    + 'font-size:16px;cursor:pointer;padding:0 2px">✕</button>';
+  document.body.appendChild(banner);
+  document.getElementById('sw-update-btn').onclick = function() {
+    if(waitingWorker) waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+    banner.remove();
+  };
+  document.getElementById('sw-dismiss-btn').onclick = function() {
+    banner.remove();
+  };
+}
+
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
     navigator.serviceWorker.register('sw.js').then(function(reg){
       reg.update();
+      if(reg.waiting){ showUpdateBanner(reg.waiting); }
       reg.addEventListener('updatefound', function(){
         var nw = reg.installing; if(!nw) return;
         nw.addEventListener('statechange', function(){
-          if(nw.state === 'activated' && navigator.serviceWorker.controller){
-            fireNotif('🔄','Updating...','New version found');
-            setTimeout(function(){ window.location.reload(); }, 1500);
+          if(nw.state === 'installed' && navigator.serviceWorker.controller){
+            showUpdateBanner(nw);
           }
         });
       });
@@ -3782,7 +3838,19 @@ window.addEventListener('beforeinstallprompt',function(e){
   e.preventDefault();
   deferredPrompt=e;
   var btn=document.getElementById('install-btn');
-  if(btn){btn.style.display='';btn.querySelector('.mi-ic').textContent='📲';}
+  if(btn){btn.style.display='';var ic=btn.querySelector('.mi-ic');if(ic)ic.textContent='📲';}
+
+  // Auto-prompt after 30 seconds on first visit (if not already installed)
+  var prompted=false;
+  try{prompted=localStorage.getItem('vf_install_prompted')}catch(e){}
+  if(!prompted){
+    setTimeout(function(){
+      if(deferredPrompt){
+        fireNotif('📲','Install ValeurFin','Tap the Install App button in More menu for full-screen experience!');
+        try{localStorage.setItem('vf_install_prompted','1')}catch(e){}
+      }
+    },30000);
+  }
 });
 
 function installApp(){
@@ -3802,7 +3870,6 @@ function installApp(){
         fireNotif('✅','Installing...','ValeurFin added to home screen');
       }
       deferredPrompt=null;
-      var btn=document.getElementById('install-btn');if(btn)btn.style.display='none';
     });
     return;
   }
@@ -3813,8 +3880,33 @@ function installApp(){
     return;
   }
   
-  // Fallback
-  fireNotif('ℹ️','How to install','Open in Chrome → Menu (⋮) → "Add to Home Screen"');
+  // Fallback — generic instructions
+  showGenericInstallGuide();
+}
+
+function showGenericInstallGuide(){
+  var existing=document.getElementById('install-guide-modal');
+  if(existing){existing.style.display='flex';return;}
+  var modal=document.createElement('div');
+  modal.id='install-guide-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;display:flex;align-items:flex-end;justify-content:center;padding:16px';
+  modal.innerHTML='<div style="background:#1a1a35;border-radius:16px;padding:20px;width:100%;max-width:400px;border:1px solid rgba(108,92,231,.4)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    +'<h3 style="color:#fff;font-size:16px">📲 Install ValeurFin</h3>'
+    +'<button onclick="document.getElementById(\'install-guide-modal\').style.display=\'none\'" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:20px;cursor:pointer">✕</button>'
+    +'</div>'
+    +'<div style="color:rgba(255,255,255,.8);font-size:13px;line-height:2">'
+    +'<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)"><b>Chrome (Android):</b></div>'
+    +'<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)">1️⃣ Tap the <b>three dots menu</b> ⋮ at the top right</div>'
+    +'<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)">2️⃣ Tap <b>"Add to Home Screen"</b> or <b>"Install app"</b></div>'
+    +'<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)">3️⃣ Tap <b>"Install"</b> — Done! Opens as full-screen app</div>'
+    +'<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)"><b>Samsung Internet:</b></div>'
+    +'<div style="padding:8px 0">Tap the menu ☰ → <b>"Add page to"</b> → <b>"Home Screen"</b></div>'
+    +'</div>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:10px;margin-top:12px;text-align:center">Works best in Chrome for Android</p>'
+    +'</div>';
+  modal.onclick=function(e){if(e.target===modal)modal.style.display='none';}
+  document.body.appendChild(modal);
 }
 
 function showIOSInstallGuide(){
@@ -3841,19 +3933,27 @@ function showIOSInstallGuide(){
   document.body.appendChild(modal);
 }
 
-// Show install button to iOS users too (they need it for the guide)
+// Show install button for iOS users too (they need it for the guide)
 if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){
   var isStandalone=window.navigator.standalone;
-  if(!isStandalone){
+  if(isStandalone){
     window.addEventListener('DOMContentLoaded',function(){
       var btn=document.getElementById('install-btn');
-      if(btn){btn.style.display='';btn.querySelector('.mi-ic').textContent='📲';}
+      if(btn){var ic=btn.querySelector('.mi-ic');if(ic)ic.textContent='✅';btn.lastChild.textContent='Installed';}
     });
   }
 }
+// If already running as PWA (Android or desktop), update button
+if(window.matchMedia('(display-mode: standalone)').matches){
+  window.addEventListener('DOMContentLoaded',function(){
+    var btn=document.getElementById('install-btn');
+    if(btn){var ic=btn.querySelector('.mi-ic');if(ic)ic.textContent='✅';btn.lastChild.textContent='Installed';}
+  });
+}
 window.addEventListener('appinstalled',function(){
   fireNotif('🎉','Installed!','ValeurFin is on your home screen!');
-  var btn=document.getElementById('install-btn');if(btn)btn.style.display='none';
+  var btn=document.getElementById('install-btn');
+  if(btn){var ic=btn.querySelector('.mi-ic');if(ic)ic.textContent='✅';btn.lastChild.textContent='Installed';}
 });
 
 document.addEventListener('DOMContentLoaded', boot);
