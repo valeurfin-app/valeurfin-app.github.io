@@ -11411,6 +11411,11 @@ function initApp(){
 
 // ===== PORTFOLIO REPORT (M4) =====
 function generateReport() {
+  // CRITICAL: Open window FIRST — must be synchronous with user click
+  // Mobile browsers block window.open() if called after async computation
+  var w = window.open('', '_blank');
+  if(!w) { fireNotif('⚠️','Allow popups','to view the report'); return; }
+  w.document.write('<html><head><title>Generating Report...</title></head><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#F7F8FC"><h2 style="color:#6C5CE7">Generating your report...</h2></body></html>');
   var inv = filterByMember(S.investments);
   var nw = inv.reduce(function(s,i){ return s + getInvValue(i); }, 0);
   var invested = inv.reduce(function(s,i){ return s + getInvInvested(i); }, 0);
@@ -11474,7 +11479,10 @@ function generateReport() {
     +'<h2>§10 Wealth Projection (5Y)</h2><table><tr><th>Year</th><th style="text-align:right">Estimated</th><th style="text-align:right">Tax</th><th style="text-align:right">After Tax</th><th style="text-align:right">Infl Adj</th></tr>'+projRows+'</table>'
     +'<div style="margin-top:24px;padding:14px;background:linear-gradient(135deg,#F0EDFF,#fff);border:1.5px solid #6C5CE7;border-radius:10px;text-align:center"><div style="font-size:13px;font-weight:700;color:#6C5CE7">Powered by ValeurFin</div><div style="font-size:10px;color:#636E72">valeurfin-app.github.io/valeurfin · India\'s Privacy-First Wealth Dashboard</div></div>'
     +'<div style="margin-top:8px;font-size:8px;color:#B2BEC3;text-align:center">Auto-generated from on-device data. Not financial advice.</div></body></html>';
-  var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}else{fireNotif('⚠️','Allow popups','to view the report');}
+  // Write to already-open window
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
 }
 
 // ===== BROKER REFERRAL =====
