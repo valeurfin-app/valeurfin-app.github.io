@@ -3678,7 +3678,7 @@ function fmt(n){if(n==null||isNaN(n))return'₹0';var a=Math.abs(n);if(a>=1e7)re
 function fmtFull(n){return'₹'+Math.round(n||0).toLocaleString('en-IN')}
 function fS(n){return(n>=0?'+':'')+fmt(n)}
 function pct(n){return(n>=0?'+':'')+n.toFixed(1)+'%'}
-function mN(m){var base=S&&S.createdAt?new Date(S.createdAt):new Date();return new Date(base.getFullYear(),base.getMonth()+m).toLocaleDateString('en-IN',{month:'short',year:'numeric'})}
+function mN(m){if(typeof m==='string'&&m.indexOf('-')!==-1){var p=m.split('-');var d=new Date(parseInt(p[0]),parseInt(p[1])-1);return isNaN(d.getTime())?m:d.toLocaleDateString('en-IN',{month:'short',year:'numeric'});}var base=S&&S.createdAt?new Date(S.createdAt):new Date();return new Date(base.getFullYear(),base.getMonth()+m).toLocaleDateString('en-IN',{month:'short',year:'numeric'})}
 function mNFull(m){var base=S&&S.createdAt?new Date(S.createdAt):new Date();return new Date(base.getFullYear(),base.getMonth()+m).toLocaleDateString('en-IN',{month:'long',year:'numeric'})}
 function catIcon(id){var c=EXPENSE_CATS.find(function(x){return x.id===id});return c?c.icon:'📋'}
 function catLabel(id){var c=EXPENSE_CATS.find(function(x){return x.id===id});return c?c.label:id}
@@ -4976,8 +4976,8 @@ function buildAddFields(){var t=INV_TYPES.find(function(x){return x.id===selecte
   h+='><div class="dd" id="'+ddId+'"></div></div></div>';
   // Quick Add: hide platform, started, and other optional fields
   var qHide = _quickAddMode ? 'display:none' : '';
-  // 2. Platform + 3. Started
-  h+='<div style="'+qHide+'"><div class="fr"><div class="fg"><label>Platform</label><select class="inp" id="add-platform" onchange="showBrokerRef(this.value)"><option value="">Select</option>'+(t.id==='Crypto'?CRYPTO_EXCHANGES:t.id==='FD'||t.id==='RD'||t.id==='PPF'?BANKS:PLATFORMS).map(function(p){return '<option>'+p+'</option>'}).join('')+'</select><div id="broker-ref" style="font-size:9px;margin-top:2px"></div></div><div class="fg"><label>Started</label><input class="inp" id="add-started" type="date"></div></div></div>';
+  // 2. Platform (hidden in quick add) + 3. Started (always visible)
+  h+='<div class="fr"><div class="fg" style="'+qHide+'"><label>Platform</label><select class="inp" id="add-platform" onchange="showBrokerRef(this.value)"><option value="">Select</option>'+(t.id==='Crypto'?CRYPTO_EXCHANGES:t.id==='FD'||t.id==='RD'||t.id==='PPF'?BANKS:PLATFORMS).map(function(p){return '<option>'+p+'</option>'}).join('')+'</select><div id="broker-ref" style="font-size:9px;margin-top:2px"></div></div><div class="fg"><label>Started</label><input class="inp" id="add-started" type="date"></div></div>';
   // 4. Current Value — NON-Stocks only
   if(t.id!=='Stocks'){
     h+='<div class="fg"><label>Current Value (₹)</label><input class="inp" id="add-current" type="number" placeholder="₹"></div>';
@@ -10494,9 +10494,9 @@ var LOCAL_MF_DB = [
 function searchLocalMF(q){
   var lq = q.toLowerCase();
   return LOCAL_MF_DB.filter(function(f){
-    return f.n.toLowerCase().indexOf(lq) !== -1;
+    return (f.name||f.n||'').toLowerCase().indexOf(lq) !== -1;
   }).slice(0, 12).map(function(f){
-    return {schemeName: f.n, schemeCode: f.c};
+    return {schemeName: f.name||f.n, schemeCode: f.code||f.c};
   });
 }
 
@@ -11660,7 +11660,7 @@ function showAutoSyncModal(){
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5k';
+var APP_VERSION = 'v4.1.5l';
 
 function showUpdateBanner() {
   if(document.getElementById('sw-update-banner')) return;
