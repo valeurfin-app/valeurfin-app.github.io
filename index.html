@@ -5068,13 +5068,29 @@ async function boot(){
 // ====================================================
 
 function renderAll(){
-  renderFamilyDD();rDash();rInv();rExp();rIncome();rReminders();rGoals();rInsurance();rKPI();rDividends();rWhatIf();rLog();rFamily();rSecurity();renderAddForm();rBotPageChips();
-  // Re-render projector if it's visible
-  try { renderProjection(); } catch(e) {}
+  // CRITICAL: Update sidebar + topbar FIRST — before any render that might fail
   document.getElementById('tb-month').textContent=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
   document.getElementById('sb-avatar').textContent=(S.user.name||'U').charAt(0).toUpperCase();
   document.getElementById('sb-uname').textContent=S.user.name||'User';
   document.getElementById('sb-umode').textContent=S.user.mode==='family'?'Family':'Individual';
+  // Render all pages — each wrapped so one failure doesn't block the rest
+  try{renderFamilyDD()}catch(e){console.warn('[VF] renderFamilyDD error:',e)}
+  try{rDash()}catch(e){console.warn('[VF] rDash error:',e)}
+  try{rInv()}catch(e){console.warn('[VF] rInv error:',e)}
+  try{rExp()}catch(e){console.warn('[VF] rExp error:',e)}
+  try{rIncome()}catch(e){console.warn('[VF] rIncome error:',e)}
+  try{rReminders()}catch(e){console.warn('[VF] rReminders error:',e)}
+  try{rGoals()}catch(e){console.warn('[VF] rGoals error:',e)}
+  try{rInsurance()}catch(e){console.warn('[VF] rInsurance error:',e)}
+  try{rKPI()}catch(e){console.warn('[VF] rKPI error:',e)}
+  try{rDividends()}catch(e){console.warn('[VF] rDividends error:',e)}
+  try{rWhatIf()}catch(e){console.warn('[VF] rWhatIf error:',e)}
+  try{rLog()}catch(e){console.warn('[VF] rLog error:',e)}
+  try{rFamily()}catch(e){console.warn('[VF] rFamily error:',e)}
+  try{rSecurity()}catch(e){console.warn('[VF] rSecurity error:',e)}
+  try{renderAddForm()}catch(e){console.warn('[VF] renderAddForm error:',e)}
+  try{rBotPageChips()}catch(e){console.warn('[VF] rBotPageChips error:',e)}
+  try{renderProjection()}catch(e){}
 }
 
 // ===== SCORE FUNCTIONS =====
