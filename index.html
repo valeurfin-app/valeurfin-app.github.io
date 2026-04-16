@@ -4009,6 +4009,7 @@ function go(btn,pgId){
   if(pgId==='pg-tax')renderTax();
   if(pgId==='pg-exit')renderExitSignals();
   if(pgId==='pg-projector')renderProjection();
+  if(pgId==='pg-add')renderAddForm();
   if(pgId==='pg-div'){rDividends();loadAllDividends();}
   if(pgId==='pg-bot'){rBotPageChips();}
 }
@@ -13019,6 +13020,10 @@ document.addEventListener('DOMContentLoaded',boot);
 
 // ===== PORTFOLIO REPORT (M4) =====
 function generateReport() {
+  // Open window FIRST — synchronous with user click to avoid popup blockers
+  var w = window.open('', '_blank');
+  if(!w) { toast('Please allow popups to view the report', 'err'); return; }
+  w.document.write('<html><head><title>Generating...</title></head><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#F7F8FC"><h2 style="color:#6C5CE7">Generating your report...</h2></body></html>');
   var inv = filterByMember(S.investments);
   var nw = inv.reduce(function(s,i){ return s + getInvValue(i); }, 0);
   var invested = inv.reduce(function(s,i){ return s + getInvInvested(i); }, 0);
@@ -13240,14 +13245,10 @@ function generateReport() {
     + 'For informational purposes only. Not financial advice. Consult a SEBI-registered advisor.</div>'
     + '</body></html>';
 
-  // Open in new tab
-  var w = window.open('', '_blank');
-  if(w) {
-    w.document.write(html);
-    w.document.close();
-  } else {
-    toast('Please allow popups to view the report', 'err');
-  }
+  // Write to already-open window
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
 }
 
 // ===== BROKER REFERRAL =====
