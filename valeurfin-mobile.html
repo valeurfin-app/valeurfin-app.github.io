@@ -4722,8 +4722,23 @@ async function boot(){
 // ====================================================
 
 function renderAll(){
-  renderFamilyDD();rHome();rInv();rExp();rIncome();rReminders();rGoals();rInsurance();rKPI();rDividends();rWhatIf();rLog();rFamily();rSecurity();renderAddSubForms();
-  try { renderProjection(); } catch(e) {}
+  // Render all pages — each wrapped so one failure doesn't block the rest
+  try{renderFamilyDD()}catch(e){console.warn('[VF] renderFamilyDD:',e)}
+  try{rHome()}catch(e){console.warn('[VF] rHome:',e)}
+  try{rInv()}catch(e){console.warn('[VF] rInv:',e)}
+  try{rExp()}catch(e){console.warn('[VF] rExp:',e)}
+  try{rIncome()}catch(e){console.warn('[VF] rIncome:',e)}
+  try{rReminders()}catch(e){console.warn('[VF] rReminders:',e)}
+  try{rGoals()}catch(e){console.warn('[VF] rGoals:',e)}
+  try{rInsurance()}catch(e){console.warn('[VF] rInsurance:',e)}
+  try{rKPI()}catch(e){console.warn('[VF] rKPI:',e)}
+  try{rDividends()}catch(e){console.warn('[VF] rDividends:',e)}
+  try{rWhatIf()}catch(e){console.warn('[VF] rWhatIf:',e)}
+  try{rLog()}catch(e){console.warn('[VF] rLog:',e)}
+  try{rFamily()}catch(e){console.warn('[VF] rFamily:',e)}
+  try{rSecurity()}catch(e){console.warn('[VF] rSecurity:',e)}
+  try{renderAddSubForms()}catch(e){console.warn('[VF] renderAddSubForms:',e)}
+  try{renderProjection()}catch(e){}
 }
 
 // ===== SCORE FUNCTIONS =====
