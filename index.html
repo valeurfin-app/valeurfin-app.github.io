@@ -3836,6 +3836,7 @@ var STOCK_DB=[
   {name:'MOTILALAMC - MOBANK10',sym:'MOBANK10',sector:'ETF'}
 ];
 var selectedInvType='SIP',mfSearchResults=[],livePrices={},priceLastFetched=null;
+var currentMember='all';
 var saveInProgress=false,lastSaveHash='',idbWritten=false;
 
 var CORS_PROXIES=['https://prices.valeurfin.workers.dev/?url=','https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=','https://thingproxy.freeboard.io/fetch/'];
@@ -4440,8 +4441,8 @@ function getInvValue(inv){
   return inv.liveValue||inv.value||0;
 }
 function getInvReturns(inv){return getInvValue(inv)-getInvInvested(inv);}
-function getInvXIRR(inv){var val=getInvValue(inv);var invested=getInvInvested(inv);if(!invested||invested<=0)return 0;if(invHasLots(inv)&&inv.lots.length>0)return calcLotsXIRR(inv.lots,val);if(inv.started){var months=(Date.now()-new Date(inv.started))/(1000*60*60*24*30.44);if(months<0.5)return 0;return(Math.pow(val/invested,12/months)-1)*100;}return(Math.pow(val/invested,12/Math.max(1,S.currentMonth))-1)*100;}
-function calcLotsXIRR(lots,currentValue){if(!lots||!lots.length)return 0;var cfs=lots.map(function(l){return{date:new Date(l.date),amount:-(l.qty*l.price)};});cfs.push({date:new Date(),amount:currentValue});cfs.sort(function(a,b){return a.date-b.date});var first=cfs[0].date;function npv(r){return cfs.reduce(function(s,cf){var y=(cf.date-first)/(365.25*24*3600*1000);return s+cf.amount/Math.pow(1+r,y)},0);}var rate=0.1;for(var i=0;i<100;i++){var f=npv(rate);var df=npv(rate+0.0001);var delta=(df-f)/0.0001;if(Math.abs(delta)<1e-10)break;rate=rate-f/delta;if(rate<-0.999)rate=-0.999;}if(isNaN(rate)||!isFinite(rate))return 0;return rate*100;}
+function getInvXIRR(inv){var val=getInvValue(inv);var invested=getInvInvested(inv);if(!invested||invested<=0)return 0;if(invHasLots(inv)&&inv.lots.length>0){var r=calcLotsXIRR(inv.lots,val);return Math.max(-999,Math.min(999,r));}if(inv.started&&inv.started.length>=8){var sd=new Date(inv.started);if(isNaN(sd.getTime()))return 0;var months=(Date.now()-sd.getTime())/(1000*60*60*24*30.44);if(months<0.5)return 0;var r2=(Math.pow(val/invested,12/months)-1)*100;return Math.max(-999,Math.min(999,r2));}return 0;}
+function calcLotsXIRR(lots,currentValue){if(!lots||!lots.length)return 0;var validLots=lots.filter(function(l){var d=new Date(l.date);return l.date&&!isNaN(d.getTime())&&l.qty>0&&l.price>0;});if(!validLots.length)return 0;var today=new Date();var daysDiff=(today-new Date(validLots[0].date))/(1000*60*60*24);if(daysDiff<1)return 0;var cfs=validLots.map(function(l){return{date:new Date(l.date),amount:-(l.qty*l.price)};});cfs.push({date:today,amount:currentValue});cfs.sort(function(a,b){return a.date-b.date});var first=cfs[0].date;function npv(r){return cfs.reduce(function(s,cf){var y=(cf.date-first)/(365.25*24*3600*1000);return s+cf.amount/Math.pow(1+r,y)},0);}var rate=0.1;for(var i=0;i<100;i++){var f=npv(rate);var df=npv(rate+0.0001);var delta=(df-f)/0.0001;if(Math.abs(delta)<1e-10)break;rate=rate-f/delta;if(rate<-0.999)rate=-0.999;if(rate>100)rate=100;}if(isNaN(rate)||!isFinite(rate))return 0;return Math.max(-999,Math.min(999,rate*100));}
 function getQtyOnDate(inv,dateStr){
   var t=new Date(dateStr);
   // Lot-based: filter to lots purchased on or before the date
@@ -4588,7 +4589,7 @@ function rFamily(){
       +"<div style=\"font-size:12px;font-weight:600\">"+mInv.length+"</div></div>"
       +"</div>"
       +(mb.id!=="self"
-        ?"<div style=\"text-align:right;margin-top:6px\"><button class=\"btn-sm\" onclick=\"event.stopPropagation();removeFamily(this.closest('[data-mbid]').dataset.mbid)\">Remove</button></div>"
+        ?"<div style=\"text-align:right;margin-top:6px\"><button class=\"btn-sm\" style=\"margin-right:6px\" onclick=\"event.stopPropagation();openEditFamilyMember('"+mb.id+"')\">✏️ Edit</button><button class=\"btn-sm\" onclick=\"event.stopPropagation();removeFamily(this.closest('[data-mbid]').dataset.mbid)\">Remove</button></div>"
         :"")
       +"</div>";
   }).join("");
@@ -5415,6 +5416,25 @@ function openAddFamilyMember(){
   trapFocus(document.getElementById('edit-modal'));
 }
 
+function openEditFamilyMember(id){
+  var mb=(S.family||[]).find(function(f){return f.id===id;});
+  if(!mb)return;
+  var h='<div class="fg"><label>Member Name</label>'
+    +'<input class="inp" id="fam-new-name" value="'+mb.name+'" placeholder="e.g. Priya" maxlength="40"></div>';
+  h+='<div class="fg"><label>Relation</label>'
+    +'<select class="inp" id="fam-new-relation">'
+    +'<option value="">Select relation</option>'
+    +['Spouse','Father','Mother','Son','Daughter','Brother','Sister','Grandparent','Other'].map(function(r){return '<option'+(r===mb.relation?' selected':'')+'>'+r+'</option>'}).join('')
+    +'</select></div>';
+  document.getElementById('em-form').innerHTML=h;
+  document.getElementById('em-title').textContent='Edit Family Member';
+  document.getElementById('em-sub').textContent='Update member details';
+  document.getElementById('em-del-confirm').style.display='none';
+  editingId=id;editingType='family';
+  document.getElementById('edit-modal').classList.add('open');
+  trapFocus(document.getElementById('edit-modal'));
+}
+
 function saveEdit(){
   if(editingType==='family'){
     var name=(document.getElementById('fam-new-name').value||'').trim();
@@ -5422,8 +5442,15 @@ function saveEdit(){
     if(!name){toast('Enter a name','err');return;}
     if(!rel){toast('Select a relation','err');return;}
     S.family=S.family||[];
-    S.family.push({id:uid(),name:name,relation:rel,age:''});
-    saveS().then(function(){renderAll();closeEditModal();toast(name+' added to family');});
+    if(editingId){
+      // Edit existing member
+      var mb=S.family.find(function(f){return f.id===editingId;});
+      if(mb){mb.name=name;mb.relation=rel;}
+    } else {
+      // Add new member
+      S.family.push({id:uid(),name:name,relation:rel,age:''});
+    }
+    saveS().then(function(){renderAll();closeEditModal();toast(name+(editingId?' updated':' added'));});
     return;
   }
   if(editingType==='investment'){var inv=S.investments.find(function(i){return i.id===editingId});if(!inv)return;
@@ -12181,7 +12208,7 @@ function renderScreener(){
 // ===== KPIs =====
 function rKPI(){
   var inv=filterByMember(S.investments);var el=document.getElementById('kpi-list');var empty=document.getElementById('kpi-empty');
-  if(!inv.length||S.currentMonth===0){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';
+  if(!inv.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';
   var nw=inv.reduce(function(s,i){return s+(i.liveValue||i.value)},0);
   var invested=inv.reduce(function(s,i){return s+i.invested},0);var returns=nw-invested;
   var cagrDates=inv.filter(function(i){return i.started;}).map(function(i){return new Date(i.started).getTime();});
@@ -12997,18 +13024,19 @@ function initApp(){
   },0);
 
   applyTheme();
-  ensureMonthlySnapshot();
   renderAll();
   try { renderNWChart(); } catch(e) {}
   rMarket();
   generateAlerts();
 
   // On open: full refresh if stale; else just update NAV + gold price
+  // ensureMonthlySnapshot runs AFTER prices are fetched (captures accurate NW)
   var staleMs = AUTO_REFRESH_INTERVAL;
   var isStale = !priceLastFetched || (Date.now() - priceLastFetched.getTime() > staleMs);
   if (isStale) {
-    setTimeout(function() { refreshAll(); }, 200);
+    setTimeout(function() { refreshAll().then(function(){ ensureMonthlySnapshot(); try{renderNWChart();}catch(e){} }).catch(function(){ ensureMonthlySnapshot(); }); }, 200);
   } else {
+    ensureMonthlySnapshot();
     setTimeout(function() { fetchMFNavs(); fetchGoldPrice(); }, 3000);
   }
   startAutoRefresh();
