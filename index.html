@@ -3950,12 +3950,22 @@ function fmtFull(n){return'₹'+Math.round(n||0).toLocaleString('en-IN')}
 function fS(n){return(n>=0?'+':'')+fmt(n)}
 function pct(n){return(n>=0?'+':'')+n.toFixed(1)+'%'}
 function mN(m){
-  // Use app creation date as base so month labels are always accurate
+  // Handle both formats: number (SIP offset) and string "YYYY-MM" (monthly snapshot)
+  if(typeof m==='string' && m.indexOf('-')!==-1){
+    var parts=m.split('-');
+    var d=new Date(parseInt(parts[0]), parseInt(parts[1])-1);
+    return isNaN(d.getTime()) ? m : d.toLocaleDateString('en-IN',{month:'short',year:'numeric'});
+  }
   var base=S&&S.createdAt?new Date(S.createdAt):new Date();
   var d=new Date(base.getFullYear(),base.getMonth()+m);
   return d.toLocaleDateString('en-IN',{month:'short',year:'numeric'});
 }
 function mNFull(m){
+  if(typeof m==='string' && m.indexOf('-')!==-1){
+    var parts=m.split('-');
+    var d=new Date(parseInt(parts[0]), parseInt(parts[1])-1);
+    return isNaN(d.getTime()) ? m : d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  }
   var base=S&&S.createdAt?new Date(S.createdAt):new Date();
   var d=new Date(base.getFullYear(),base.getMonth()+m);
   return d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
@@ -11091,9 +11101,9 @@ var LOCAL_MF_DB = [
 function searchLocalMF(q){
   var lq = q.toLowerCase();
   return LOCAL_MF_DB.filter(function(f){
-    return f.n.toLowerCase().indexOf(lq) !== -1;
+    return (f.name||f.n||'').toLowerCase().indexOf(lq) !== -1;
   }).slice(0, 12).map(function(f){
-    return {schemeName: f.n, schemeCode: f.c};
+    return {schemeName: f.name||f.n, schemeCode: f.code||f.c};
   });
 }
 
@@ -13397,7 +13407,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5k';
+var APP_VERSION = 'v4.1.5l';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
