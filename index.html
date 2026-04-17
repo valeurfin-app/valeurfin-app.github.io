@@ -709,6 +709,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <button class="sb-link" onclick="go(this,'pg-exit')"><span class="sbi">🚪</span>Exit Signals</button>
 <button class="sb-link" onclick="go(this,'pg-projector')"><span class="sbi">🔮</span>Wealth Projector</button>
 <div class="sb-section">Tools</div>
+<button class="sb-link" onclick="go(this,'pg-itr')"><span class="sbi">🧮</span>ITR Calculator</button>
 <button class="sb-link" onclick="go(this,'pg-report')"><span class="sbi">📄</span>Portfolio Report</button>
 <button class="sb-link" onclick="go(this,'pg-import')"><span class="sbi">📥</span>Import Data</button>
 <div class="sb-section">Settings</div>
@@ -1054,6 +1055,72 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 </div>
 
 <!-- ===== ABOUT ===== -->
+<div class="pg" id="pg-itr">
+<div class="cd">
+<h3>🧮 ITR Calculator <span class="cd-badge">FY 2025-26</span></h3>
+<p class="m-sub">Calculate your income tax under Old & New regimes. Auto-pulls data from your investments.</p>
+<div class="fr" style="margin:10px 0">
+<div class="fg"><label>Tax Regime</label><select class="inp" id="itr-regime" onchange="calcITR()"><option value="new">New Regime (Default)</option><option value="old">Old Regime</option></select></div>
+<div class="fg"><label>Age Group</label><select class="inp" id="itr-age" onchange="calcITR()"><option value="below60">Below 60</option><option value="60to80">60 - 80 (Senior)</option><option value="above80">Above 80 (Super Senior)</option></select></div>
+</div>
+</div>
+<div class="cd"><h3>💼 Salary Breakup</h3>
+<div class="fr"><div class="fg"><label>Annual CTC (₹)</label><input class="inp" id="itr-ctc" type="number" oninput="calcITR()"></div><div class="fg"><label>Monthly In-Hand (₹)</label><input class="inp" id="itr-monthly" type="number" oninput="document.getElementById('itr-annual-inhand').value=Math.round(this.value*12);calcITR()"></div><div class="fg"><label>Annual In-Hand (₹)</label><input class="inp" id="itr-annual-inhand" type="number" readonly style="opacity:.7"></div></div>
+<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--p)">📋 Detailed Salary Breakup</summary>
+<div style="margin-top:8px">
+<h4 style="font-size:11px;color:var(--txt2);margin:8px 0 4px">Earnings</h4>
+<div class="fr"><div class="fg"><label>Basic Pay</label><input class="inp" id="itr-basic" type="number" oninput="calcITR()"></div><div class="fg"><label>HRA</label><input class="inp" id="itr-hra" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Special Allowance</label><input class="inp" id="itr-special" type="number" oninput="calcITR()"></div><div class="fg"><label>LTA</label><input class="inp" id="itr-lta" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Dearness Allowance</label><input class="inp" id="itr-da" type="number" oninput="calcITR()"></div><div class="fg"><label>Bonus</label><input class="inp" id="itr-bonus" type="number" oninput="calcITR()"></div></div>
+<div class="fg" style="max-width:200px"><label>Bonus Frequency</label><select class="inp" id="itr-bonus-freq"><option value="yearly">Yearly</option><option value="quarterly">Quarterly</option><option value="monthly">Monthly</option></select></div>
+<div class="fr"><div class="fg"><label>Conveyance</label><input class="inp" id="itr-conveyance" type="number" oninput="calcITR()"></div><div class="fg"><label>Medical Allowance</label><input class="inp" id="itr-medical" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>City Compensatory</label><input class="inp" id="itr-citycomp" type="number" oninput="calcITR()"></div><div class="fg"><label>Education Allowance</label><input class="inp" id="itr-education" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Telephone/Internet</label><input class="inp" id="itr-telephone" type="number" oninput="calcITR()"></div><div class="fg"><label>Other Allowances</label><input class="inp" id="itr-other-allow" type="number" oninput="calcITR()"></div></div>
+<h4 style="font-size:11px;color:var(--g);margin:10px 0 4px">Non-Taxable</h4>
+<div class="fr"><div class="fg"><label>Food Card / Meals</label><input class="inp" id="itr-food" type="number" oninput="calcITR()"></div><div class="fg"><label>Car / Fuel Allowance</label><input class="inp" id="itr-car" type="number" oninput="calcITR()"></div><div class="fg"><label>Uniform Allowance</label><input class="inp" id="itr-uniform" type="number" oninput="calcITR()"></div></div>
+<h4 style="font-size:11px;color:var(--d);margin:10px 0 4px">Deductions from Salary</h4>
+<div class="fr"><div class="fg"><label>PF (Employee)</label><input class="inp" id="itr-pf-emp" type="number" oninput="calcITR()"></div><div class="fg"><label>PF (Employer)</label><input class="inp" id="itr-pf-er" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Professional Tax</label><input class="inp" id="itr-ptax" type="number" oninput="calcITR()"></div><div class="fg"><label>Gratuity</label><input class="inp" id="itr-gratuity" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>ESI</label><input class="inp" id="itr-esi" type="number" oninput="calcITR()"></div><div class="fg"><label>Group Insurance</label><input class="inp" id="itr-group-ins" type="number" oninput="calcITR()"></div></div>
+</div></details>
+<div style="margin-top:8px;padding:8px 12px;background:var(--pbg);border-radius:8px;font-size:11px"><b>Standard Deduction:</b> <span id="itr-std-ded">₹75,000 (New Regime)</span></div>
+</div>
+<div class="cd" id="itr-deductions-section"><h3>📑 Investment Deductions <span style="font-size:10px;color:var(--txt2)">(Old Regime only)</span></h3>
+<details open><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--b)">Section 80C (Limit ₹1,50,000)</summary>
+<div style="margin-top:6px">
+<div class="fr"><div class="fg"><label>PPF <span style="font-size:9px;color:var(--g)">(auto)</span></label><input class="inp" id="itr-80c-ppf" type="number" oninput="calcITR()"></div><div class="fg"><label>ELSS <span style="font-size:9px;color:var(--g)">(auto)</span></label><input class="inp" id="itr-80c-elss" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Tax Saving FD</label><input class="inp" id="itr-80c-fd" type="number" oninput="calcITR()"></div><div class="fg"><label>LIC Premium</label><input class="inp" id="itr-80c-lic" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>NSC</label><input class="inp" id="itr-80c-nsc" type="number" oninput="calcITR()"></div><div class="fg"><label>Sukanya Samriddhi</label><input class="inp" id="itr-80c-sukanya" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Tuition Fees</label><input class="inp" id="itr-80c-tuition" type="number" oninput="calcITR()"></div><div class="fg"><label>Home Loan Principal</label><input class="inp" id="itr-80c-homeloan" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>EPF (Employee PF)</label><input class="inp" id="itr-80c-epf" type="number" oninput="calcITR()" readonly style="opacity:.7"></div></div>
+<div style="font-size:10px;color:var(--txt2);margin-top:4px">Total 80C: <b id="itr-80c-total">₹0</b> / ₹1,50,000</div>
+</div></details>
+<details><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--b)">NPS — Section 80CCD</summary>
+<div style="margin-top:6px">
+<div class="fr"><div class="fg"><label>80CCD(1B) — Additional NPS (₹50K limit, Old only)</label><input class="inp" id="itr-nps-1b" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>80CCD(2) — Employer NPS (10%/14% of Basic, Both regimes)</label><input class="inp" id="itr-nps-2" type="number" oninput="calcITR()"></div></div>
+</div></details>
+<details><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--b)">Section 80D — Health Insurance</summary>
+<div style="margin-top:6px">
+<div class="fr"><div class="fg"><label>Self + Family <span style="font-size:9px;color:var(--g)">(auto)</span> (₹25K)</label><input class="inp" id="itr-80d-self" type="number" oninput="calcITR()"></div><div class="fg"><label>Parents (₹25K / ₹50K senior)</label><input class="inp" id="itr-80d-parents" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Preventive Health (₹5K within 80D)</label><input class="inp" id="itr-80d-prevent" type="number" oninput="calcITR()"></div><div class="fg"><label><input type="checkbox" id="itr-parents-senior" onchange="calcITR()"> Parents are Senior Citizens</label></div></div>
+</div></details>
+<details><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--b)">Other Deductions</summary>
+<div style="margin-top:6px">
+<div class="fr"><div class="fg"><label>80E — Education Loan Interest</label><input class="inp" id="itr-80e" type="number" oninput="calcITR()"></div><div class="fg"><label>24(b) — Home Loan Interest (₹2L)</label><input class="inp" id="itr-24b" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>80G — Donations (100%)</label><input class="inp" id="itr-80g100" type="number" oninput="calcITR()"></div><div class="fg"><label>80G — Donations (50%)</label><input class="inp" id="itr-80g50" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>80GG — Rent (no HRA, ₹60K)</label><input class="inp" id="itr-80gg" type="number" oninput="calcITR()"></div><div class="fg"><label>80TTA — Savings Interest (₹10K)</label><input class="inp" id="itr-80tta" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>80TTB — Senior Interest (₹50K)</label><input class="inp" id="itr-80ttb" type="number" oninput="calcITR()"></div><div class="fg"><label>80U — Disability (₹75K/₹1.25L)</label><input class="inp" id="itr-80u" type="number" oninput="calcITR()"></div></div>
+</div></details>
+<details><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--b)">Capital Gains <span style="font-size:9px;color:var(--g)">(auto from investments)</span></summary>
+<div style="margin-top:6px">
+<div class="fr"><div class="fg"><label>STCG (Equity &lt;1Y) — 20%</label><input class="inp" id="itr-stcg" type="number" oninput="calcITR()"></div><div class="fg"><label>LTCG (Equity &gt;1Y) — 12.5% &gt;₹1.25L</label><input class="inp" id="itr-ltcg" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Crypto Gains — 30% flat</label><input class="inp" id="itr-crypto" type="number" oninput="calcITR()"></div></div>
+</div></details>
+</div>
+<div class="cd"><h3>📊 Tax Comparison — Old vs New</h3><div id="itr-result"></div></div>
+</div>
+
 <div class="pg" id="pg-report">
 <div class="cd">
 <h3>📄 Portfolio Report</h3>
@@ -4014,13 +4081,14 @@ function go(btn,pgId){
   document.getElementById(pgId).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(function(b){b.classList.remove('on')});
   if(btn)btn.classList.add('on');
-  var titles={'pg-dash':'Dashboard','pg-market':'Market Pulse','pg-inv':'Investments','pg-add':'Add Investment','pg-exp':'Expenses','pg-income':'Income','pg-remind':'Reminders','pg-goals':'Goals','pg-ins':'Insurance','pg-bot':'ValeurBot','pg-kpi':'KPIs','pg-div':'Dividends','pg-whatif':'SIP Calculator','pg-log':'Transaction Log','pg-screener':'Screener','pg-tax':'Tax Calculator','pg-exit':'Exit Signals','pg-projector':'Wealth Projector','pg-report':'Portfolio Report','pg-security':'Security','pg-family':'Family','pg-privacy':'Privacy','pg-terms':'Terms','pg-about':'About','pg-import':'Import Data'};
+  var titles={'pg-dash':'Dashboard','pg-market':'Market Pulse','pg-inv':'Investments','pg-add':'Add Investment','pg-exp':'Expenses','pg-income':'Income','pg-remind':'Reminders','pg-goals':'Goals','pg-ins':'Insurance','pg-bot':'ValeurBot','pg-kpi':'KPIs','pg-div':'Dividends','pg-whatif':'SIP Calculator','pg-log':'Transaction Log','pg-screener':'Screener','pg-tax':'Tax Calculator','pg-exit':'Exit Signals','pg-projector':'Wealth Projector','pg-itr':'ITR Calculator','pg-report':'Portfolio Report','pg-security':'Security','pg-family':'Family','pg-privacy':'Privacy','pg-terms':'Terms','pg-about':'About','pg-import':'Import Data'};
   document.getElementById('pg-title').textContent=titles[pgId]||'Dashboard';
   if(pgId==='pg-screener')renderScreener();
   if(pgId==='pg-tax')renderTax();
   if(pgId==='pg-exit')renderExitSignals();
   if(pgId==='pg-projector')renderProjection();
   if(pgId==='pg-add')renderAddForm();
+  if(pgId==='pg-itr')initITR();
   if(pgId==='pg-div'){rDividends();loadAllDividends();}
   if(pgId==='pg-bot'){rBotPageChips();}
 }
@@ -5284,7 +5352,10 @@ function rDonut(inv,nw,elId,colorMap){
   var cum=0;var slices=entries.map(function(e){var p=e[1]/nw;var start=cum;cum+=p;return{name:e[0],val:e[1],pct:p,start:start}});
   var svg='<svg viewBox="0 0 140 140">';
   for(var di=0;di<slices.length;di++){
-    var s=slices[di];var a1=s.start*2*Math.PI-Math.PI/2;var a2=(s.start+s.pct)*2*Math.PI-Math.PI/2;
+    var s=slices[di];
+    if(s.pct>=0.9999){svg+='<circle cx="70" cy="70" r="60" fill="'+(colorMap[s.name]||'#636E72')+'" opacity="0.85"/>';continue;}
+    if(s.pct<0.001)continue;
+    var a1=s.start*2*Math.PI-Math.PI/2;var a2=(s.start+s.pct)*2*Math.PI-Math.PI/2;
     var lg=s.pct>0.5?1:0;
     var x1=(70+60*Math.cos(a1)).toFixed(2),y1=(70+60*Math.sin(a1)).toFixed(2);
     var x2=(70+60*Math.cos(a2)).toFixed(2),y2=(70+60*Math.sin(a2)).toFixed(2);
@@ -5400,7 +5471,7 @@ function openEditInv(id){
   if(inv.type==='Gold'){h+='<div class="fr"><div class="fg"><label>Weight (grams)</label><input class="inp" id="edit-gold-grams" type="number" step="0.01" min="0" placeholder="e.g. 10.5" value="'+(inv.grams||0)+'"></div><div class="fg"><label>Purity</label><select class="inp" id="edit-gold-purity"><option value="24" '+(inv.goldPurity>=24?'selected':'')+'>24K (999 / Pure)</option><option value="22" '+((inv.goldPurity||22)===22?'selected':'')+'>22K (916 / Hallmark)</option><option value="18" '+(inv.goldPurity===18?'selected':'')+'>18K (750 / Jewellery)</option><option value="0" '+(inv.goldPurity===0?'selected':'')+'>SGB / ETF (no purity)</option></select></div></div>';}
 
   h+='<div class="fr"><div class="fg"><label>Target Return %</label><input class="inp" id="edit-target" type="number" value="'+(inv.targetReturn||'')+'"></div><div class="fg"><label>Stop Loss %</label><input class="inp" id="edit-stoploss" type="number" value="'+(inv.stopLoss||'')+'"></div></div>';
-  if(S.user.mode==='family'){h+='<div class="fg"><label>Owner</label><select class="inp" id="edit-owner"><option value="self">'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'" '+(inv.owner===f.id?'selected':'')+'>'+f.name+'</option>'}).join('')+'</select></div>'}
+  if(S.user.mode==='family'||(S.family&&S.family.length>0)){h+='<div class="fg"><label>Owner</label><select class="inp" id="edit-owner"><option value="self" '+(inv.owner==='self'||!inv.owner?'selected':'')+'>'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'" '+(inv.owner===f.id?'selected':'')+'>'+f.name+'</option>'}).join('')+'</select></div>'}
   document.getElementById('em-form').innerHTML=h;document.getElementById('em-del-confirm').style.display='none';document.getElementById('edit-modal').classList.add('open');
   trapFocus(document.getElementById('edit-modal'));
 }
@@ -13072,6 +13143,215 @@ function initApp(){
 
 document.addEventListener('DOMContentLoaded',boot);
 
+// ===== ITR CALCULATOR =====
+function itrVal(id){return parseFloat(document.getElementById(id).value)||0}
+function itrAutoFill(){
+  // Auto-pull from app investments
+  var ppf=S.investments.filter(function(i){return i.type==='PPF'}).reduce(function(s,i){return s+i.invested},0);
+  var elss=S.investments.filter(function(i){return i.type==='ELSS'}).reduce(function(s,i){return s+i.invested},0);
+  var nps=S.investments.filter(function(i){return i.type==='NPS'}).reduce(function(s,i){return s+i.invested},0);
+  var healthPrem=S.insurance.filter(function(i){return i.insType==='health'&&i.status==='active'}).reduce(function(s,i){return s+i.premium},0);
+  var stcg=0,ltcg=0,crypto=0;
+  S.investments.forEach(function(i){
+    var gain=getInvValue(i)-getInvInvested(i);if(gain<=0)return;
+    if(i.type==='Crypto'){crypto+=gain;return}
+    if(i.type!=='Stocks'&&i.type!=='SIP'&&i.type!=='ELSS')return;
+    var days=i.started?Math.floor((Date.now()-new Date(i.started).getTime())/(86400000)):365;
+    if(days>365)ltcg+=gain;else stcg+=gain;
+  });
+  var el;
+  el=document.getElementById('itr-80c-ppf');if(el&&!el.value)el.value=Math.round(ppf)||'';
+  el=document.getElementById('itr-80c-elss');if(el&&!el.value)el.value=Math.round(elss)||'';
+  el=document.getElementById('itr-80c-epf');if(el)el.value=Math.round(itrVal('itr-pf-emp'))||'';
+  el=document.getElementById('itr-nps-1b');if(el&&!el.value)el.value=Math.round(Math.min(nps,50000))||'';
+  el=document.getElementById('itr-80d-self');if(el&&!el.value)el.value=Math.round(healthPrem)||'';
+  el=document.getElementById('itr-stcg');if(el&&!el.value)el.value=Math.round(stcg)||'';
+  el=document.getElementById('itr-ltcg');if(el&&!el.value)el.value=Math.round(ltcg)||'';
+  el=document.getElementById('itr-crypto');if(el&&!el.value)el.value=Math.round(crypto)||'';
+}
+
+function calcITR(){
+  var regime=document.getElementById('itr-regime').value;
+  var ageGroup=document.getElementById('itr-age').value;
+  // Salary income
+  var ctc=itrVal('itr-ctc');
+  var basic=itrVal('itr-basic');var hra=itrVal('itr-hra');var special=itrVal('itr-special');
+  var lta=itrVal('itr-lta');var da=itrVal('itr-da');var bonus=itrVal('itr-bonus');
+  var bonusFreq=document.getElementById('itr-bonus-freq').value;
+  var annualBonus=bonusFreq==='monthly'?bonus*12:bonusFreq==='quarterly'?bonus*4:bonus;
+  var conveyance=itrVal('itr-conveyance');var medical=itrVal('itr-medical');
+  var cityComp=itrVal('itr-citycomp');var education=itrVal('itr-education');
+  var telephone=itrVal('itr-telephone');var otherAllow=itrVal('itr-other-allow');
+  var food=itrVal('itr-food');var car=itrVal('itr-car');var uniform=itrVal('itr-uniform');
+  var pfEmp=itrVal('itr-pf-emp');var pfEr=itrVal('itr-pf-er');
+  var ptax=itrVal('itr-ptax');var gratuity=itrVal('itr-gratuity');
+  var esi=itrVal('itr-esi');var groupIns=itrVal('itr-group-ins');
+
+  // Update EPF auto-fill
+  var epfEl=document.getElementById('itr-80c-epf');if(epfEl)epfEl.value=Math.round(pfEmp)||'';
+
+  // Gross salary = all taxable components
+  var grossSalary=ctc||(basic+hra+special+lta+da+annualBonus+conveyance+medical+cityComp+education+telephone+otherAllow+food+car+uniform+pfEr+gratuity);
+  // Taxable salary = gross - non-taxable - employer deductions
+  var nonTaxable=food+car+uniform;
+  var empDeductions=pfEmp+ptax+esi+groupIns;
+  var taxableSalary=grossSalary-nonTaxable-empDeductions;
+
+  // Standard deduction
+  var stdDedNew=75000,stdDedOld=50000;
+  document.getElementById('itr-std-ded').textContent=regime==='new'?'₹75,000 (New Regime)':'₹50,000 (Old Regime)';
+
+  // 80C
+  var c80c=Math.min(150000,itrVal('itr-80c-ppf')+itrVal('itr-80c-elss')+itrVal('itr-80c-fd')+itrVal('itr-80c-lic')+itrVal('itr-80c-nsc')+itrVal('itr-80c-sukanya')+itrVal('itr-80c-tuition')+itrVal('itr-80c-homeloan')+pfEmp);
+  var t80c=document.getElementById('itr-80c-total');if(t80c)t80c.textContent='₹'+c80c.toLocaleString('en-IN')+' / ₹1,50,000';
+  // NPS
+  var nps1b=Math.min(50000,itrVal('itr-nps-1b'));
+  var nps2=itrVal('itr-nps-2');// Employer NPS — allowed in both regimes
+  // 80D
+  var parentsSenior=document.getElementById('itr-parents-senior').checked;
+  var d80dSelf=Math.min(25000,itrVal('itr-80d-self')+itrVal('itr-80d-prevent'));
+  var d80dParents=Math.min(parentsSenior?50000:25000,itrVal('itr-80d-parents'));
+  var d80d=d80dSelf+d80dParents;
+  // Other
+  var d80e=itrVal('itr-80e');
+  var d24b=Math.min(200000,itrVal('itr-24b'));
+  var d80g=itrVal('itr-80g100')+Math.round(itrVal('itr-80g50')*0.5);
+  var d80gg=Math.min(60000,itrVal('itr-80gg'));
+  var d80tta=Math.min(10000,itrVal('itr-80tta'));
+  var d80ttb=Math.min(50000,itrVal('itr-80ttb'));
+  var d80u=itrVal('itr-80u');
+
+  // Capital gains
+  var stcg=itrVal('itr-stcg');var ltcg=itrVal('itr-ltcg');var cryptoG=itrVal('itr-crypto');
+
+  // === COMPUTE FOR BOTH REGIMES ===
+  function computeTax(reg){
+    var income=taxableSalary;
+    var stdDed=reg==='new'?stdDedNew:stdDedOld;
+    income-=stdDed;
+    // Professional tax deduction
+    income-=ptax;
+    // NPS employer (both regimes)
+    income-=nps2;
+
+    var totalDeductions=0;
+    if(reg==='old'){
+      totalDeductions=c80c+nps1b+d80d+d80e+d24b+d80g+d80gg+d80tta+d80ttb+d80u;
+      // HRA exemption (simplified: 40% of basic or actual HRA, whichever is lower)
+      if(hra>0&&basic>0){
+        var hraExempt=Math.min(hra, basic*0.4);
+        totalDeductions+=hraExempt;
+      }
+      if(lta>0) totalDeductions+=lta; // LTA exempt under old
+    }
+    income-=totalDeductions;
+    if(income<0)income=0;
+
+    // Tax slabs
+    var tax=0;
+    if(reg==='new'){
+      // New regime FY 2025-26
+      if(income>2400000)tax+=(income-2400000)*0.30;
+      if(income>2000000)tax+=Math.min(income-2000000,400000)*0.25;
+      if(income>1600000)tax+=Math.min(income-1600000,400000)*0.20;
+      if(income>1200000)tax+=Math.min(income-1200000,400000)*0.15;
+      if(income>800000)tax+=Math.min(income-800000,400000)*0.10;
+      if(income>400000)tax+=Math.min(income-400000,400000)*0.05;
+      // Rebate 87A: income up to 12L → rebate up to 60K
+      if(income<=1200000)tax=Math.max(0,tax-60000);
+    } else {
+      // Old regime
+      var exempt=ageGroup==='above80'?500000:ageGroup==='60to80'?300000:250000;
+      if(income>1000000)tax+=(income-1000000)*0.30;
+      if(income>500000)tax+=Math.min(income-500000,500000)*0.20;
+      if(income>exempt)tax+=Math.min(income-exempt,500000-exempt)*0.05;
+      // Rebate 87A: income up to 5L → rebate up to 12,500
+      if(income<=500000)tax=Math.max(0,tax-12500);
+    }
+    // Surcharge
+    var surcharge=0;
+    if(income>50000000)surcharge=tax*0.25;
+    else if(income>20000000)surcharge=tax*0.25;
+    else if(income>10000000)surcharge=tax*0.15;
+    else if(income>5000000)surcharge=tax*0.10;
+    // Cess
+    var cess=(tax+surcharge)*0.04;
+    var totalTax=Math.round(tax+surcharge+cess);
+
+    // Capital gains tax (same for both regimes)
+    var cgTax=0;
+    cgTax+=Math.round(stcg*0.20);
+    var ltcgTaxable=Math.max(0,ltcg-125000);
+    cgTax+=Math.round(ltcgTaxable*0.125);
+    cgTax+=Math.round(cryptoG*0.30);
+    cgTax+=Math.round(cgTax*0.04);// cess on CG
+
+    return{
+      grossSalary:Math.round(grossSalary),
+      nonTaxable:Math.round(nonTaxable),
+      empDeductions:Math.round(empDeductions),
+      stdDed:stdDed,
+      totalDeductions:Math.round(totalDeductions),
+      taxableIncome:Math.round(income),
+      slabTax:Math.round(tax),
+      surcharge:Math.round(surcharge),
+      cess:Math.round(cess),
+      incomeTax:totalTax,
+      cgTax:cgTax,
+      totalTax:totalTax+cgTax,
+      monthlyTax:Math.round((totalTax+cgTax)/12),
+      effectiveRate:grossSalary>0?((totalTax+cgTax)/grossSalary*100).toFixed(1):'0.0'
+    };
+  }
+
+  var oldT=computeTax('old');
+  var newT=computeTax('new');
+  var savings=oldT.totalTax-newT.totalTax;
+  var better=savings>0?'new':'old';
+  var savAmt=Math.abs(savings);
+
+  function fc(v){return '₹'+v.toLocaleString('en-IN')}
+  var el=document.getElementById('itr-result');
+  el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'
+    +'<div style="padding:14px;background:'+(better==='old'?'var(--gbg)':'var(--bg)')+';border:1.5px solid '+(better==='old'?'var(--g)':'var(--bdr)')+';border-radius:12px">'
+    +'<h4 style="font-size:13px;margin-bottom:8px">📋 Old Regime</h4>'
+    +'<div style="font-size:10px;color:var(--txt2);line-height:1.8">'
+    +'Gross Salary: <b>'+fc(oldT.grossSalary)+'</b><br>'
+    +'− Non-Taxable: '+fc(oldT.nonTaxable)+'<br>'
+    +'− Std Deduction: '+fc(oldT.stdDed)+'<br>'
+    +'− 80C+NPS+80D+Others: '+fc(oldT.totalDeductions)+'<br>'
+    +'<b style="color:var(--txt)">Taxable Income: '+fc(oldT.taxableIncome)+'</b><br>'
+    +'Slab Tax: '+fc(oldT.slabTax)+'<br>'
+    +'Surcharge: '+fc(oldT.surcharge)+' · Cess: '+fc(oldT.cess)+'<br>'
+    +'<b style="font-size:14px;color:var(--d)">Income Tax: '+fc(oldT.incomeTax)+'</b>'
+    +(oldT.cgTax>0?'<br>Capital Gains Tax: '+fc(oldT.cgTax):'')
+    +'<br><b style="font-size:16px;color:var(--d)">TOTAL: '+fc(oldT.totalTax)+'</b>'
+    +'<br>Monthly: '+fc(oldT.monthlyTax)+' · Effective: '+oldT.effectiveRate+'%'
+    +'</div></div>'
+    +'<div style="padding:14px;background:'+(better==='new'?'var(--gbg)':'var(--bg)')+';border:1.5px solid '+(better==='new'?'var(--g)':'var(--bdr)')+';border-radius:12px">'
+    +'<h4 style="font-size:13px;margin-bottom:8px">🆕 New Regime</h4>'
+    +'<div style="font-size:10px;color:var(--txt2);line-height:1.8">'
+    +'Gross Salary: <b>'+fc(newT.grossSalary)+'</b><br>'
+    +'− Non-Taxable: '+fc(newT.nonTaxable)+'<br>'
+    +'− Std Deduction: '+fc(newT.stdDed)+'<br>'
+    +'− Employer NPS: '+fc(Math.round(itrVal('itr-nps-2')))+'<br>'
+    +'<b style="color:var(--txt)">Taxable Income: '+fc(newT.taxableIncome)+'</b><br>'
+    +'Slab Tax: '+fc(newT.slabTax)+'<br>'
+    +'Surcharge: '+fc(newT.surcharge)+' · Cess: '+fc(newT.cess)+'<br>'
+    +'<b style="font-size:14px;color:var(--d)">Income Tax: '+fc(newT.incomeTax)+'</b>'
+    +(newT.cgTax>0?'<br>Capital Gains Tax: '+fc(newT.cgTax):'')
+    +'<br><b style="font-size:16px;color:var(--d)">TOTAL: '+fc(newT.totalTax)+'</b>'
+    +'<br>Monthly: '+fc(newT.monthlyTax)+' · Effective: '+newT.effectiveRate+'%'
+    +'</div></div></div>'
+    +'<div style="padding:14px;background:linear-gradient(135deg,var(--gbg),var(--card));border:1.5px solid var(--g);border-radius:12px;text-align:center">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--g)">💡 '+(better==='new'?'New':'Old')+' Regime saves you '+fc(savAmt)+'/year ('+fc(Math.round(savAmt/12))+'/month)</div>'
+    +'<div style="font-size:10px;color:var(--txt2);margin-top:4px">'+(savings===0?'Both regimes result in equal tax.':better==='new'?'The New Regime with lower rates and ₹75K standard deduction is better for you.':'The Old Regime with deductions (80C, 80D, HRA, etc.) saves you more.')+'</div>'
+    +'</div>';
+}
+
+// Auto-fill on page visit
+function initITR(){try{itrAutoFill();calcITR();}catch(e){}}
+
 // ===== PORTFOLIO REPORT (M4) =====
 function generateReport() {
   // Open window FIRST — synchronous with user click to avoid popup blockers
@@ -13407,7 +13687,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5l';
+var APP_VERSION = 'v4.1.5m';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
