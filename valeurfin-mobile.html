@@ -595,7 +595,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div id="dash-est-nw"></div>
 <div id="dash-events"></div>
 <div class="cd"><h3>📈 Timeline</h3><div class="timeline" id="home-tl"></div></div>
-<div class="cd"><h3>🍩 Allocation</h3><div class="donut-wrap" id="home-donut"></div></div>
+<div class="cd"><h3>◑ Asset Allocation</h3><div class="donut-wrap" id="home-donut"></div></div>
 <div class="cd"><h3>🏗️ Sectors</h3><div class="donut-wrap" id="home-sector"></div></div>
 <div class="cd"><h3>💸 Expenses</h3><div id="home-exp-bars"></div></div>
 <div class="cd"><h3>📊 Holdings</h3><div id="home-holdings"></div></div>
@@ -678,6 +678,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div class="more-item" onclick="goMore('pg-family')"><span class="mi-ic">👨‍👩‍👧‍👦</span>Family</div>
 <div class="more-item" onclick="goMore('pg-security')"><span class="mi-ic">🔒</span>Security</div>
 <div class="more-item" onclick="goMore('pg-import')" id="more-import-link"><span class="mi-ic">📥</span>Import</div>
+<div class="more-item" onclick="goMore('pg-itr')"><span class="mi-ic">🧮</span>ITR Calc</div>
 <div class="more-item" onclick="goMore('pg-report')"><span class="mi-ic">📄</span>Report</div>
 <div class="more-item" onclick="goMore('pg-about')"><span class="mi-ic">💎</span>About</div>
 <div class="more-item" id="install-btn" onclick="installApp()"><span class="mi-ic">📲</span>Install App</div>
@@ -887,6 +888,72 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <div id="scr-list-m"></div>
 <div id="scr-empty-m" style="display:none;text-align:center;padding:24px;color:var(--txt3);font-size:clamp(11px,3vw,13px)">No investments match the filter</div>
 </div>
+</div>
+
+<!-- ITR CALCULATOR -->
+<div class="pg" id="pg-itr">
+<button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
+<div class="cd">
+<h3>🧮 ITR Calculator <span class="cd-badge">FY 2025-26</span></h3>
+<p class="m-sub">Old vs New regime comparison. Auto-pulls from investments.</p>
+<div class="fr" style="margin:8px 0">
+<div class="fg"><label>Regime</label><select class="inp" id="itr-regime" onchange="calcITR()"><option value="new">New Regime</option><option value="old">Old Regime</option></select></div>
+<div class="fg"><label>Age</label><select class="inp" id="itr-age" onchange="calcITR()"><option value="below60">&lt;60</option><option value="60to80">60-80</option><option value="above80">80+</option></select></div>
+</div>
+</div>
+<div class="cd"><h3>💼 Salary</h3>
+<div class="fr"><div class="fg"><label>Annual CTC</label><input class="inp" id="itr-ctc" type="number" oninput="calcITR()"></div><div class="fg"><label>Monthly In-Hand</label><input class="inp" id="itr-monthly" type="number" oninput="document.getElementById('itr-annual-inhand').value=Math.round(this.value*12);calcITR()"></div></div>
+<div class="fg"><label>Annual In-Hand</label><input class="inp" id="itr-annual-inhand" type="number" readonly style="opacity:.7"></div>
+<details style="margin-top:6px"><summary style="cursor:pointer;font-size:11px;font-weight:600;color:var(--p)">📋 Detailed Breakup</summary>
+<div style="margin-top:6px">
+<div class="fr"><div class="fg"><label>Basic</label><input class="inp" id="itr-basic" type="number" oninput="calcITR()"></div><div class="fg"><label>HRA</label><input class="inp" id="itr-hra" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Special Allow.</label><input class="inp" id="itr-special" type="number" oninput="calcITR()"></div><div class="fg"><label>LTA</label><input class="inp" id="itr-lta" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>DA</label><input class="inp" id="itr-da" type="number" oninput="calcITR()"></div><div class="fg"><label>Bonus</label><input class="inp" id="itr-bonus" type="number" oninput="calcITR()"></div></div>
+<div class="fg" style="max-width:160px"><label>Bonus Freq</label><select class="inp" id="itr-bonus-freq"><option value="yearly">Yearly</option><option value="quarterly">Quarterly</option><option value="monthly">Monthly</option></select></div>
+<div class="fr"><div class="fg"><label>Conveyance</label><input class="inp" id="itr-conveyance" type="number" oninput="calcITR()"></div><div class="fg"><label>Medical</label><input class="inp" id="itr-medical" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>City Comp.</label><input class="inp" id="itr-citycomp" type="number" oninput="calcITR()"></div><div class="fg"><label>Education</label><input class="inp" id="itr-education" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Telephone</label><input class="inp" id="itr-telephone" type="number" oninput="calcITR()"></div><div class="fg"><label>Other Allow.</label><input class="inp" id="itr-other-allow" type="number" oninput="calcITR()"></div></div>
+<div style="font-size:10px;font-weight:600;color:var(--g);margin:6px 0">Non-Taxable</div>
+<div class="fr"><div class="fg"><label>Food Card</label><input class="inp" id="itr-food" type="number" oninput="calcITR()"></div><div class="fg"><label>Car/Fuel</label><input class="inp" id="itr-car" type="number" oninput="calcITR()"></div><div class="fg"><label>Uniform</label><input class="inp" id="itr-uniform" type="number" oninput="calcITR()"></div></div>
+<div style="font-size:10px;font-weight:600;color:var(--d);margin:6px 0">Deductions</div>
+<div class="fr"><div class="fg"><label>PF (Emp)</label><input class="inp" id="itr-pf-emp" type="number" oninput="calcITR()"></div><div class="fg"><label>PF (Er)</label><input class="inp" id="itr-pf-er" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Prof Tax</label><input class="inp" id="itr-ptax" type="number" oninput="calcITR()"></div><div class="fg"><label>Gratuity</label><input class="inp" id="itr-gratuity" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>ESI</label><input class="inp" id="itr-esi" type="number" oninput="calcITR()"></div><div class="fg"><label>Group Ins.</label><input class="inp" id="itr-group-ins" type="number" oninput="calcITR()"></div></div>
+</div></details>
+<div style="margin-top:6px;padding:6px 10px;background:var(--pbg);border-radius:6px;font-size:10px"><b>Std Deduction:</b> <span id="itr-std-ded">₹75,000 (New)</span></div>
+</div>
+<div class="cd"><h3>📑 Deductions</h3>
+<details><summary style="cursor:pointer;font-size:11px;font-weight:600;color:var(--b)">80C (₹1.5L limit)</summary>
+<div style="margin-top:4px">
+<div class="fr"><div class="fg"><label>PPF</label><input class="inp" id="itr-80c-ppf" type="number" oninput="calcITR()"></div><div class="fg"><label>ELSS</label><input class="inp" id="itr-80c-elss" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Tax FD</label><input class="inp" id="itr-80c-fd" type="number" oninput="calcITR()"></div><div class="fg"><label>LIC</label><input class="inp" id="itr-80c-lic" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>NSC</label><input class="inp" id="itr-80c-nsc" type="number" oninput="calcITR()"></div><div class="fg"><label>Sukanya</label><input class="inp" id="itr-80c-sukanya" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Tuition</label><input class="inp" id="itr-80c-tuition" type="number" oninput="calcITR()"></div><div class="fg"><label>Home Loan P.</label><input class="inp" id="itr-80c-homeloan" type="number" oninput="calcITR()"></div></div>
+<div class="fg"><label>EPF</label><input class="inp" id="itr-80c-epf" type="number" readonly style="opacity:.7"></div>
+<div style="font-size:9px;color:var(--txt2)">Total: <b id="itr-80c-total">₹0</b> / ₹1,50,000</div>
+</div></details>
+<details><summary style="cursor:pointer;font-size:11px;font-weight:600;color:var(--b)">NPS 80CCD</summary>
+<div class="fr" style="margin-top:4px"><div class="fg"><label>1B (₹50K, Old)</label><input class="inp" id="itr-nps-1b" type="number" oninput="calcITR()"></div><div class="fg"><label>2 (Employer, Both)</label><input class="inp" id="itr-nps-2" type="number" oninput="calcITR()"></div></div>
+</details>
+<details><summary style="cursor:pointer;font-size:11px;font-weight:600;color:var(--b)">80D Health Ins.</summary>
+<div style="margin-top:4px">
+<div class="fr"><div class="fg"><label>Self+Family (₹25K)</label><input class="inp" id="itr-80d-self" type="number" oninput="calcITR()"></div><div class="fg"><label>Parents</label><input class="inp" id="itr-80d-parents" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>Preventive (₹5K)</label><input class="inp" id="itr-80d-prevent" type="number" oninput="calcITR()"></div><div class="fg"><label><input type="checkbox" id="itr-parents-senior" onchange="calcITR()"> Sr. Citizen</label></div></div>
+</div></details>
+<details><summary style="cursor:pointer;font-size:11px;font-weight:600;color:var(--b)">Other Deductions</summary>
+<div style="margin-top:4px">
+<div class="fr"><div class="fg"><label>80E Edu Loan</label><input class="inp" id="itr-80e" type="number" oninput="calcITR()"></div><div class="fg"><label>24b Home Loan Int (₹2L)</label><input class="inp" id="itr-24b" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>80G (100%)</label><input class="inp" id="itr-80g100" type="number" oninput="calcITR()"></div><div class="fg"><label>80G (50%)</label><input class="inp" id="itr-80g50" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>80GG Rent (₹60K)</label><input class="inp" id="itr-80gg" type="number" oninput="calcITR()"></div><div class="fg"><label>80TTA (₹10K)</label><input class="inp" id="itr-80tta" type="number" oninput="calcITR()"></div></div>
+<div class="fr"><div class="fg"><label>80TTB Sr. (₹50K)</label><input class="inp" id="itr-80ttb" type="number" oninput="calcITR()"></div><div class="fg"><label>80U Disability</label><input class="inp" id="itr-80u" type="number" oninput="calcITR()"></div></div>
+</div></details>
+<details><summary style="cursor:pointer;font-size:11px;font-weight:600;color:var(--b)">Capital Gains (auto)</summary>
+<div style="margin-top:4px">
+<div class="fr"><div class="fg"><label>STCG (20%)</label><input class="inp" id="itr-stcg" type="number" oninput="calcITR()"></div><div class="fg"><label>LTCG (12.5%)</label><input class="inp" id="itr-ltcg" type="number" oninput="calcITR()"></div></div>
+<div class="fg"><label>Crypto (30%)</label><input class="inp" id="itr-crypto" type="number" oninput="calcITR()"></div>
+</div></details>
+</div>
+<div class="cd"><h3>📊 Old vs New</h3><div id="itr-result"></div></div>
 </div>
 
 <!-- REPORT -->
@@ -3708,7 +3775,7 @@ function applyTheme(){document.documentElement.setAttribute('data-theme',S.theme
 
 // ===== NAVIGATION =====
 function goNav(tab){var map={home:'pg-home',inv:'pg-inv',exp:'pg-exp',add:'pg-add',more:'pg-more'};document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active')});document.getElementById(map[tab]).classList.add('active');document.querySelectorAll('.bnav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('nav-'+tab).classList.add('on');if(tab==='add')renderAddSubForms()}
-function goMore(pgId){document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active')});document.getElementById(pgId).classList.add('active');document.querySelectorAll('.bnav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('nav-more').classList.add('on');if(pgId==='pg-tax')renderTaxM();if(pgId==='pg-exit')renderExitM();if(pgId==='pg-screener')renderScreenerM();if(pgId==='pg-div'){rDividends();loadAllDividends();}if(pgId==='pg-bot')rBotPageChipsM();if(pgId==='pg-projector')renderProjection();if(pgId==='pg-import'){}}
+function goMore(pgId){document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active')});document.getElementById(pgId).classList.add('active');document.querySelectorAll('.bnav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('nav-more').classList.add('on');if(pgId==='pg-tax')renderTaxM();if(pgId==='pg-exit')renderExitM();if(pgId==='pg-screener')renderScreenerM();if(pgId==='pg-div'){rDividends();loadAllDividends();}if(pgId==='pg-bot')rBotPageChipsM();if(pgId==='pg-projector')renderProjection();if(pgId==='pg-itr')initITR();if(pgId==='pg-import'){}}
 
 // ===== FAMILY =====
 function switchMember(val){currentMember=val||'all';renderAll();}
@@ -4784,6 +4851,8 @@ function makeDonut(groups,total,colorMap){
   var cum=0;var svg='<svg viewBox="0 0 100 100">';
   for(var di=0;di<entries.length;di++){
     var name=entries[di][0],val=entries[di][1];var p=val/total;
+    if(p>=0.9999){svg+='<circle cx="50" cy="50" r="40" fill="'+(colorMap[name]||'#636E72')+'" opacity="0.85"/>';cum+=p;continue;}
+    if(p<0.001){cum+=p;continue;}
     var a1=cum*2*Math.PI-Math.PI/2,a2=(cum+p)*2*Math.PI-Math.PI/2;var lg=p>0.5?1:0;
     var x1=(50+40*Math.cos(a1)).toFixed(2),y1=(50+40*Math.sin(a1)).toFixed(2);
     var x2=(50+40*Math.cos(a2)).toFixed(2),y2=(50+40*Math.sin(a2)).toFixed(2);
@@ -4873,6 +4942,7 @@ function openEditInv(id){var inv=S.investments.find(function(i){return i.id===id
   if(inv.type==='Stocks'){h+='<div class="fg"><label>NSE Symbol</label><div style="display:flex;gap:5px"><input class="inp" id="edit-symbol" value="'+(inv.nseSymbol||'')+'" oninput="this.value=this.value.toUpperCase()" style="flex:1"><button type="button" class="btn-sm" onclick="testSymbol(\'edit-symbol\',\'edit-sym-result\')" style="white-space:nowrap">🔍</button></div><div id="edit-sym-result" style="font-size:9px;margin-top:3px"></div></div><div class="fg"><label>Sector</label><select class="inp" id="edit-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option '+(inv.sector===s?'selected':'')+'>'+s+'</option>'}).join('')+'</select></div></div>';h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="edit-qty" type="number" value="'+(inv.qty||0)+'"></div><div class="fg"><label>Avg Price</label><input class="inp" id="edit-avgprice" type="number" value="'+(inv.avgPrice||0)+'"></div></div>'}
   if(inv.type==='FD'||inv.type==='RD')h+='<div class="fg"><label>Maturity</label><input class="inp" id="edit-maturity" type="date" value="'+(inv.maturityDate||'')+'"></div>';
   h+='<div class="fr"><div class="fg"><label>Target %</label><input class="inp" id="edit-target" type="number" value="'+(inv.targetReturn||'')+'"></div><div class="fg"><label>Stop Loss %</label><input class="inp" id="edit-stoploss" type="number" value="'+(inv.stopLoss||'')+'"></div></div>';
+  if(S.user.mode==='family'||(S.family&&S.family.length>0)){h+='<div class="fg"><label>Owner</label><select class="inp" id="edit-owner"><option value="self" '+(inv.owner==='self'||!inv.owner?'selected':'')+'>'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'" '+(inv.owner===f.id?'selected':'')+'>'+f.name+'</option>'}).join('')+'</select></div>'}
   document.getElementById('em-form').innerHTML=h;document.getElementById('em-del-confirm').style.display='none';document.getElementById('edit-modal').classList.add('open');trapFocus(document.getElementById('edit-modal'))}
 function openAddFamilyMember(){
   var h='<div class="fg"><label>Member Name</label>'
@@ -4926,7 +4996,7 @@ function saveEdit(){
     saveS().then(function(){renderAll();closeEditModal();fireNotif('✅',name+(editingId?' updated':' added'),'');});
     return;
   }
-  if(editingType==='investment'){var inv=S.investments.find(function(i){return i.id===editingId});if(!inv)return;inv.label=document.getElementById('edit-name').value.trim()||inv.label;inv.invested=parseFloat(document.getElementById('edit-invested').value)||inv.invested;inv.value=parseFloat(document.getElementById('edit-value').value)||inv.value;var sd=document.getElementById('edit-started');if(sd)inv.started=sd.value||inv.started;inv.returnRate=parseFloat(document.getElementById('edit-return').value)||inv.returnRate;var es=document.getElementById('edit-symbol');if(es)inv.nseSymbol=es.value.trim();var esc=document.getElementById('edit-sector');if(esc)inv.sector=esc.value;var eq=document.getElementById('edit-qty');if(eq)inv.qty=parseFloat(eq.value)||inv.qty;var ea=document.getElementById('edit-avgprice');if(ea)inv.avgPrice=parseFloat(ea.value)||inv.avgPrice;var em=document.getElementById('edit-maturity');if(em)inv.maturityDate=em.value||inv.maturityDate;var et=document.getElementById('edit-target');inv.targetReturn=et?parseFloat(et.value)||null:inv.targetReturn;var esl=document.getElementById('edit-stoploss');inv.stopLoss=esl?parseFloat(esl.value)||null:inv.stopLoss;inv.returns=inv.value-inv.invested}saveS().then(function(){renderAll();closeEditModal();fireNotif('✅','Saved','')})}
+  if(editingType==='investment'){var inv=S.investments.find(function(i){return i.id===editingId});if(!inv)return;inv.label=document.getElementById('edit-name').value.trim()||inv.label;inv.invested=parseFloat(document.getElementById('edit-invested').value)||inv.invested;inv.value=parseFloat(document.getElementById('edit-value').value)||inv.value;var sd=document.getElementById('edit-started');if(sd)inv.started=sd.value||inv.started;inv.returnRate=parseFloat(document.getElementById('edit-return').value)||inv.returnRate;var es=document.getElementById('edit-symbol');if(es)inv.nseSymbol=es.value.trim();var esc=document.getElementById('edit-sector');if(esc)inv.sector=esc.value;var eq=document.getElementById('edit-qty');if(eq)inv.qty=parseFloat(eq.value)||inv.qty;var ea=document.getElementById('edit-avgprice');if(ea)inv.avgPrice=parseFloat(ea.value)||inv.avgPrice;var em=document.getElementById('edit-maturity');if(em)inv.maturityDate=em.value||inv.maturityDate;var et=document.getElementById('edit-target');inv.targetReturn=et?parseFloat(et.value)||null:inv.targetReturn;var esl=document.getElementById('edit-stoploss');inv.stopLoss=esl?parseFloat(esl.value)||null:inv.stopLoss;var eow=document.getElementById('edit-owner');if(eow)inv.owner=eow.value;inv.returns=inv.value-inv.invested}saveS().then(function(){renderAll();closeEditModal();fireNotif('✅','Saved','')})}
 function showDeleteConfirm(){document.getElementById('em-del-confirm').style.display='block'}
 function cancelDelete(){document.getElementById('em-del-confirm').style.display='none'}
 function confirmDelete(){if(editingType==='investment')S.investments=S.investments.filter(function(i){return i.id!==editingId});saveS().then(function(){renderAll();closeEditModal();fireNotif('🗑️','Deleted','')})}
@@ -11468,6 +11538,140 @@ function initApp(){
   fireNotif('👋','Welcome',S.user.name||'User');
 }
 
+// ===== ITR CALCULATOR =====
+function itrVal(id){return parseFloat(document.getElementById(id).value)||0}
+function itrAutoFill(){
+  var ppf=S.investments.filter(function(i){return i.type==='PPF'}).reduce(function(s,i){return s+i.invested},0);
+  var elss=S.investments.filter(function(i){return i.type==='ELSS'}).reduce(function(s,i){return s+i.invested},0);
+  var nps=S.investments.filter(function(i){return i.type==='NPS'}).reduce(function(s,i){return s+i.invested},0);
+  var healthPrem=S.insurance.filter(function(i){return i.insType==='health'&&i.status==='active'}).reduce(function(s,i){return s+i.premium},0);
+  var stcg=0,ltcg=0,crypto=0;
+  S.investments.forEach(function(i){
+    var gain=getInvValue(i)-getInvInvested(i);if(gain<=0)return;
+    if(i.type==='Crypto'){crypto+=gain;return}
+    if(i.type!=='Stocks'&&i.type!=='SIP'&&i.type!=='ELSS')return;
+    var days=i.started?Math.floor((Date.now()-new Date(i.started).getTime())/(86400000)):365;
+    if(days>365)ltcg+=gain;else stcg+=gain;
+  });
+  var el;
+  el=document.getElementById('itr-80c-ppf');if(el&&!el.value)el.value=Math.round(ppf)||'';
+  el=document.getElementById('itr-80c-elss');if(el&&!el.value)el.value=Math.round(elss)||'';
+  el=document.getElementById('itr-80c-epf');if(el)el.value=Math.round(itrVal('itr-pf-emp'))||'';
+  el=document.getElementById('itr-nps-1b');if(el&&!el.value)el.value=Math.round(Math.min(nps,50000))||'';
+  el=document.getElementById('itr-80d-self');if(el&&!el.value)el.value=Math.round(healthPrem)||'';
+  el=document.getElementById('itr-stcg');if(el&&!el.value)el.value=Math.round(stcg)||'';
+  el=document.getElementById('itr-ltcg');if(el&&!el.value)el.value=Math.round(ltcg)||'';
+  el=document.getElementById('itr-crypto');if(el&&!el.value)el.value=Math.round(crypto)||'';
+}
+function calcITR(){
+  var regime=document.getElementById('itr-regime').value;
+  var ageGroup=document.getElementById('itr-age').value;
+  var ctc=itrVal('itr-ctc');
+  var basic=itrVal('itr-basic');var hra=itrVal('itr-hra');var special=itrVal('itr-special');
+  var lta=itrVal('itr-lta');var da=itrVal('itr-da');var bonus=itrVal('itr-bonus');
+  var bonusFreq=document.getElementById('itr-bonus-freq').value;
+  var annualBonus=bonusFreq==='monthly'?bonus*12:bonusFreq==='quarterly'?bonus*4:bonus;
+  var conveyance=itrVal('itr-conveyance');var medical=itrVal('itr-medical');
+  var cityComp=itrVal('itr-citycomp');var education=itrVal('itr-education');
+  var telephone=itrVal('itr-telephone');var otherAllow=itrVal('itr-other-allow');
+  var food=itrVal('itr-food');var car=itrVal('itr-car');var uniform=itrVal('itr-uniform');
+  var pfEmp=itrVal('itr-pf-emp');var pfEr=itrVal('itr-pf-er');
+  var ptax=itrVal('itr-ptax');var gratuity=itrVal('itr-gratuity');
+  var esi=itrVal('itr-esi');var groupIns=itrVal('itr-group-ins');
+  var epfEl=document.getElementById('itr-80c-epf');if(epfEl)epfEl.value=Math.round(pfEmp)||'';
+  var grossSalary=ctc||(basic+hra+special+lta+da+annualBonus+conveyance+medical+cityComp+education+telephone+otherAllow+food+car+uniform+pfEr+gratuity);
+  var nonTaxable=food+car+uniform;
+  var empDeductions=pfEmp+ptax+esi+groupIns;
+  var taxableSalary=grossSalary-nonTaxable-empDeductions;
+  var stdDedNew=75000,stdDedOld=50000;
+  document.getElementById('itr-std-ded').textContent=regime==='new'?'₹75,000 (New)':'₹50,000 (Old)';
+  var c80c=Math.min(150000,itrVal('itr-80c-ppf')+itrVal('itr-80c-elss')+itrVal('itr-80c-fd')+itrVal('itr-80c-lic')+itrVal('itr-80c-nsc')+itrVal('itr-80c-sukanya')+itrVal('itr-80c-tuition')+itrVal('itr-80c-homeloan')+pfEmp);
+  var t80c=document.getElementById('itr-80c-total');if(t80c)t80c.textContent='₹'+c80c.toLocaleString('en-IN')+' / ₹1,50,000';
+  var nps1b=Math.min(50000,itrVal('itr-nps-1b'));
+  var nps2=itrVal('itr-nps-2');
+  var parentsSenior=document.getElementById('itr-parents-senior').checked;
+  var d80dSelf=Math.min(25000,itrVal('itr-80d-self')+itrVal('itr-80d-prevent'));
+  var d80dParents=Math.min(parentsSenior?50000:25000,itrVal('itr-80d-parents'));
+  var d80d=d80dSelf+d80dParents;
+  var d80e=itrVal('itr-80e');var d24b=Math.min(200000,itrVal('itr-24b'));
+  var d80g=itrVal('itr-80g100')+Math.round(itrVal('itr-80g50')*0.5);
+  var d80gg=Math.min(60000,itrVal('itr-80gg'));
+  var d80tta=Math.min(10000,itrVal('itr-80tta'));
+  var d80ttb=Math.min(50000,itrVal('itr-80ttb'));
+  var d80u=itrVal('itr-80u');
+  var stcg=itrVal('itr-stcg');var ltcg=itrVal('itr-ltcg');var cryptoG=itrVal('itr-crypto');
+  function computeTax(reg){
+    var income=taxableSalary;
+    var stdDed=reg==='new'?stdDedNew:stdDedOld;
+    income-=stdDed;income-=ptax;income-=nps2;
+    var totalDeductions=0;
+    if(reg==='old'){
+      totalDeductions=c80c+nps1b+d80d+d80e+d24b+d80g+d80gg+d80tta+d80ttb+d80u;
+      if(hra>0&&basic>0)totalDeductions+=Math.min(hra,basic*0.4);
+      if(lta>0)totalDeductions+=lta;
+    }
+    income-=totalDeductions;if(income<0)income=0;
+    var tax=0;
+    if(reg==='new'){
+      if(income>2400000)tax+=(income-2400000)*0.30;
+      if(income>2000000)tax+=Math.min(income-2000000,400000)*0.25;
+      if(income>1600000)tax+=Math.min(income-1600000,400000)*0.20;
+      if(income>1200000)tax+=Math.min(income-1200000,400000)*0.15;
+      if(income>800000)tax+=Math.min(income-800000,400000)*0.10;
+      if(income>400000)tax+=Math.min(income-400000,400000)*0.05;
+      if(income<=1200000)tax=Math.max(0,tax-60000);
+    }else{
+      var exempt=ageGroup==='above80'?500000:ageGroup==='60to80'?300000:250000;
+      if(income>1000000)tax+=(income-1000000)*0.30;
+      if(income>500000)tax+=Math.min(income-500000,500000)*0.20;
+      if(income>exempt)tax+=Math.min(income-exempt,500000-exempt)*0.05;
+      if(income<=500000)tax=Math.max(0,tax-12500);
+    }
+    var surcharge=0;
+    if(income>50000000)surcharge=tax*0.25;
+    else if(income>20000000)surcharge=tax*0.25;
+    else if(income>10000000)surcharge=tax*0.15;
+    else if(income>5000000)surcharge=tax*0.10;
+    var cess=(tax+surcharge)*0.04;var totalTax=Math.round(tax+surcharge+cess);
+    var cgTax=Math.round(stcg*0.20)+Math.round(Math.max(0,ltcg-125000)*0.125)+Math.round(cryptoG*0.30);
+    cgTax+=Math.round(cgTax*0.04);
+    return{grossSalary:Math.round(grossSalary),nonTaxable:Math.round(nonTaxable),stdDed:stdDed,totalDeductions:Math.round(totalDeductions),taxableIncome:Math.round(income),slabTax:Math.round(tax),surcharge:Math.round(surcharge),cess:Math.round(cess),incomeTax:totalTax,cgTax:cgTax,totalTax:totalTax+cgTax,monthlyTax:Math.round((totalTax+cgTax)/12),effectiveRate:grossSalary>0?((totalTax+cgTax)/grossSalary*100).toFixed(1):'0.0'};
+  }
+  var oldT=computeTax('old');var newT=computeTax('new');
+  var savings=oldT.totalTax-newT.totalTax;var better=savings>0?'new':'old';var savAmt=Math.abs(savings);
+  function fc(v){return '₹'+v.toLocaleString('en-IN')}
+  var el=document.getElementById('itr-result');
+  el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+    +'<div style="padding:10px;background:'+(better==='old'?'var(--gbg)':'var(--bg)')+';border:1px solid '+(better==='old'?'var(--g)':'var(--bdr)')+';border-radius:10px">'
+    +'<h4 style="font-size:11px;margin-bottom:6px">📋 Old</h4>'
+    +'<div style="font-size:9px;color:var(--txt2);line-height:1.7">'
+    +'Gross: <b>'+fc(oldT.grossSalary)+'</b><br>'
+    +'− Std Ded: '+fc(oldT.stdDed)+'<br>'
+    +'− Deductions: '+fc(oldT.totalDeductions)+'<br>'
+    +'<b>Taxable: '+fc(oldT.taxableIncome)+'</b><br>'
+    +'Tax: '+fc(oldT.slabTax)+' + Cess: '+fc(oldT.cess)+'<br>'
+    +(oldT.cgTax>0?'CG Tax: '+fc(oldT.cgTax)+'<br>':'')
+    +'<b style="font-size:13px;color:var(--d)">Total: '+fc(oldT.totalTax)+'</b><br>'
+    +'Monthly: '+fc(oldT.monthlyTax)+' · '+oldT.effectiveRate+'%'
+    +'</div></div>'
+    +'<div style="padding:10px;background:'+(better==='new'?'var(--gbg)':'var(--bg)')+';border:1px solid '+(better==='new'?'var(--g)':'var(--bdr)')+';border-radius:10px">'
+    +'<h4 style="font-size:11px;margin-bottom:6px">🆕 New</h4>'
+    +'<div style="font-size:9px;color:var(--txt2);line-height:1.7">'
+    +'Gross: <b>'+fc(newT.grossSalary)+'</b><br>'
+    +'− Std Ded: '+fc(newT.stdDed)+'<br>'
+    +'− NPS Er: '+fc(Math.round(nps2))+'<br>'
+    +'<b>Taxable: '+fc(newT.taxableIncome)+'</b><br>'
+    +'Tax: '+fc(newT.slabTax)+' + Cess: '+fc(newT.cess)+'<br>'
+    +(newT.cgTax>0?'CG Tax: '+fc(newT.cgTax)+'<br>':'')
+    +'<b style="font-size:13px;color:var(--d)">Total: '+fc(newT.totalTax)+'</b><br>'
+    +'Monthly: '+fc(newT.monthlyTax)+' · '+newT.effectiveRate+'%'
+    +'</div></div></div>'
+    +'<div style="padding:10px;background:var(--gbg);border:1px solid var(--g);border-radius:10px;text-align:center">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--g)">💡 '+(better==='new'?'New':'Old')+' saves '+fc(savAmt)+'/yr</div>'
+    +'<div style="font-size:9px;color:var(--txt2);margin-top:2px">'+(savings===0?'Equal tax both regimes.':better==='new'?'New Regime with ₹75K deduction is better.':'Old Regime deductions save you more.')+'</div></div>';
+}
+function initITR(){try{itrAutoFill();calcITR();}catch(e){}}
+
 // ===== PORTFOLIO REPORT (M4) =====
 function generateReport() {
   // CRITICAL: Open window FIRST — must be synchronous with user click
@@ -11660,7 +11864,7 @@ function showAutoSyncModal(){
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5l';
+var APP_VERSION = 'v4.1.5m';
 
 function showUpdateBanner() {
   if(document.getElementById('sw-update-banner')) return;
