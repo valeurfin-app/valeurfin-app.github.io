@@ -5080,6 +5080,7 @@ function openEditInv(id){var inv=S.investments.find(function(i){return i.id===id
   if(inv.type==='FD'||inv.type==='RD')h+='<div class="fg"><label>Maturity</label><input class="inp" id="edit-maturity" type="date" value="'+(inv.maturityDate||'')+'"></div>';
   h+='<div class="fr"><div class="fg"><label>Target %</label><input class="inp" id="edit-target" type="number" value="'+(inv.targetReturn||'')+'"></div><div class="fg"><label>Stop Loss %</label><input class="inp" id="edit-stoploss" type="number" value="'+(inv.stopLoss||'')+'"></div></div>';
   if(S.user.mode==='family'||(S.family&&S.family.length>0)){h+='<div class="fg"><label>Owner</label><select class="inp" id="edit-owner"><option value="self" '+(inv.owner==='self'||!inv.owner?'selected':'')+'>'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'" '+(inv.owner===f.id?'selected':'')+'>'+f.name+'</option>'}).join('')+'</select></div>'}
+  h+='<div class="fg" style="margin-top:4px"><label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px"><input type="checkbox" id="edit-emergency-fund" '+(inv.isEmergencyFund?'checked':'')+' style="width:15px;height:15px"> Emergency Fund</label></div>';
   document.getElementById('em-form').innerHTML=h;document.getElementById('em-del-confirm').style.display='none';document.getElementById('edit-modal').classList.add('open');trapFocus(document.getElementById('edit-modal'))}
 function openAddFamilyMember(){
   var h='<div class="fg"><label>Member Name</label>'
@@ -5143,7 +5144,7 @@ function saveEdit(){
     saveS().then(function(){rLoans();closeEditModal();fireNotif('✅',label+(editingId?' updated':' added'),'');});
     return;
   }
-  if(editingType==='investment'){var inv=S.investments.find(function(i){return i.id===editingId});if(!inv)return;inv.label=document.getElementById('edit-name').value.trim()||inv.label;inv.invested=parseFloat(document.getElementById('edit-invested').value)||inv.invested;inv.value=parseFloat(document.getElementById('edit-value').value)||inv.value;var sd=document.getElementById('edit-started');if(sd)inv.started=sd.value||inv.started;inv.returnRate=parseFloat(document.getElementById('edit-return').value)||inv.returnRate;var es=document.getElementById('edit-symbol');if(es)inv.nseSymbol=es.value.trim();var esc=document.getElementById('edit-sector');if(esc)inv.sector=esc.value;var eq=document.getElementById('edit-qty');if(eq)inv.qty=parseFloat(eq.value)||inv.qty;var ea=document.getElementById('edit-avgprice');if(ea)inv.avgPrice=parseFloat(ea.value)||inv.avgPrice;var em=document.getElementById('edit-maturity');if(em)inv.maturityDate=em.value||inv.maturityDate;var et=document.getElementById('edit-target');inv.targetReturn=et?parseFloat(et.value)||null:inv.targetReturn;var esl=document.getElementById('edit-stoploss');inv.stopLoss=esl?parseFloat(esl.value)||null:inv.stopLoss;var eow=document.getElementById('edit-owner');if(eow)inv.owner=eow.value;inv.returns=inv.value-inv.invested}saveS().then(function(){renderAll();closeEditModal();fireNotif('✅','Saved','')})}
+  if(editingType==='investment'){var inv=S.investments.find(function(i){return i.id===editingId});if(!inv)return;inv.label=document.getElementById('edit-name').value.trim()||inv.label;inv.invested=parseFloat(document.getElementById('edit-invested').value)||inv.invested;inv.value=parseFloat(document.getElementById('edit-value').value)||inv.value;var sd=document.getElementById('edit-started');if(sd)inv.started=sd.value||inv.started;inv.returnRate=parseFloat(document.getElementById('edit-return').value)||inv.returnRate;var es=document.getElementById('edit-symbol');if(es)inv.nseSymbol=es.value.trim();var esc=document.getElementById('edit-sector');if(esc)inv.sector=esc.value;var eq=document.getElementById('edit-qty');if(eq)inv.qty=parseFloat(eq.value)||inv.qty;var ea=document.getElementById('edit-avgprice');if(ea)inv.avgPrice=parseFloat(ea.value)||inv.avgPrice;var em=document.getElementById('edit-maturity');if(em)inv.maturityDate=em.value||inv.maturityDate;var et=document.getElementById('edit-target');inv.targetReturn=et?parseFloat(et.value)||null:inv.targetReturn;var esl=document.getElementById('edit-stoploss');inv.stopLoss=esl?parseFloat(esl.value)||null:inv.stopLoss;var eow=document.getElementById('edit-owner');if(eow)inv.owner=eow.value;var eef=document.getElementById('edit-emergency-fund');if(eef)inv.isEmergencyFund=eef.checked;inv.returns=inv.value-inv.invested}saveS().then(function(){renderAll();closeEditModal();fireNotif('✅','Saved','')})}
 function showDeleteConfirm(){document.getElementById('em-del-confirm').style.display='block'}
 function cancelDelete(){document.getElementById('em-del-confirm').style.display='none'}
 function confirmDelete(){if(editingType==='investment')S.investments=S.investments.filter(function(i){return i.id!==editingId});saveS().then(function(){renderAll();closeEditModal();fireNotif('🗑️','Deleted','')})}
@@ -5236,6 +5237,8 @@ function buildAddFields(){var t=INV_TYPES.find(function(x){return x.id===selecte
   }
   // --- Owner (all types, family mode) ---
   if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
+  // --- Emergency Fund tag ---
+  h+='<div class="fg" style="margin-top:4px"><label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px"><input type="checkbox" id="add-emergency-fund" style="width:15px;height:15px"> Emergency Fund <span style="font-size:8px;color:var(--txt2)">(for calculations)</span></label></div>';
   // --- Gold-specific: Grams + Purity ---
   if(t.id==='Gold'){
     h+='<div class="fr"><div class="fg"><label>Weight (grams)</label><input class="inp" id="add-gold-grams" type="number" step="0.01" min="0" placeholder="e.g. 10.5"></div>';
@@ -10912,7 +10915,7 @@ function addInvestment(){var t=INV_TYPES.find(function(x){return x.id===selected
   var goldGrams=parseFloat(document.getElementById('add-gold-grams')&&document.getElementById('add-gold-grams').value)||0;
   var goldPurity=parseInt(document.getElementById('add-gold-purity')&&document.getElementById('add-gold-purity').value)||22;
   var maturityDate=document.getElementById('add-maturity')?document.getElementById('add-maturity').value:'';var fdRate=document.getElementById('add-fdrate')?parseFloat(document.getElementById('add-fdrate').value)||returnRate:returnRate;var qty=document.getElementById('add-qty')?parseFloat(document.getElementById('add-qty').value)||0:0;var avgPrice=document.getElementById('add-avgprice')?parseFloat(document.getElementById('add-avgprice').value)||0:0;var nseSymbol=document.getElementById('add-symbol')?document.getElementById('add-symbol').value:'';var sector=document.getElementById('add-sector')?document.getElementById('add-sector').value:'';if(t.id==='Stocks'&&!nseSymbol){var look=stockLookup(name);if(look){nseSymbol=look.sym;if(!sector)sector=look.sector}}
-  var inv={id:uid(),type:selectedInvType,label:name,platform:platform,bucket:t.bucket,invested:invested||currentVal,value:currentVal||invested,monthly:monthly,dueDate:dueDate,stepUp:stepUp,stepUpFrom:stepUpFrom||0,returnRate:t.hasFD?fdRate:returnRate,returns:0,owner:owner,started:started,maturityDate:maturityDate,qty:qty,avgPrice:avgPrice,nseSymbol:nseSymbol,sector:sector,livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:[],schemeCode:'',totalUnits:0,currentNAV:0,grams:goldGrams,goldPurity:goldPurity,divCache:[],divCacheDate:0,createdAt:Date.now()};
+  var inv={id:uid(),type:selectedInvType,label:name,platform:platform,bucket:t.bucket,invested:invested||currentVal,value:currentVal||invested,monthly:monthly,dueDate:dueDate,stepUp:stepUp,stepUpFrom:stepUpFrom||0,returnRate:t.hasFD?fdRate:returnRate,returns:0,owner:owner,started:started,maturityDate:maturityDate,qty:qty,avgPrice:avgPrice,nseSymbol:nseSymbol,sector:sector,livePrice:null,liveValue:null,dayChange:null,dayChangePct:null,fiftyTwoHigh:null,fiftyTwoLow:null,targetReturn:null,stopLoss:null,lots:[],schemeCode:'',totalUnits:0,currentNAV:0,grams:goldGrams,goldPurity:goldPurity,divCache:[],divCacheDate:0,isEmergencyFund:!!(document.getElementById('add-emergency-fund')&&document.getElementById('add-emergency-fund').checked),createdAt:Date.now()};
   if(selectedInvType==='Stocks'){var allLots=pendingLots.slice();if(qty>0&&avgPrice>0)allLots.push({id:uid(),date:started||new Date().toISOString().slice(0,10),qty:qty,price:avgPrice});if(allLots.length>0){allLots.sort(function(a,b){return new Date(a.date)-new Date(b.date)});inv.lots=allLots;syncInvFromLots(inv);}resetPendingLots();}
   if(selectedInvType==='SIP'||selectedInvType==='ELSS'){var scEl=document.getElementById('add-scheme-code');var tuEl=document.getElementById('add-total-units');if(scEl&&scEl.value)inv.schemeCode=scEl.value;if(tuEl&&tuEl.value)inv.totalUnits=parseFloat(tuEl.value)||0;}
   if(inv.type==='EPF'){inv.uan=(document.getElementById('add-uan')||{}).value||'';inv.employer=(document.getElementById('add-employer')||{}).value||'';inv.epfEmpMonthly=parseFloat((document.getElementById('add-epf-emp')||{}).value)||0;inv.epfErMonthly=parseFloat((document.getElementById('add-epf-er')||{}).value)||0;}
@@ -11351,44 +11354,45 @@ function clearAlerts(){alertList=[];document.getElementById('alert-list').innerH
 
 // ===== BOT =====
 var BOT_CHIPS=[{label:'📊 Portfolio',q:'portfolio'},{label:'🏆 Top',q:'top performer'},{label:'📉 Worst',q:'worst'},{label:'🍩 Allocation',q:'allocation'},{label:'💰 Dividends',q:'dividends'},{label:'📅 SIP',q:'next sip'},{label:'🛡️ Insurance',q:'insurance'},{label:'💸 Expenses',q:'expenses'},{label:'🚨 Emergency',q:'emergency'},{label:'📈 CAGR',q:'cagr'},{label:'🎯 Goals',q:'goals'},{label:'💡 Tips',q:'tips'}];
-function botAnswer(q){q=q.toLowerCase().trim();var inv=filterByMember(S.investments);var nw=inv.reduce(function(s,i){return s+(i.liveValue||i.value)},0);var invested=inv.reduce(function(s,i){return s+i.invested},0);var returns=nw-invested;var retPct=invested>0?(returns/invested*100):0;var exps=filterByMember(S.expenses);var mExp=exps.filter(function(e){return e.frequency==='monthly'}).reduce(function(s,e){return s+e.amount},0);var mInc=filterByMember(S.income).reduce(function(s,i){return s+(i.frequency==='monthly'?i.amount:i.amount/12)},0);
-  if(q.match(/^(hi|hello|hey)/))return{text:'Hi '+(S.user.name||'')+'! 👋 Ask me anything!',data:null};
-  if(q.match(/portfolio|summary/)){if(!inv.length)return{text:"Empty!",data:null};return{text:'Portfolio:',data:{'NW':fmtFull(nw),'Invested':fmtFull(invested),'Returns':fS(returns),'Count':inv.length+''}}}
-  if(q.match(/net worth/))return{text:'NW: '+fmtFull(nw),data:null};
-  if(q.match(/top|best/)){if(!inv.length)return{text:"No data",data:null};var s=inv.map(function(i){return{label:i.label,rp:i.invested>0?(((i.liveValue||i.value)-i.invested)/i.invested*100):0}}).sort(function(a,b){return b.rp-a.rp})[0];return{text:'🏆 '+s.label+' '+pct(s.rp),data:null}}
-  if(q.match(/worst|bottom/)){if(!inv.length)return{text:"No data",data:null};var w=inv.map(function(i){return{label:i.label,rp:i.invested>0?(((i.liveValue||i.value)-i.invested)/i.invested*100):0}}).sort(function(a,b){return a.rp-b.rp})[0];return{text:'📉 '+w.label+' '+pct(w.rp),data:null}}
-  if(q.match(/allocation/)){var bk={};inv.forEach(function(i){bk[i.bucket||invBucket(i.type)]=(bk[i.bucket||invBucket(i.type)]||0)+(i.liveValue||i.value)});var ad={};Object.entries(bk).forEach(function(e){ad[e[0]]=fmt(e[1])});return{text:'Allocation:',data:ad}}
-  if(q.match(/dividend/)){var divs=S.dividends||[];return{text:divs.length?'Total: '+fmtFull(divs.reduce(function(s,d){return s+d.totalDiv},0)):'No dividends',data:null}}
-  if(q.match(/sip/)){var sips=inv.filter(function(i){return i.monthly>0});if(!sips.length)return{text:"No SIPs",data:null};var sd={};sips.slice(0,4).forEach(function(s){sd[s.label]=fmt(s.monthly)});return{text:'SIPs:',data:sd}}
-  if(q.match(/insurance/)){return{text:'Score: '+calcInsuranceScore().score+'/100',data:null}}
-  if(q.match(/expense|spend/))return{text:'Monthly: '+fmt(mExp),data:null};
-  if(q.match(/emergency/)){var liq=inv.filter(function(i){return['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+i.value},0);return{text:'Emergency: '+(mExp>0?(liq/mExp).toFixed(1):0)+' months',data:null}}
-  if(q.match(/cagr/)){var cagr=invested>0&&S.currentMonth>0?(Math.pow(nw/invested,12/S.currentMonth)-1)*100:0;return{text:'CAGR: '+cagr.toFixed(2)+'%',data:null}}
-  if(q.match(/goal/)){var goals=S.goals||[];if(!goals.length)return{text:"No goals",data:null};var gd={};goals.forEach(function(g){gd[g.name]=Math.min(100,(g.current/g.target*100)).toFixed(0)+'%'});return{text:'Goals:',data:gd}}
-  if(q.match(/tip|suggest/)){return{text:'💡 Increase SIPs yearly. Get insurance. Track expenses. Set goals.',data:null}}
-  if(q.match(/thank/))return{text:"Welcome! 😊",data:null};
-  return{text:"Try the chips below! 🤖",data:null}
-  if(q.match(/fire|financial.independen|retire.early/)){
-    var fiNum=mExp*12*25;var pct=fiNum>0?(nw/fiNum*100):0;
-    return{text:"FIRE number: "+fmtFull(fiNum)+". Progress: "+pct.toFixed(1)+"%.",data:{"FI Number":fmtFull(fiNum),"Progress":pct.toFixed(1)+"%"}};}
-  if(q.match(/rebalanc|ideal.allocation/)){
-    var age=parseInt(S.user.age)||35;var bk={};inv.forEach(function(i){var b=i.bucket||invBucket(i.type);bk[b]=(bk[b]||0)+getInvValue(i);});
-    var curEq=nw>0?((bk.Equity||0)/nw*100):0;
-    return{text:"Ideal equity for age "+age+" is "+(100-age)+"%. Yours: "+curEq.toFixed(1)+"%.",data:{"Ideal":(100-age)+"%","Current":curEq.toFixed(1)+"%"}};}
-  if(q.match(/80c|tax.sav|section.80/)){
-    var used=inv.filter(function(i){return i.type==="ELSS"||i.type==="PPF";}).reduce(function(s,i){return s+getInvInvested(i);},0);
-    return{text:"80C used: "+fmtFull(used)+" / Rs 1,50,000. Remaining: "+fmtFull(Math.max(0,150000-used))+".",data:null};}
-  if(q.match(/passive.income|dividend.income/)){
-    var fdI=inv.filter(function(i){return i.type==="FD"||i.type==="RD";}).reduce(function(s,i){return s+i.invested*(i.returnRate||0)/100/12;},0);
-    var swpA=inv.reduce(function(s,i){return s+(i.swpAmount||0);},0);
-    return{text:"Monthly passive income: "+fmtFull(fdI+swpA)+".",data:{"FD Interest":fmtFull(fdI)+"/mo","SWP":fmtFull(swpA)+"/mo"}};}
-  if(q.match(/project|corpus.in|future.value/)){
-    var sips=inv.filter(function(i){return i.monthly>0;}).reduce(function(s,i){return s+i.monthly;},0);
-    var corp=nw;for(var moi=1;moi<=120;moi++){corp=corp*(1+12/12/100)+sips;}
-    return{text:"Corpus in 10yr at 12%: "+fmtFull(corp)+".",data:{"SIP":fmtFull(sips)+"/mo","Corpus":fmtFull(corp)}};}
-  if(q.match(/cash.flow|surplus|how.much.left/)){
-    var sipTot=inv.filter(function(i){return i.monthly>0;}).reduce(function(s,i){return s+i.monthly;},0);
-    return{text:"Surplus: "+fmtFull(mInc-mExp-sipTot)+"/mo.",data:{"Income":fmtFull(mInc),"Expenses":fmtFull(mExp),"SIPs":fmtFull(sipTot)}};}
+function botAnswer(query){
+  var q=query.toLowerCase().trim();
+  function sf(n){return fmtFull(n||0)}function sp(n){return isNaN(n)||!isFinite(n)?'0.0%':pct(n)}function sfs(n){return fS(n||0)}function stf(n){return(isNaN(n)||!isFinite(n))?'0.0':n.toFixed(1)}function sdiv(a,b){return b>0?(a/b):0}
+  var inv=filterByMember(S.investments)||[];
+  var nw=inv.reduce(function(s,i){return s+(getInvValue(i)||0)},0);
+  var invested=inv.reduce(function(s,i){return s+(i.invested||0)},0);
+  var returns=nw-invested;var retPct=sdiv(returns,invested)*100;
+  var exps=filterByMember(S.expenses)||[];var incomes=filterByMember(S.income)||[];
+  var mExp=exps.filter(function(e){return e.frequency==='monthly'}).reduce(function(s,e){return s+(e.amount||0)},0);
+  var mInc=incomes.reduce(function(s,i){return s+(i.frequency==='monthly'?(i.amount||0):(i.amount||0)/12)},0);
+  function gv(i){return(i.liveValue||i.value||getInvValue(i)||0)}function gi(i){return(i.invested||0)}function grp(i){var v=gi(i);return v>0?((gv(i)-v)/v*100):0}
+  var liab=(typeof getTotalLiabilities==='function')?getTotalLiabilities():0;var trueNW=nw-liab;
+  if(q.match(/^(hi|hello|hey|good|namaste)/))return{text:'Hi '+(S.user.name||'there')+'! 👋 Ask anything!',data:null};
+  if(q.match(/portfolio|summary|overview/)){if(!inv.length)return{text:'Empty! Add investments.',data:null};return{text:'📊 Portfolio:',data:{'Net Worth':sf(trueNW),'Invested':sf(invested),'Returns':sfs(returns)+' ('+sp(retPct)+')','Holdings':inv.length+''}}}
+  if(q.match(/net worth|networth/))return{text:'Net Worth: '+sf(trueNW),data:liab>0?{'Assets':sf(nw),'Liabilities':sf(liab),'Net':sf(trueNW)}:null};
+  if(q.match(/top perform|best.*stock|best.*invest|highest/)){if(!inv.length)return{text:'No investments.',data:null};var sorted=inv.map(function(i){return{label:i.label||'?',invested:gi(i),val:gv(i),rp:grp(i)}}).sort(function(a,b){return b.rp-a.rp});var top=sorted[0];return{text:'🏆 '+top.label,data:{'Invested':sf(top.invested),'Current':sf(top.val),'Return':sp(top.rp)}}}
+  if(q.match(/worst|lowest|poor|underperform/)){if(!inv.length)return{text:'No investments.',data:null};var ws=inv.map(function(i){return{label:i.label||'?',invested:gi(i),val:gv(i),rp:grp(i)}}).sort(function(a,b){return a.rp-b.rp});var w=ws[0];return{text:'📉 '+w.label,data:{'Invested':sf(w.invested),'Current':sf(w.val),'Return':sp(w.rp)}}}
+  if(q.match(/allocation|asset.*mix/)){if(!inv.length)return{text:'Add investments.',data:null};var bk={};inv.forEach(function(i){var b=i.bucket||invBucket(i.type);bk[b]=(bk[b]||0)+gv(i)});var d={};Object.keys(bk).sort(function(a,b){return bk[b]-bk[a]}).forEach(function(k){d[k]=sf(bk[k])+' ('+stf(sdiv(bk[k],nw)*100)+'%)'});return{text:'Allocation:',data:d}}
+  if(q.match(/sector/)){var st=inv.filter(function(i){return i.type==='Stocks'&&i.sector});if(!st.length)return{text:'No stocks with sectors.',data:null};var stot=st.reduce(function(s,i){return s+gv(i)},0);var sc={};st.forEach(function(i){sc[i.sector]=(sc[i.sector]||0)+gv(i)});var sd={};Object.keys(sc).sort(function(a,b){return sc[b]-sc[a]}).forEach(function(k){sd[k]=sf(sc[k])+' ('+stf(sdiv(sc[k],stot)*100)+'%)'});return{text:'Sectors:',data:sd}}
+  if(q.match(/dividend/)){var autoDiv=0;inv.filter(function(i){return(i.divCache||[]).length>0}).forEach(function(i){(i.divCache||[]).forEach(function(dc){autoDiv+=(dc.dps||0)*(i.qty||0)})});var manDiv=(S.dividends||[]).reduce(function(s,d){return s+(d.totalDiv||0)},0);if(!autoDiv&&!manDiv)return{text:'No dividends yet.',data:null};return{text:'Dividends:',data:{'Auto':sf(autoDiv),'Manual':sf(manDiv),'Total':sf(autoDiv+manDiv)}}}
+  if(q.match(/sip.*due|next.*sip/)){var sips=inv.filter(function(i){return(i.monthly||0)>0});if(!sips.length)return{text:'No SIPs.',data:null};var sd2={};sips.slice(0,5).forEach(function(s){sd2[s.label||'SIP']=sf(s.monthly)+' on '+ordinal(parseInt(s.dueDate)||1)});return{text:'SIPs:',data:sd2}}
+  if(q.match(/insurance/)){try{var iS=calcInsuranceScore();return{text:'Insurance: '+iS.score+'/100 — '+iS.grade,data:null}}catch(e){return{text:'Add insurance first.',data:null}}}
+  if(q.match(/expense|spending/)){if(!exps.length)return{text:'No expenses.',data:null};return{text:'Monthly: '+sf(mExp),data:null}}
+  if(q.match(/saving/)){if(mInc<=0)return{text:'Add income first.',data:null};return{text:'Savings: '+stf(sdiv(mInc-mExp,mInc)*100)+'%',data:{'Income':sf(mInc),'Expenses':sf(mExp),'Savings':sf(mInc-mExp)}}}
+  if(q.match(/income|salary/)){if(!incomes.length)return{text:'No income.',data:null};return{text:'Monthly: '+sf(mInc),data:null}}
+  if(q.match(/emergency|liquid/)){var liq=inv.filter(function(i){return i.isEmergencyFund||['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+(i.value||gv(i))},0);var mo=sdiv(liq,mExp);return{text:'Emergency: '+stf(mo)+' months',data:{'Liquid':sf(liq),'Expenses':sf(mExp)}}}
+  if(q.match(/cagr/)){var bd=inv.filter(function(i){return i.started}).map(function(i){var t=new Date(i.started).getTime();return isNaN(t)?0:t}).filter(function(t){return t>0});if(!bd.length)return{text:'Add dates.',data:null};var yrs=(Date.now()-Math.min.apply(null,bd))/(365.25*86400000);var cagr=invested>0&&yrs>0.08?(Math.pow(sdiv(nw,invested),sdiv(1,yrs))-1)*100:0;return{text:'CAGR: '+stf(cagr)+'%',data:null}}
+  if(q.match(/goal|target/)){var goals=S.goals||[];if(!goals.length)return{text:'No goals.',data:null};var gD={};goals.forEach(function(g){gD[(g.icon||'🎯')+' '+(g.name||'Goal')]=sf(g.current)+'/'+sf(g.target)});return{text:'Goals:',data:gD}}
+  if(q.match(/wealth.*score|health/)){try{var ws2=calcWealthScore(nw,invested,returns,mExp,mInc,inv);return{text:'Score: '+ws2.score+'/100 — '+ws2.grade,data:null}}catch(e){return{text:'Add more data.',data:null}}}
+  if(q.match(/tax|ltcg|stcg/)){if(!inv.length)return{text:'No investments.',data:null};var tS=0,tL=0,tT=0;inv.forEach(function(i){var g=gv(i)-gi(i);if(g<=0)return;var hd=i.started?Math.floor((Date.now()-new Date(i.started).getTime())/86400000):0;if(isNaN(hd))hd=0;try{var r=getTaxRules(i.type,hd);if(r.isExempt||r.isSlab)return;if(r.isFlat)tT+=g*(r.stRate||0)/100;else if(r.isLong){tL+=g;tT+=Math.max(0,g-(r.ltExempt||0))*(r.ltRate||0)/100}else{tS+=g;tT+=g*(r.stRate||0)/100}}catch(e){}});return{text:'Tax:',data:{'STCG':sf(tS),'LTCG':sf(tL),'Tax':sf(tT)}}}
+  if(q.match(/exit|sell/)){try{var sig=getExitSignals(inv);if(!sig.length)return{text:'🟢 All clear!',data:null};var eD={};sig.slice(0,5).forEach(function(s){eD[(s.icon||'')+' '+(s.inv?s.inv.label:'')]=s.reason||''});return{text:sig.length+' signal(s):',data:eD}}catch(e){return{text:'Error.',data:null}}}
+  if(q.match(/tip|suggest|advice/)){var tips=['Review and increase SIPs annually'];if(!inv.length)tips.unshift('Start investing!');return{text:'Tips:',data:{'💡 1':tips[0]}}}
+  if(q.match(/loan|emi|debt/)){var loans=S.loans||[];if(!loans.length)return{text:'No loans.',data:null};var ld={};loans.forEach(function(l){ld[l.label||'Loan']=sf(l.outstanding)+' EMI:'+sf(l.emi)});return{text:'Loans:',data:ld}}
+  if(q.match(/fire|retire/)){if(mExp<=0)return{text:'Add expenses.',data:null};var fi=mExp*12*25;return{text:'FIRE: '+sf(fi)+'. '+stf(sdiv(trueNW,fi)*100)+'% done.',data:null}}
+  if(q.match(/project|corpus/)){var sipT=inv.filter(function(i){return(i.monthly||0)>0}).reduce(function(s,i){return s+(i.monthly||0)},0);var c=trueNW;for(var mo2=1;mo2<=120;mo2++)c=c*1.01+sipT;return{text:'10Y projection: '+sf(c),data:null}}
+  if(q.match(/cash.flow|surplus/)){var sipT2=inv.filter(function(i){return(i.monthly||0)>0}).reduce(function(s,i){return s+(i.monthly||0)},0);var emiT=(S.loans||[]).reduce(function(s,l){return s+(l.emi||0)},0);return{text:'Surplus: '+sf(mInc-mExp-sipT2-emiT)+'/mo',data:{'Income':sf(mInc),'Expenses':sf(mExp),'SIPs':sf(sipT2),'EMIs':sf(emiT)}}}
+  if(q.match(/thank/))return{text:'Welcome! 😊',data:null};
+  if(q.match(/help|what can/))return{text:'Try: portfolio, net worth, top performer, allocation, sectors, tax, SIP due, goals, FIRE, savings, expenses, loans, tips',data:null};
+  return{text:'Try tapping a chip below, or ask about: portfolio, returns, tax, goals, savings.',data:null};
 }
 
 // ===== CHAT RENDER =====
@@ -11397,7 +11401,7 @@ function renderChipsM(containerId){document.getElementById(containerId).innerHTM
 
 // Float chat
 function toggleChatM(){var w=document.getElementById('chat-window-m');w.classList.toggle('open');if(w.classList.contains('open')&&!chatMessagesM.length){chatMessagesM.push({role:'bot',text:'Hi '+(S.user.name||'')+'! 👋',data:null});renderChatMsgM('chat-msgs-m',chatMessagesM[chatMessagesM.length-1]);renderChipsM('chat-chips-m')}}
-function chatSendM(){var inp=document.getElementById('chat-input-m');var q=inp.value.trim();if(!q)return;chatMessagesM.push({role:'user',text:q,data:null});renderChatMsgM('chat-msgs-m',chatMessagesM[chatMessagesM.length-1]);inp.value='';setTimeout(function(){var ans=botAnswer(q);chatMessagesM.push({role:'bot',text:ans.text,data:ans.data});renderChatMsgM('chat-msgs-m',chatMessagesM[chatMessagesM.length-1])},300)}
+function chatSendM(){var inp=document.getElementById('chat-input-m');var q=inp.value.trim();if(!q)return;chatMessagesM.push({role:'user',text:q,data:null});renderChatMsgM('chat-msgs-m',chatMessagesM[chatMessagesM.length-1]);inp.value='';setTimeout(function(){try{var ans=botAnswer(q);chatMessagesM.push({role:'bot',text:ans.text,data:ans.data});renderChatMsgM('chat-msgs-m',chatMessagesM[chatMessagesM.length-1])}catch(e){console.warn('[VF] bot error:',e);chatMessagesM.push({role:'bot',text:'⚠️ Error. Try rephrasing.',data:null});renderChatMsgM('chat-msgs-m',chatMessagesM[chatMessagesM.length-1])}},300)}
 function chatChipM(q){document.getElementById('chat-input-m').value=q;chatSendM()}
 
 // Bot page
@@ -11425,7 +11429,7 @@ function botChipM(q){
   botPageSendM();
 }
 
-function botPageSendM(){var inp=document.getElementById('bot-page-input-m');var q=inp.value.trim();if(!q)return;botPageMessagesM.push({role:'user',text:q,data:null});renderChatMsgM('bot-page-msgs-m',botPageMessagesM[botPageMessagesM.length-1]);inp.value='';setTimeout(function(){var ans=botAnswer(q);botPageMessagesM.push({role:'bot',text:ans.text,data:ans.data});renderChatMsgM('bot-page-msgs-m',botPageMessagesM[botPageMessagesM.length-1])},300)}
+function botPageSendM(){var inp=document.getElementById('bot-page-input-m');var q=inp.value.trim();if(!q)return;botPageMessagesM.push({role:'user',text:q,data:null});renderChatMsgM('bot-page-msgs-m',botPageMessagesM[botPageMessagesM.length-1]);inp.value='';setTimeout(function(){try{var ans=botAnswer(q);botPageMessagesM.push({role:'bot',text:ans.text,data:ans.data});renderChatMsgM('bot-page-msgs-m',botPageMessagesM[botPageMessagesM.length-1])}catch(e){console.warn('[VF] bot error:',e);botPageMessagesM.push({role:'bot',text:'⚠️ Error. Try another question.',data:null});renderChatMsgM('bot-page-msgs-m',botPageMessagesM[botPageMessagesM.length-1])}},300)}
 function botPageChipM(q){document.getElementById('bot-page-input-m').value=q;botPageSendM()}
 
 // ===== VOICE =====
@@ -12097,7 +12101,7 @@ function showAutoSyncModal(){
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5n';
+var APP_VERSION = 'v4.1.5j';
 
 function showUpdateBanner() {
   if(document.getElementById('sw-update-banner')) return;
