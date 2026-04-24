@@ -596,7 +596,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- HOME -->
 <div class="pg active" id="pg-home">
 <div id="dash-member-pills"></div>
-<div class="cd" id="dash-nw-chart-card" style="padding:12px;margin-bottom:8px;display:none">
+<div class="cd" id="dash-nw-chart-card" style="padding:12px;margin-bottom:8px">
 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
 <div><div style="font-size:9px;color:var(--txt2)">Net Worth</div><div id="nwc-value" style="font-size:22px;font-weight:800;letter-spacing:-0.5px"></div></div>
 <div style="text-align:right"><div id="nwc-return" style="font-size:12px;font-weight:700"></div><div style="font-size:8px;color:var(--txt2)">All Time</div></div>
@@ -12086,19 +12086,25 @@ var _nwcPeriod=0;
 function setNWCPeriod(months){_nwcPeriod=months;document.querySelectorAll('#nwc-tabs .pill').forEach(function(p){p.classList.remove('on')});event.target.classList.add('on');renderNWChart()}
 function renderNWChart(){
   var card=document.getElementById('dash-nw-chart-card');
+  if(!card)return;
   var snaps=(S.snapshots||[]).slice();
-  var inv=filterByMember(S.investments);
+  var inv=filterByMember(S.investments)||[];
   var currentNW=inv.reduce(function(s,i){return s+(getInvValue(i)||0)},0);
   var liab=(typeof getTotalLiabilities==='function')?getTotalLiabilities():0;
   currentNW-=liab;
-  if(currentNW<=0&&snaps.length===0){card.style.display='none';return}
+  if(currentNW<=0&&snaps.length===0&&inv.length===0){card.style.display='none';return}
   card.style.display='block';
-  var points=snaps.filter(function(s){return s.date||s.month!==undefined}).map(function(s){return{date:s.date?new Date(s.date):new Date(),nw:s.nw||0}});
+  var points=[];
+  snaps.forEach(function(s){
+    var d;if(s.date){d=new Date(s.date)}else if(typeof s.month==='number'){d=new Date();d.setMonth(d.getMonth()-Math.max(0,(S.currentMonth||0)-s.month))}else return;
+    if(isNaN(d.getTime()))return;points.push({date:d,nw:s.nw||0});
+  });
   points.push({date:new Date(),nw:currentNW});
-  if(points.length<=1&&currentNW>0){
-    var earliest=inv.filter(function(i){return i.started}).map(function(i){return new Date(i.started).getTime()}).filter(function(t){return!isNaN(t)&&t>0});
+  if(points.length<=1){
+    var earliest=inv.filter(function(i){return i.started}).map(function(i){var t=new Date(i.started).getTime();return isNaN(t)?0:t}).filter(function(t){return t>0});
     var startDate=earliest.length?new Date(Math.min.apply(null,earliest)):new Date(Date.now()-90*86400000);
-    points.unshift({date:startDate,nw:inv.reduce(function(s,i){return s+(i.invested||0)},0)});
+    var startNW=inv.reduce(function(s,i){return s+(i.invested||0)},0);
+    if(startNW>0)points.unshift({date:startDate,nw:startNW});
   }
   points.sort(function(a,b){return a.date-b.date});
   if(_nwcPeriod>0){var cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-_nwcPeriod);points=points.filter(function(p){return p.date>=cutoff})}
@@ -12108,19 +12114,23 @@ function renderNWChart(){
   var retEl=document.getElementById('nwc-return');
   retEl.textContent=(allTimeRet>=0?'+':'')+allTimeRet.toFixed(2)+'%';
   retEl.style.color=allTimeRet>=0?'var(--g)':'var(--d)';
-  var el=document.getElementById('nwc-chart');var W=el.offsetWidth||320;var H=140;
-  var minNW=Math.min.apply(null,points.map(function(p){return p.nw}));
-  var maxNW=Math.max.apply(null,points.map(function(p){return p.nw}));
-  var range=maxNW-minNW||1;var padT=8,padB=20,chartH=H-padT-padB,chartW=W;
-  var pts=points.map(function(p,i){var x=points.length>1?(i/(points.length-1))*chartW:chartW/2;var y=padT+chartH-(((p.nw-minNW)/range)*chartH);return{x:x,y:y,nw:p.nw,date:p.date}});
-  var linePath=pts.map(function(p,i){return(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' ');
-  var isUp=currentNW>=firstNW;var color=isUp?'#00B894':'#D63031';
-  var gradId='nwcG'+Date.now();
-  var areaPath=linePath+' L'+pts[pts.length-1].x.toFixed(1)+','+(padT+chartH)+' L'+pts[0].x.toFixed(1)+','+(padT+chartH)+' Z';
-  var xLabels='';[0,Math.floor(pts.length/2),pts.length-1].forEach(function(idx){if(pts[idx]){var d=pts[idx].date;xLabels+='<text x="'+pts[idx].x.toFixed(1)+'" y="'+(H-3)+'" font-size="7" fill="var(--txt3)" text-anchor="middle">'+d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'})+'</text>'}});
-  var svg='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px"><defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.3"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0.02"/></linearGradient></defs>'+xLabels+'<path d="'+areaPath+'" fill="url(#'+gradId+')"/><path d="'+linePath+'" fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linecap="round"/>';
-  if(pts.length>0){var last=pts[pts.length-1];svg+='<circle cx="'+last.x.toFixed(1)+'" cy="'+last.y.toFixed(1)+'" r="3" fill="'+color+'" stroke="var(--card)" stroke-width="1.5"/>';}
-  svg+='</svg>';el.innerHTML=svg;
+  setTimeout(function(){
+    var el=document.getElementById('nwc-chart');if(!el)return;
+    var W=el.offsetWidth||el.clientWidth||320;var H=140;
+    var minNW=Math.min.apply(null,points.map(function(p){return p.nw}));
+    var maxNW=Math.max.apply(null,points.map(function(p){return p.nw}));
+    var range=maxNW-minNW;if(range<=0)range=maxNW*0.1||1;
+    var padT=8,padB=20,chartH=H-padT-padB,chartW=W;
+    var pts=points.map(function(p,i){var x=points.length>1?(i/(points.length-1))*chartW:chartW/2;var y=padT+chartH-(((p.nw-minNW)/range)*chartH);return{x:x,y:y,nw:p.nw,date:p.date}});
+    var linePath=pts.map(function(p,i){return(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' ');
+    var isUp=currentNW>=firstNW;var color=isUp?'#00B894':'#D63031';
+    var gradId='nwcG'+Date.now();
+    var areaPath=linePath+' L'+pts[pts.length-1].x.toFixed(1)+','+(padT+chartH)+' L'+pts[0].x.toFixed(1)+','+(padT+chartH)+' Z';
+    var xLabels='';[0,Math.floor(pts.length/2),pts.length-1].forEach(function(idx){if(pts[idx]){var d=pts[idx].date;xLabels+='<text x="'+pts[idx].x.toFixed(1)+'" y="'+(H-3)+'" font-size="7" fill="var(--txt3)" text-anchor="middle">'+d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'})+'</text>'}});
+    var svg='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px"><defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.3"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0.02"/></linearGradient></defs>'+xLabels+'<path d="'+areaPath+'" fill="url(#'+gradId+')"/><path d="'+linePath+'" fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linecap="round"/>';
+    if(pts.length>0){var last=pts[pts.length-1];svg+='<circle cx="'+last.x.toFixed(1)+'" cy="'+last.y.toFixed(1)+'" r="3" fill="'+color+'" stroke="var(--card)" stroke-width="1.5"/>';}
+    svg+='</svg>';el.innerHTML=svg;
+  },50);
 }
 
 // ===== NET WORTH GROWTH CHART =====
@@ -12224,7 +12234,7 @@ function showAutoSyncModal(){
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5s';
+var APP_VERSION = 'v4.1.5t';
 
 function showUpdateBanner() {
   if(document.getElementById('sw-update-banner')) return;
