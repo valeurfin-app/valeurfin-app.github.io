@@ -12165,25 +12165,25 @@ function rDividends() {
   var stocksWithSymbols = S.investments.filter(function(i) {
     return i.type === 'Stocks' && i.nseSymbol;
   });
-  var stocksNeverTried = stocksWithSymbols.some(function(i) {
+  // Check if annualDividendRate data exists (from price API — reliable)
+  var hasAnnualDivData = stocksWithSymbols.some(function(i){ return i.annualDividendRate > 0; });
+  var stocksNeverTried = !hasAnnualDivData && stocksWithSymbols.some(function(i) {
     return !i.divCacheDate && (i.divCache||[]).length === 0;
   });
-  var stocksFailedProxy = !stocksNeverTried && stocksWithSymbols.some(function(i) {
+  var stocksFailedProxy = !hasAnnualDivData && !stocksNeverTried && stocksWithSymbols.some(function(i) {
     return i.divCacheDate === 1 && (i.divCache||[]).length === 0;
   });
 
-  // Show loading/retry states BEFORE empty check
+  // Show loading/retry ONLY if annualDividendRate is not available
   if (stocksWithSymbols.length > 0 && (stocksNeverTried || stocksFailedProxy)) {
     empty.style.display = 'none';
     var statusHTML = '<div style="padding:14px;background:var(--bg);border-radius:10px;margin-bottom:10px">';
     if (stocksNeverTried) {
-      statusHTML += '<div style="text-align:center;padding:12px"><div style="font-size:24px;margin-bottom:6px">⏳</div><div style="font-size:12px;font-weight:600">Loading dividend history...</div><div style="font-size:10px;color:var(--txt2);margin-top:4px">Fetching from NSE for ' + stocksWithSymbols.length + ' stock(s)</div></div>';
+      statusHTML += '<div style="text-align:center;padding:12px"><div style="font-size:24px;margin-bottom:6px">⏳</div><div style="font-size:12px;font-weight:600">Loading dividend data...</div><div style="font-size:10px;color:var(--txt2);margin-top:4px">Refresh prices (🔄) to auto-detect dividends for ' + stocksWithSymbols.length + ' stock(s)</div></div>';
     } else if (stocksFailedProxy) {
-      var failedNames = stocksWithSymbols.filter(function(i){ return i.divCacheDate === 1; }).map(function(i){ return i.nseSymbol; }).join(', ');
-      statusHTML += '<div style="text-align:center;padding:12px"><div style="font-size:24px;margin-bottom:6px">⚠️</div><div style="font-size:12px;font-weight:600;color:var(--w)">Could not fetch dividends</div><div style="font-size:10px;color:var(--txt2);margin-top:4px">Failed for: ' + failedNames + '</div><button class="btn-sm" onclick="loadAllDividends()" style="margin-top:8px">🔄 Retry</button></div>';
+      statusHTML += '<div style="text-align:center;padding:12px"><div style="font-size:24px;margin-bottom:6px">💡</div><div style="font-size:12px;font-weight:600;color:var(--b)">Tap 🔄 Refresh Prices to load dividends</div><div style="font-size:10px;color:var(--txt2);margin-top:4px">Dividend data is fetched alongside live prices</div></div>';
     }
     statusHTML += '</div>';
-    // Show existing data (manual + cached) PLUS the status
     if (total > 0 || divs.length > 0) {
       summary.innerHTML = '<div class="sg"><div class="st"><div class="lbl">TOTAL DIVIDENDS</div><div class="val" style="color:var(--g)">' + fmt(total) + '</div></div></div>';
     } else {
@@ -12238,18 +12238,24 @@ function rDividends() {
   // ── Per-stock breakdown ───────────────────────────────────────────────────
   var stockRows = '';
   S.investments.filter(function(i) {
-    return i.type === 'Stocks' && (i.divCache || []).length > 0;
+    return i.type === 'Stocks' && ((i.divCache || []).length > 0 || (i.annualDividendRate || 0) > 0);
   }).forEach(function(inv) {
-    var invTotal = calcInvDividends(inv);
+    var invTotal = 0;
+    var source = '';
+    if (inv.annualDividendRate > 0 && inv.qty > 0) {
+      invTotal = inv.qty * inv.annualDividendRate;
+      source = '₹' + inv.annualDividendRate.toFixed(2) + '/share/yr';
+    } else {
+      invTotal = calcInvDividends(inv);
+      if (invTotal <= 0) return;
+      source = (inv.divCache||[]).length + ' payments';
+    }
     if (invTotal <= 0) return;
-    var payments = inv.divCache.length;
-    var lastDps = inv.divCache[inv.divCache.length - 1];
     stockRows += '<tr>'
-      + '<td><b>' + inv.label + '</b><br><small style="color:var(--txt3)">' + inv.nseSymbol + '</small></td>'
-      + '<td>' + payments + ' payments</td>'
-      + '<td>₹' + (lastDps ? lastDps.dps.toFixed(2) : '—') + '</td>'
-      + '<td>' + (lastDps ? lastDps.exDate : '—') + '</td>'
-      + '<td class="div-total">' + fmtFull(invTotal) + '</td>'
+      + '<td><b>' + inv.label + '</b><br><small style="color:var(--txt3)">' + (inv.nseSymbol||'') + '</small></td>'
+      + '<td>' + source + '</td>'
+      + '<td>' + (inv.qty || 0) + ' shares</td>'
+      + '<td class="div-total" style="color:var(--g)">' + fmtFull(invTotal) + '</td>'
       + '</tr>';
   });
 
@@ -12278,7 +12284,7 @@ function rDividends() {
       + '<h3 style="font-size:13px">📊 From Your Holdings <span class="cd-badge">Auto</span></h3>'
       + (stocksNeverTried ? '<p style="font-size:10px;color:var(--txt3)">🔄 Fetching dividend data...</p>' : '')
       + '<div style="overflow-x:auto"><table class="div-tbl"><thead><tr>'
-      + '<th>Stock</th><th>Payments</th><th>Last DPS</th><th>Last Ex-Date</th><th>Your Total</th>'
+      + '<th>Stock</th><th>Source</th><th>Qty</th><th>Annual Dividend</th>'
       + '</tr></thead><tbody>' + stockRows + '</tbody></table></div></div>';
   } else if (stocksNeverTried) {
     html += '<div class="cd"><p style="font-size:11px;color:var(--txt3);padding:8px">🔄 Loading dividend history for your stocks...</p></div>';
@@ -14255,7 +14261,7 @@ function renderNWChart(){
   var currentNW=inv.reduce(function(s,i){return s+(getInvValue(i)||0)},0);
   var liab=(typeof getTotalLiabilities==='function')?getTotalLiabilities():0;
   currentNW-=liab;
-  if(snaps.length<2&&currentNW<=0){card.style.display='none';return}
+  if(currentNW<=0&&snaps.length===0){card.style.display='none';return}
   card.style.display='block';
   // Ensure snapshots have dates
   var points=snaps.filter(function(s){return s.date||s.month!==undefined}).map(function(s){
@@ -14264,6 +14270,13 @@ function renderNWChart(){
   });
   // Add today
   points.push({date:new Date(),nw:currentNW});
+  // If only 1 point, add a synthetic start from earliest investment
+  if(points.length<=1&&currentNW>0){
+    var earliest=inv.filter(function(i){return i.started}).map(function(i){return new Date(i.started).getTime()}).filter(function(t){return!isNaN(t)&&t>0});
+    var startDate=earliest.length?new Date(Math.min.apply(null,earliest)):new Date(Date.now()-90*86400000);
+    var startNW=inv.reduce(function(s,i){return s+(i.invested||0)},0);
+    points.unshift({date:startDate,nw:startNW});
+  }
   // Sort by date
   points.sort(function(a,b){return a.date-b.date});
   // Filter by period
@@ -14406,7 +14419,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5q';
+var APP_VERSION = 'v4.1.5r';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
