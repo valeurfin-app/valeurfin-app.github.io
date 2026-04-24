@@ -793,7 +793,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- ===== DASHBOARD ===== -->
 <div class="pg active" id="pg-dash">
 <div id="dash-member-pills"></div>
-<div class="cd" id="dash-nw-chart-card" style="padding:16px;margin-bottom:12px;display:none">
+<div class="cd" id="dash-nw-chart-card" style="padding:16px;margin-bottom:12px">
 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
 <div><div style="font-size:11px;color:var(--txt2)">Net Worth</div><div id="nwc-value" style="font-size:28px;font-weight:800;letter-spacing:-1px"></div></div>
 <div style="text-align:right"><div id="nwc-return" style="font-size:13px;font-weight:700"></div><div style="font-size:9px;color:var(--txt2)">All Time</div></div>
@@ -5585,7 +5585,7 @@ function rDash(){
   }else tl.innerHTML='<div style="text-align:center;padding:20px;font-size:11px;color:var(--txt3)">Process months to see timeline</div>';
 
   rDonut(inv,nw,'dash-donut',BUCKET_COLORS);
-  try{renderNWChart()}catch(e){console.warn('[VF] NW chart error:',e)}
+  try{renderNWChart()}catch(e){console.warn('[VF] NW chart error:',e);}
   rSectorDonut(inv,nw);
   rDashExpBars(exps);
   rDashHoldings(inv,nw);
@@ -14305,29 +14305,34 @@ function setNWCPeriod(months){
 }
 function renderNWChart(){
   var card=document.getElementById('dash-nw-chart-card');
+  if(!card)return;
   var snaps=(S.snapshots||[]).slice();
-  // Add current state as latest point
-  var inv=filterByMember(S.investments);
+  var inv=filterByMember(S.investments)||[];
   var currentNW=inv.reduce(function(s,i){return s+(getInvValue(i)||0)},0);
   var liab=(typeof getTotalLiabilities==='function')?getTotalLiabilities():0;
   currentNW-=liab;
-  if(currentNW<=0&&snaps.length===0){card.style.display='none';return}
+  if(currentNW<=0&&snaps.length===0&&inv.length===0){card.style.display='none';return}
   card.style.display='block';
-  // Ensure snapshots have dates
-  var points=snaps.filter(function(s){return s.date||s.month!==undefined}).map(function(s){
-    var d=s.date?new Date(s.date):new Date();
-    return{date:d,nw:s.nw||0};
+  // Build points from snapshots — guard against invalid dates
+  var points=[];
+  snaps.forEach(function(s){
+    var d;
+    if(s.date){d=new Date(s.date)}
+    else if(typeof s.month==='number'){d=new Date();d.setMonth(d.getMonth()-Math.max(0,(S.currentMonth||0)-s.month))}
+    else{return}
+    if(isNaN(d.getTime()))return;
+    points.push({date:d,nw:s.nw||0});
   });
-  // Add today
+  // Add current NW as today
   points.push({date:new Date(),nw:currentNW});
-  // If only 1 point, add a synthetic start from earliest investment
-  if(points.length<=1&&currentNW>0){
-    var earliest=inv.filter(function(i){return i.started}).map(function(i){return new Date(i.started).getTime()}).filter(function(t){return!isNaN(t)&&t>0});
+  // If only 1 point (just today), create a synthetic start from earliest investment
+  if(points.length<=1){
+    var earliest=inv.filter(function(i){return i.started}).map(function(i){var t=new Date(i.started).getTime();return isNaN(t)?0:t}).filter(function(t){return t>0});
     var startDate=earliest.length?new Date(Math.min.apply(null,earliest)):new Date(Date.now()-90*86400000);
     var startNW=inv.reduce(function(s,i){return s+(i.invested||0)},0);
-    points.unshift({date:startDate,nw:startNW});
+    if(startNW>0)points.unshift({date:startDate,nw:startNW});
   }
-  // Sort by date
+  // Sort and deduplicate
   points.sort(function(a,b){return a.date-b.date});
   // Filter by period
   if(_nwcPeriod>0){
@@ -14341,49 +14346,50 @@ function renderNWChart(){
   var retEl=document.getElementById('nwc-return');
   retEl.textContent=(allTimeRet>=0?'+':'')+allTimeRet.toFixed(2)+'%';
   retEl.style.color=allTimeRet>=0?'var(--g)':'var(--d)';
-  // Draw SVG chart
-  var el=document.getElementById('nwc-chart');
-  var W=el.offsetWidth||600;var H=180;
-  var minNW=Math.min.apply(null,points.map(function(p){return p.nw}));
-  var maxNW=Math.max.apply(null,points.map(function(p){return p.nw}));
-  var range=maxNW-minNW||1;
-  var padT=10,padB=25,padL=0,padR=0;
-  var chartH=H-padT-padB;var chartW=W-padL-padR;
-  var pts=points.map(function(p,i){
-    var x=padL+(points.length>1?(i/(points.length-1))*chartW:chartW/2);
-    var y=padT+chartH-(((p.nw-minNW)/range)*chartH);
-    return{x:x,y:y,nw:p.nw,date:p.date};
-  });
-  var linePath=pts.map(function(p,i){return(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' ');
-  var isUp=currentNW>=firstNW;
-  var color=isUp?'#00B894':'#D63031';
-  var gradId='nwcGrad'+Date.now();
-  var areaPath=linePath+' L'+pts[pts.length-1].x.toFixed(1)+','+(padT+chartH)+' L'+pts[0].x.toFixed(1)+','+(padT+chartH)+' Z';
-  // Y-axis labels
-  var yLabels='';
-  for(var yi=0;yi<=3;yi++){
-    var yv=minNW+(range*yi/3);
-    var yy=padT+chartH-(yi/3*chartH);
-    yLabels+='<text x="'+padL+'" y="'+(yy-3)+'" font-size="8" fill="var(--txt3)" text-anchor="start">'+fmt(yv)+'</text>';
-    yLabels+='<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="var(--bdr)" stroke-width="0.5" stroke-dasharray="3,3"/>';
-  }
-  // X-axis labels (first, mid, last)
-  var xLabels='';
-  [0,Math.floor(pts.length/2),pts.length-1].forEach(function(idx){
-    if(pts[idx]){
-      var d=pts[idx].date;var lbl=d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'});
-      xLabels+='<text x="'+pts[idx].x.toFixed(1)+'" y="'+(H-3)+'" font-size="8" fill="var(--txt3)" text-anchor="middle">'+lbl+'</text>';
+  // Draw SVG — use setTimeout to ensure card is painted and has width
+  setTimeout(function(){
+    var el=document.getElementById('nwc-chart');
+    if(!el)return;
+    var W=el.offsetWidth||el.clientWidth||600;var H=180;
+    var minNW=Math.min.apply(null,points.map(function(p){return p.nw}));
+    var maxNW=Math.max.apply(null,points.map(function(p){return p.nw}));
+    var range=maxNW-minNW;if(range<=0)range=maxNW*0.1||1;
+    var padT=10,padB=25,chartH=H-padT-padB,chartW=W;
+    var pts=points.map(function(p,i){
+      var x=points.length>1?(i/(points.length-1))*chartW:chartW/2;
+      var y=padT+chartH-(((p.nw-minNW)/range)*chartH);
+      return{x:x,y:y,nw:p.nw,date:p.date};
+    });
+    var linePath=pts.map(function(p,i){return(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' ');
+    var isUp=currentNW>=firstNW;
+    var color=isUp?'#00B894':'#D63031';
+    var gradId='nwcGrad'+Date.now();
+    var areaPath=linePath+' L'+pts[pts.length-1].x.toFixed(1)+','+(padT+chartH)+' L'+pts[0].x.toFixed(1)+','+(padT+chartH)+' Z';
+    // Y-axis labels
+    var yLabels='';
+    for(var yi=0;yi<=3;yi++){
+      var yv=minNW+(range*yi/3);
+      var yy=padT+chartH-(yi/3*chartH);
+      yLabels+='<text x="2" y="'+(yy-3)+'" font-size="8" fill="var(--txt3)">'+fmt(yv)+'</text>';
+      yLabels+='<line x1="0" y1="'+yy+'" x2="'+W+'" y2="'+yy+'" stroke="var(--bdr)" stroke-width="0.5" stroke-dasharray="3,3"/>';
     }
-  });
-  var svg='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px">'
-    +'<defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.3"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0.02"/></linearGradient></defs>'
-    +yLabels+xLabels
-    +'<path d="'+areaPath+'" fill="url(#'+gradId+')"/>'
-    +'<path d="'+linePath+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round"/>';
-  // Latest point dot
-  if(pts.length>0){var last=pts[pts.length-1];svg+='<circle cx="'+last.x.toFixed(1)+'" cy="'+last.y.toFixed(1)+'" r="4" fill="'+color+'" stroke="var(--card)" stroke-width="2"/>';}
-  svg+='</svg>';
-  el.innerHTML=svg;
+    // X-axis labels
+    var xLabels='';
+    [0,Math.floor(pts.length/2),pts.length-1].forEach(function(idx){
+      if(pts[idx]){
+        var dt=pts[idx].date;var lbl=dt.toLocaleDateString('en-IN',{month:'short',year:'2-digit'});
+        xLabels+='<text x="'+pts[idx].x.toFixed(1)+'" y="'+(H-3)+'" font-size="8" fill="var(--txt3)" text-anchor="middle">'+lbl+'</text>';
+      }
+    });
+    var svg='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px">'
+      +'<defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.3"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0.02"/></linearGradient></defs>'
+      +yLabels+xLabels
+      +'<path d="'+areaPath+'" fill="url(#'+gradId+')"/>'
+      +'<path d="'+linePath+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round"/>';
+    if(pts.length>0){var last=pts[pts.length-1];svg+='<circle cx="'+last.x.toFixed(1)+'" cy="'+last.y.toFixed(1)+'" r="4" fill="'+color+'" stroke="var(--card)" stroke-width="2"/>';}
+    svg+='</svg>';
+    el.innerHTML=svg;
+  },50);
 }
 
 // ===== NET WORTH GROWTH CHART =====
@@ -14469,7 +14475,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5s';
+var APP_VERSION = 'v4.1.5t';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
