@@ -596,6 +596,22 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- HOME -->
 <div class="pg active" id="pg-home">
 <div id="dash-member-pills"></div>
+<div class="cd" id="dash-nw-chart-card" style="padding:12px;margin-bottom:8px;display:none">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+<div><div style="font-size:9px;color:var(--txt2)">Net Worth</div><div id="nwc-value" style="font-size:22px;font-weight:800;letter-spacing:-0.5px"></div></div>
+<div style="text-align:right"><div id="nwc-return" style="font-size:12px;font-weight:700"></div><div style="font-size:8px;color:var(--txt2)">All Time</div></div>
+</div>
+<div id="nwc-chart" style="width:100%;height:140px;position:relative"></div>
+<div style="display:flex;gap:3px;margin-top:8px;justify-content:center" id="nwc-tabs">
+<button class="pill" onclick="setNWCPeriod(1)" style="font-size:9px;padding:3px 8px">1M</button>
+<button class="pill" onclick="setNWCPeriod(3)" style="font-size:9px;padding:3px 8px">3M</button>
+<button class="pill" onclick="setNWCPeriod(6)" style="font-size:9px;padding:3px 8px">6M</button>
+<button class="pill" onclick="setNWCPeriod(12)" style="font-size:9px;padding:3px 8px">1Y</button>
+<button class="pill" onclick="setNWCPeriod(36)" style="font-size:9px;padding:3px 8px">3Y</button>
+<button class="pill" onclick="setNWCPeriod(60)" style="font-size:9px;padding:3px 8px">5Y</button>
+<button class="pill on" onclick="setNWCPeriod(0)" style="font-size:9px;padding:3px 8px">MAX</button>
+</div>
+</div>
 <div id="dash-family-overview"></div>
 <div class="sg" id="home-stats"></div>
 <div id="home-tips"></div>
@@ -634,6 +650,10 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- INVESTMENTS -->
 <div class="pg" id="pg-inv">
+<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+<input class="inp" id="inv-search" type="text" placeholder="🔍 Search..." oninput="searchInvM()" style="flex:1;min-width:120px">
+<select class="inp" id="inv-sort" onchange="sortInvM()" style="max-width:130px;font-size:10px"><option value="name">Name</option><option value="value-desc">Value ↓</option><option value="return-desc">Return ↓</option><option value="sector">Sector</option></select>
+</div>
 <div class="pills" id="inv-pills"></div>
 <div id="inv-subtotal" style="font-size:10px;color:var(--txt2);margin-bottom:6px;display:none"></div>
 <div id="inv-list"></div>
@@ -802,7 +822,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- EXIT SIGNALS -->
 <div class="pg" id="pg-exit">
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
-<div class="cd"><h3>🚪 Exit Signals</h3>
+<div class="cd"><h3>🚪 Exit Signals <button class="btn-sm" onclick="document.getElementById('exit-info-modal').classList.add('open')" style="font-size:9px;margin-left:4px">ℹ️ How?</button></h3>
 <div id="exit-list-m"></div>
 <div id="exit-empty-m" class="empty-state" style="display:none"><div class="es-ic">🚪</div><h3>No Signals</h3></div>
 </div>
@@ -4565,15 +4585,17 @@ async function loadAllDividends() {
 }
 
 function calcStockDividends() {
-  // Sum all auto-fetched dividends across all stock holdings using lot-aware qty
   var total = 0;
   S.investments.filter(function(i) {
-    return i.type === 'Stocks' && (i.divCache || []).length > 0;
+    return i.type === 'Stocks';
   }).forEach(function(inv) {
-    (inv.divCache || []).forEach(function(dh) {
-      var qty = getQtyOnDate(inv, dh.exDate);
-      total += qty * dh.dps;
-    });
+    if(inv.annualDividendRate>0&&inv.qty>0){total+=inv.qty*inv.annualDividendRate;return;}
+    if((inv.divCache || []).length > 0) {
+      (inv.divCache || []).forEach(function(dh) {
+        var qty = getQtyOnDate(inv, dh.exDate);
+        total += qty * dh.dps;
+      });
+    }
   });
   return total;
 }
@@ -5044,6 +5066,7 @@ function rHome(){
   else tl.innerHTML='<div style="text-align:center;padding:12px;font-size:9px;color:var(--txt3)">Process months</div>';
   var bk={};inv.forEach(function(i){var b=i.bucket||invBucket(i.type);bk[b]=(bk[b]||0)+(i.liveValue||i.value)});
   document.getElementById('home-donut').innerHTML=makeDonut(bk,nw,BUCKET_COLORS);
+  try{renderNWChart()}catch(e){console.warn('[VF] NW chart error:',e)}
   var secG={};inv.filter(function(i){return i.type==='Stocks'&&i.sector}).forEach(function(i){secG[i.sector]=(secG[i.sector]||0)+(i.liveValue||i.value)});
   var secT=Object.values(secG).reduce(function(s,v){return s+v},0);
   document.getElementById('home-sector').innerHTML=makeDonut(secG,secT,SECTOR_COLORS);
@@ -5082,11 +5105,13 @@ function rInv(){var inv=filterByMember(S.investments);var el=document.getElement
   el.innerHTML=inv.map(function(i){var val=i.liveValue||i.value;var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;var liveUp=(i.dayChangePct||0)>=0;var ti=getTaxInfo(i);var ec=getExitCue(i,val,ret,retP);
     return '<div class="inv-card" data-type="'+i.type+'"><div class="inv-top"><div class="inv-ic" style="background:'+(BUCKET_COLORS[i.bucket]||'#636E72')+'20;color:'+(BUCKET_COLORS[i.bucket]||'#636E72')+'">'+invIcon(i.type)+'</div><div class="inv-info"><h4>'+i.label+'</h4><p>'+i.type+(i.nseSymbol?' · '+i.nseSymbol:'')+(i.platform?' · '+i.platform:'')+'</p></div></div><div class="inv-grid"><div class="ig-k">Invested</div><div class="ig-v">'+fmt(i.invested)+'</div><div class="ig-k">Current</div><div class="ig-v">'+fmt(val)+'</div><div class="ig-k">Returns</div><div class="ig-v" style="color:'+(ret>=0?'var(--g)':'var(--d)')+'">'+fS(ret)+' ('+pct(retP)+')</div>'+(i.livePrice?'<div class="ig-k">Live</div><div class="ig-v"><span class="live-badge '+(liveUp?'up':'dn')+'">₹'+i.livePrice.toFixed(2)+'</span></div>':'')+'<div class="ig-k">Tax</div><div class="ig-v"><span class="tax-badge '+ti.badge+'">'+ti.label+'</span></div><div class="ig-k">Signal</div><div class="ig-v"><span class="exit-cue '+ec.cls+'">'+ec.icon+' '+ec.label+'</span></div></div><div class="inv-actions"><button onclick="openEditInv(\''+i.id+'\')">✏️</button><button onclick="quickDeleteInv(\''+i.id+'\')">🗑️</button>'+(i.type==='Stocks'&&i.nseSymbol?'<a href="https://www.screener.in/company/'+i.nseSymbol+'/" target="_blank" style="text-decoration:none;font-size:clamp(14px,4vw,18px)" title="Screener.in">📊</a>':'')+'</div></div>'}).join('')}
 function filterInvM(btn,type){document.querySelectorAll('#inv-pills .pill').forEach(function(p){p.classList.remove('on')});btn.classList.add('on');document.querySelectorAll('.inv-card').forEach(function(c){c.style.display=type==='all'?'':c.getAttribute('data-type')===type?'':'none'});var stEl=document.getElementById('inv-subtotal');if(type==='all'){stEl.style.display='none';return}var inv=filterByMember(S.investments).filter(function(i){return i.type===type});var ti=inv.reduce(function(s,i){return s+getInvInvested(i)},0);var tv=inv.reduce(function(s,i){return s+getInvValue(i)},0);var r=tv-ti;stEl.style.display='block';stEl.innerHTML='<b>'+type+':</b> '+inv.length+' · Inv: <b>'+fmt(ti)+'</b> · Cur: <b>'+fmt(tv)+'</b> · <span style="color:'+(r>=0?'var(--g)':'var(--d)')+'">'+fS(r)+'</span>'}
+function searchInvM(){var q=(document.getElementById('inv-search').value||'').toLowerCase().trim();document.querySelectorAll('.inv-card').forEach(function(c){if(!q){c.style.display='';return}c.style.display=(c.textContent||'').toLowerCase().indexOf(q)!==-1?'':'none'})}
+function sortInvM(){var sortBy=document.getElementById('inv-sort').value;var container=document.getElementById('inv-list-m');if(!container)return;var cards=Array.from(container.querySelectorAll('.inv-card'));cards.sort(function(a,b){var ai=S.investments.find(function(i){return i.id===a.getAttribute('data-id')});var bi=S.investments.find(function(i){return i.id===b.getAttribute('data-id')});if(!ai||!bi)return 0;if(sortBy==='name')return(ai.label||'').localeCompare(bi.label||'');if(sortBy==='value-desc')return getInvValue(bi)-getInvValue(ai);if(sortBy==='return-desc'){var ra=ai.invested>0?((getInvValue(ai)-ai.invested)/ai.invested*100):0;var rb=bi.invested>0?((getInvValue(bi)-bi.invested)/bi.invested*100):0;return rb-ra;}if(sortBy==='sector')return(ai.sector||'zzz').localeCompare(bi.sector||'zzz');return 0});cards.forEach(function(c){container.appendChild(c)})}
 
 // ===== EDIT INVESTMENT =====
 function openEditInv(id){var inv=S.investments.find(function(i){return i.id===id});if(!inv)return;editingId=id;editingType='investment';
   document.getElementById('em-title').textContent='✏️ '+inv.label;document.getElementById('em-sub').textContent=inv.type;
-  var h='<div class="fr"><div class="fg"><label>Name</label><input class="inp" id="edit-name" value="'+inv.label+'"></div><div class="fg"><label>Platform</label><input class="inp" id="edit-platform" value="'+(inv.platform||'')+'" placeholder="Groww, Zerodha"></div></div>';
+  var h='<div class="fr"><div class="fg"><label>Name</label><input class="inp" id="edit-name" value="'+inv.label+'"></div><div class="fg"><label>Platform</label><select class="inp" id="edit-platform"><option value="">Select</option>'+((inv.type==='Crypto'?CRYPTO_EXCHANGES:inv.type==='FD'||inv.type==='RD'||inv.type==='PPF'?BANKS:PLATFORMS).map(function(p){return '<option'+(inv.platform===p?' selected':'')+'>'+p+'</option>'}).join(''))+'</select></div></div>';
   h+='<div class="fr"><div class="fg"><label>Invested</label><input class="inp" id="edit-invested" type="number" value="'+Math.round(inv.invested)+'"></div><div class="fg"><label>Current</label><input class="inp" id="edit-value" type="number" value="'+Math.round(inv.liveValue||inv.value)+'"></div></div>';
   h+='<div class="fg"><label>Started</label><input class="inp" id="edit-started" type="date" value="'+(inv.started||'')+'"></div>';
   h+='<div class="fg"><label>Return %</label><input class="inp" id="edit-return" type="number" value="'+(inv.returnRate||0)+'"></div>';
@@ -11093,7 +11118,7 @@ async function fetchStockPrice(sym){
             fiftyTwoHigh:meta.fiftyTwoWeekHigh||0,fiftyTwoLow:meta.fiftyTwoWeekLow||0,
             change:(meta.regularMarketPrice||0)-(meta.chartPreviousClose||0),
             changePct:meta.chartPreviousClose?((meta.regularMarketPrice-meta.chartPreviousClose)/meta.chartPreviousClose*100):0,
-            exchange:suffixes[si]==='.NS'?'NSE':'BSE'};
+            exchange:suffixes[si]==='.NS'?'NSE':'BSE',dividendRate:meta.trailingAnnualDividendRate||0};
         }
       }catch(e){continue}
     }
@@ -11129,6 +11154,7 @@ async function fetchLivePrices(){
       }
       inv.dayChange=data.change;inv.dayChangePct=data.changePct;
       inv.fiftyTwoHigh=data.fiftyTwoHigh;inv.fiftyTwoLow=data.fiftyTwoLow;
+      if(data.dividendRate>0){inv.annualDividendRate=data.dividendRate;inv.divCacheDate=Date.now();}
       fetched++;
     }
     await new Promise(function(r){setTimeout(r,300)});
@@ -11621,6 +11647,9 @@ function calcProjectedValue(inv, years, goldRate, overrideRate) {
   if (type === 'PPF') { var ppfR = rate > 0 ? rate : 7.1; return { current: val, projected: val * Math.pow(1 + ppfR/100, years), rate: ppfR, newContrib: 0 }; }
   if (type === 'NPS') { var npsR = rate > 0 ? rate : 10; return { current: val, projected: val * Math.pow(1 + npsR/100, years), rate: npsR, newContrib: 0 }; }
   if (type === 'Gold') { var gr = goldRate || 8; return { current: val, projected: val * Math.pow(1 + gr/100, years), rate: gr, newContrib: 0 }; }
+  if (type === 'EPF') { var epfR = rate > 0 ? rate : 8.25; var epfMr = epfR/12/100; var ec = val; var em2 = (inv.epfEmpMonthly||0)+(inv.epfErMonthly||0); for(var ei=1;ei<=years*12;ei++)ec=ec*(1+epfMr)+em2; return{current:val,projected:ec,rate:epfR,newContrib:em2*years*12}; }
+  if (type === 'LIC') { return inv.maturityValue&&inv.maturityValue>val?{current:val,projected:inv.maturityValue,rate:0,newContrib:(inv.annualPremium||0)*years}:{current:val,projected:val,rate:0,newContrib:0}; }
+  if (type === 'Land') { var reR = goldRate || 8; return{current:val,projected:val*Math.pow(1+reR/100,years),rate:reR,newContrib:0}; }
   return { current: val, projected: val, rate: 0, newContrib: 0 };
 }
 
@@ -12052,6 +12081,43 @@ function showBrokerRef(platform) {
   el.innerHTML = ref ? '<a href="' + ref.url + '" target="_blank" style="color:var(--p);text-decoration:none">' + ref.label + '</a>' : '';
 }
 
+// ===== INTERACTIVE NET WORTH CHART =====
+var _nwcPeriod=0;
+function setNWCPeriod(months){_nwcPeriod=months;document.querySelectorAll('#nwc-tabs .pill').forEach(function(p){p.classList.remove('on')});event.target.classList.add('on');renderNWChart()}
+function renderNWChart(){
+  var card=document.getElementById('dash-nw-chart-card');
+  var snaps=(S.snapshots||[]).slice();
+  var inv=filterByMember(S.investments);
+  var currentNW=inv.reduce(function(s,i){return s+(getInvValue(i)||0)},0);
+  var liab=(typeof getTotalLiabilities==='function')?getTotalLiabilities():0;
+  currentNW-=liab;
+  if(snaps.length<2&&currentNW<=0){card.style.display='none';return}
+  card.style.display='block';
+  var points=snaps.filter(function(s){return s.date||s.month!==undefined}).map(function(s){return{date:s.date?new Date(s.date):new Date(),nw:s.nw||0}});
+  points.push({date:new Date(),nw:currentNW});
+  points.sort(function(a,b){return a.date-b.date});
+  if(_nwcPeriod>0){var cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-_nwcPeriod);points=points.filter(function(p){return p.date>=cutoff})}
+  if(points.length<1){card.style.display='none';return}
+  document.getElementById('nwc-value').textContent=fmtFull(currentNW);
+  var firstNW=points[0].nw;var allTimeRet=firstNW>0?((currentNW-firstNW)/firstNW*100):0;
+  var retEl=document.getElementById('nwc-return');
+  retEl.textContent=(allTimeRet>=0?'+':'')+allTimeRet.toFixed(2)+'%';
+  retEl.style.color=allTimeRet>=0?'var(--g)':'var(--d)';
+  var el=document.getElementById('nwc-chart');var W=el.offsetWidth||320;var H=140;
+  var minNW=Math.min.apply(null,points.map(function(p){return p.nw}));
+  var maxNW=Math.max.apply(null,points.map(function(p){return p.nw}));
+  var range=maxNW-minNW||1;var padT=8,padB=20,chartH=H-padT-padB,chartW=W;
+  var pts=points.map(function(p,i){var x=points.length>1?(i/(points.length-1))*chartW:chartW/2;var y=padT+chartH-(((p.nw-minNW)/range)*chartH);return{x:x,y:y,nw:p.nw,date:p.date}});
+  var linePath=pts.map(function(p,i){return(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' ');
+  var isUp=currentNW>=firstNW;var color=isUp?'#00B894':'#D63031';
+  var gradId='nwcG'+Date.now();
+  var areaPath=linePath+' L'+pts[pts.length-1].x.toFixed(1)+','+(padT+chartH)+' L'+pts[0].x.toFixed(1)+','+(padT+chartH)+' Z';
+  var xLabels='';[0,Math.floor(pts.length/2),pts.length-1].forEach(function(idx){if(pts[idx]){var d=pts[idx].date;xLabels+='<text x="'+pts[idx].x.toFixed(1)+'" y="'+(H-3)+'" font-size="7" fill="var(--txt3)" text-anchor="middle">'+d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'})+'</text>'}});
+  var svg='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px"><defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.3"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0.02"/></linearGradient></defs>'+xLabels+'<path d="'+areaPath+'" fill="url(#'+gradId+')"/><path d="'+linePath+'" fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linecap="round"/>';
+  if(pts.length>0){var last=pts[pts.length-1];svg+='<circle cx="'+last.x.toFixed(1)+'" cy="'+last.y.toFixed(1)+'" r="3" fill="'+color+'" stroke="var(--card)" stroke-width="1.5"/>';}
+  svg+='</svg>';el.innerHTML=svg;
+}
+
 // ===== NET WORTH GROWTH CHART =====
 var _nwChartRange = 60;
 function setNWChartRange(btn, months) {
@@ -12153,7 +12219,7 @@ function showAutoSyncModal(){
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5p';
+var APP_VERSION = 'v4.1.5q';
 
 function showUpdateBanner() {
   if(document.getElementById('sw-update-banner')) return;
@@ -12326,5 +12392,15 @@ window.addEventListener('appinstalled',function(){
 document.addEventListener('DOMContentLoaded', boot);
 
 </script>
+<div id="exit-info-modal" onclick="if(event.target===this)this.classList.remove('open')" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;align-items:center;justify-content:center">
+<div style="background:var(--card);border-radius:14px;width:92%;max-height:80vh;overflow-y:auto;padding:18px;position:relative;font-size:10px;line-height:1.6">
+<button onclick="document.getElementById('exit-info-modal').classList.remove('open')" style="position:absolute;top:8px;right:12px;background:none;border:none;color:var(--txt);font-size:16px;cursor:pointer">✕</button>
+<h3 style="font-size:14px;margin-bottom:8px">How Signals Work</h3>
+<div style="padding:8px;background:rgba(0,184,148,.08);border-radius:6px;margin-bottom:6px"><b style="color:#00B894">🟢 HOLD</b><br>Returns positive, ≥8%, no goal deadline soon</div>
+<div style="padding:8px;background:rgba(240,165,0,.08);border-radius:6px;margin-bottom:6px"><b style="color:#F0A500">🟡 REVIEW</b><br>XIRR &lt;11% for 12+mo, stagnant, LIC surrender trap, goal deadline near</div>
+<div style="padding:8px;background:rgba(214,48,49,.08);border-radius:6px;margin-bottom:6px"><b style="color:#D63031">🔴 EXIT</b><br>XIRR negative 24+mo, down 25%+ no recovery</div>
+<div style="padding:8px;background:var(--bg);border-radius:6px">Does NOT consider daily swings or news.<br>⚠️ Not financial advice.</div>
+</div></div>
+<style>#exit-info-modal.open{display:flex!important}</style>
 </body>
 </html>
