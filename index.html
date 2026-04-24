@@ -1337,6 +1337,40 @@ function autoTagSectors(){
   });
 }
 
+function deduplicateInvestments(){
+  // Merge duplicate stocks/ETFs by nseSymbol
+  var symMap={};var toRemove=[];
+  S.investments.forEach(function(inv,idx){
+    if(inv.type!=='Stocks'||!inv.nseSymbol)return;
+    var key=inv.nseSymbol.toUpperCase();
+    if(!symMap[key]){symMap[key]={idx:idx,inv:inv};return}
+    // Merge into the first one
+    var primary=symMap[key].inv;
+    var pQty=primary.qty||0;var sQty=inv.qty||0;
+    var pInv=primary.invested||0;var sInv=inv.invested||0;
+    var totalQty=pQty+sQty;
+    // Weighted average price
+    primary.avgPrice=totalQty>0?Math.round((pInv+sInv)/totalQty*100)/100:primary.avgPrice;
+    primary.qty=totalQty;
+    primary.invested=Math.round(pInv+sInv);
+    // Update value
+    if(primary.livePrice>0)primary.value=Math.round(totalQty*primary.livePrice);
+    else primary.value=primary.invested;
+    // Merge lots
+    primary.lots=(primary.lots||[]).concat(inv.lots||[]);
+    // Keep the longer/more descriptive label
+    if((inv.label||'').length>(primary.label||'').length)primary.label=inv.label;
+    // Keep earliest started date
+    if(inv.started&&(!primary.started||inv.started<primary.started))primary.started=inv.started;
+    // Mark for removal
+    toRemove.push(inv.id);
+  });
+  if(toRemove.length>0){
+    S.investments=S.investments.filter(function(i){return toRemove.indexOf(i.id)===-1});
+    console.log('[VF] Merged '+toRemove.length+' duplicate investments');
+  }
+}
+
 var INV_TYPES=[
   {id:'SIP',icon:'📈',label:'SIP (Mutual Fund)',bucket:'Equity',hasMonthly:true,hasMF:true},
   {id:'Stocks',icon:'📊',label:'Stocks / ETF',bucket:'Equity',hasMonthly:false,hasMF:false},
@@ -4299,7 +4333,7 @@ function importData(e){
       if(!d.user||!d.user.name||!Array.isArray(d.investments)){toast('❌ Invalid file','err');return}
       if(!confirm('Import? This replaces all data.\nUser: '+d.user.name+'\nInvestments: '+d.investments.length))return;
       d.budgets=d.budgets||{};d.income=d.income||[];d.reminders=d.reminders||[];d.insurance=d.insurance||[];d.dividends=d.dividends||[];d.goals=d.goals||[];d.family=d.family||[];d.snapshots=d.snapshots||[];d.transactions=d.transactions||[];
-      S=d;autoTagSectors();saveS().then(function(){renderAll();toast('✅ Imported')});
+      S=d;autoTagSectors();deduplicateInvestments();saveS().then(function(){renderAll();toast('✅ Imported')});
     }catch(ex){toast('❌ Error: '+ex.message,'err')}
   };r.readAsText(f);e.target.value='';
 }
@@ -5336,6 +5370,7 @@ async function boot(){
   S.user.securityQ=S.user.securityQ||'';S.user.securityA=S.user.securityA||'';
   S.aiMode=S.aiMode||'local';S.geminiKey=S.geminiKey||'';
   S.loans=S.loans||[];
+  autoTagSectors();deduplicateInvestments();
   // Sync all stores
   var j=JSON.stringify(S);try{localStorage.setItem(LS_KEY,j)}catch(e){}try{sessionStorage.setItem(SS_KEY,j)}catch(e){}saveToCookie(S);
   if(S.user.hasPin){
@@ -5757,10 +5792,10 @@ function openEditInv(id){
   var h='<div class="fr"><div class="fg"><label>Name</label><input class="inp" id="edit-name" value="'+inv.label+'"></div><div class="fg"><label>Platform</label><select class="inp" id="edit-platform"><option value="">Select</option>'+((inv.type==='Crypto'?CRYPTO_EXCHANGES:inv.type==='FD'||inv.type==='RD'||inv.type==='PPF'?BANKS:PLATFORMS).map(function(p){return '<option'+(inv.platform===p?' selected':'')+'>'+p+'</option>'}).join(''))+'</select></div></div>';
   h+='<div class="fr"><div class="fg"><label>Invested</label><input class="inp" id="edit-invested" type="number" value="'+Math.round(inv.invested)+'"></div><div class="fg"><label>Current</label><input class="inp" id="edit-value" type="number" value="'+Math.round(inv.liveValue||inv.value)+'"></div></div>';
   h+='<div class="fg"><label>Started Date</label><input class="inp" id="edit-started" type="date" value="'+(inv.started||'')+'"></div>';
-  if(inv.monthly>0){h+='<div class="fr"><div class="fg"><label>Monthly</label><input class="inp" id="edit-monthly" type="number" value="'+inv.monthly+'"></div><div class="fg"><label>Due</label><select class="inp" id="edit-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'" '+(d==inv.dueDate?'selected':'')+'>'+ordinal(d)+'</option>';h+='</select></div></div>'}
+  if(inv.type==='SIP'||inv.type==='ELSS'||inv.type==='RD'||inv.monthly>0){h+='<div class="fr"><div class="fg"><label>Monthly Amount (₹)</label><input class="inp" id="edit-monthly" type="number" value="'+(inv.monthly||0)+'"></div><div class="fg"><label>Due Date</label><select class="inp" id="edit-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'" '+(d==inv.dueDate?'selected':'')+'>'+ordinal(d)+'</option>';h+='</select></div></div>'}
   h+='<div class="fg"><label>Return %</label><input class="inp" id="edit-return" type="number" value="'+(inv.returnRate||0)+'" step="0.1"></div>';
   if(inv.type==='SIP'||inv.type==='ELSS'){h+='<div style="background:var(--bbg);border:1px solid var(--b);border-radius:10px;padding:12px;margin-top:6px"><div style="font-size:11px;font-weight:700;color:var(--b);margin-bottom:8px">🔄 SWP — Systematic Withdrawal Plan</div><div class="fr"><div class="fg"><label>Monthly Withdrawal (₹) <small style="color:var(--txt2)">(0 = off)</small></label><input class="inp" id="edit-swp" type="number" value="'+(inv.swpAmount||0)+'"></div><div class="fg"><label>SWP Start Date</label><input class="inp" id="edit-swp-start" type="date" value="'+(inv.swpStartDate||'')+'"></div></div><p style="font-size:9px;color:var(--txt2);margin-top:4px">💡 SWP withdraws a fixed amount monthly from this investment and records it as income.</p></div>';}
-  if(inv.type==='Stocks'){h+='<div class="fr"><div class="fg"><label>NSE Symbol</label><div style="display:flex;gap:6px"><input class="inp" id="edit-symbol" value="'+(inv.nseSymbol||'')+'" oninput="this.value=this.value.toUpperCase()" style="flex:1"><button type="button" class="btn-sm" onclick="testSymbol(\'edit-symbol\',\'edit-sym-result\')" style="white-space:nowrap">🔍 Test</button></div><div id="edit-sym-result" style="font-size:9px;margin-top:3px"></div></div><div class="fg"><label>Sector</label><select class="inp" id="edit-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option '+(inv.sector===s?'selected':'')+'>'+s+'</option>'}).join('')+'</select></div></div>';h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="edit-qty" type="number" value="'+(inv.qty||0)+'"></div><div class="fg"><label>Avg Price</label><input class="inp" id="edit-avgprice" type="number" value="'+(inv.avgPrice||0)+'"></div></div>'}
+  if(inv.type==='Stocks'){h+='<div class="fr"><div class="fg"><label>NSE Symbol</label><div style="display:flex;gap:6px"><input class="inp" id="edit-symbol" value="'+(inv.nseSymbol||'')+'" oninput="this.value=this.value.toUpperCase()" style="flex:1"><button type="button" class="btn-sm" onclick="testSymbol(\'edit-symbol\',\'edit-sym-result\')" style="white-space:nowrap">🔍 Test</button></div><div id="edit-sym-result" style="font-size:9px;margin-top:3px"></div></div><div class="fg"><label>Sector</label><select class="inp" id="edit-sector"><option value="">Select</option>'+SECTORS.map(function(s){return '<option '+(inv.sector===s?'selected':'')+'>'+s+'</option>'}).join('')+'</select></div></div>';h+='<div class="fr"><div class="fg"><label>Qty</label><input class="inp" id="edit-qty" type="number" value="'+(inv.qty||0)+'" oninput="editRecalcStock()"></div><div class="fg"><label>Avg Price</label><input class="inp" id="edit-avgprice" type="number" value="'+(inv.avgPrice||0)+'" oninput="editRecalcStock()"></div></div>'}
   if(inv.type==='FD'||inv.type==='RD'){h+='<div class="fg"><label>Maturity Date</label><input class="inp" id="edit-maturity" type="date" value="'+(inv.maturityDate||'')+'"></div>';}
   if(inv.type==='Gold'){h+='<div class="fr"><div class="fg"><label>Weight (grams)</label><input class="inp" id="edit-gold-grams" type="number" step="0.01" min="0" placeholder="e.g. 10.5" value="'+(inv.grams||0)+'"></div><div class="fg"><label>Purity</label><select class="inp" id="edit-gold-purity"><option value="24" '+(inv.goldPurity>=24?'selected':'')+'>24K (999 / Pure)</option><option value="22" '+((inv.goldPurity||22)===22?'selected':'')+'>22K (916 / Hallmark)</option><option value="18" '+(inv.goldPurity===18?'selected':'')+'>18K (750 / Jewellery)</option><option value="0" '+(inv.goldPurity===0?'selected':'')+'>SGB / ETF (no purity)</option></select></div></div>';}
 
@@ -5773,6 +5808,16 @@ function openEditInv(id){
 
 
 
+function editRecalcStock(){
+  var q=parseFloat((document.getElementById('edit-qty')||{}).value)||0;
+  var a=parseFloat((document.getElementById('edit-avgprice')||{}).value)||0;
+  if(q>0&&a>0){
+    var invEl=document.getElementById('edit-invested');if(invEl)invEl.value=Math.round(q*a);
+    var inv=S.investments.find(function(i){return i.id===editingId});
+    if(inv&&inv.livePrice>0){var valEl=document.getElementById('edit-value');if(valEl)valEl.value=Math.round(q*inv.livePrice)}
+    else{var valEl2=document.getElementById('edit-value');if(valEl2)valEl2.value=Math.round(q*a)}
+  }
+}
 function openAddFamilyMember(){
   var h='<div class="fg"><label>Member Name</label>'
     +'<input class="inp" id="fam-new-name" placeholder="e.g. Priya" maxlength="40"></div>';
@@ -5862,12 +5907,17 @@ function saveEdit(){
     inv.invested=parseFloat(document.getElementById('edit-invested').value)||inv.invested;
     inv.value=parseFloat(document.getElementById('edit-value').value)||inv.value;
     var sd=document.getElementById('edit-started');if(sd)inv.started=sd.value||inv.started;
-    if(inv.monthly>0){var em=document.getElementById('edit-monthly');if(em)inv.monthly=parseFloat(em.value)||inv.monthly;var ed=document.getElementById('edit-due');if(ed)inv.dueDate=ed.value||inv.dueDate}
+    var em=document.getElementById('edit-monthly');if(em)inv.monthly=parseFloat(em.value)||0;var ed=document.getElementById('edit-due');if(ed)inv.dueDate=ed.value||inv.dueDate;
     inv.returnRate=parseFloat(document.getElementById('edit-return').value)||inv.returnRate;
     var es=document.getElementById('edit-symbol');if(es)inv.nseSymbol=es.value.trim();
     var esc=document.getElementById('edit-sector');if(esc)inv.sector=esc.value;
     var eq=document.getElementById('edit-qty');if(eq)inv.qty=parseFloat(eq.value)||inv.qty;
     var ea=document.getElementById('edit-avgprice');if(ea)inv.avgPrice=parseFloat(ea.value)||inv.avgPrice;
+    // Auto-recalculate invested/value for Stocks when qty/avg changed
+    if(inv.type==='Stocks'&&inv.qty>0&&inv.avgPrice>0){
+      inv.invested=Math.round(inv.qty*inv.avgPrice);
+      inv.value=inv.livePrice>0?Math.round(inv.qty*inv.livePrice):inv.invested;
+    }
     var emat=document.getElementById('edit-maturity');if(emat)inv.maturityDate=emat.value||inv.maturityDate;
     var egg=document.getElementById('edit-gold-grams');if(egg)inv.grams=parseFloat(egg.value)||0;
     var egp=document.getElementById('edit-gold-purity');if(egp)inv.goldPurity=parseInt(egp.value)||22;
@@ -14419,7 +14469,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5r';
+var APP_VERSION = 'v4.1.5s';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
