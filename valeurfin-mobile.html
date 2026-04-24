@@ -4683,21 +4683,18 @@ function rDividends() {
   var stocksWithSymbols = S.investments.filter(function(i) {
     return i.type === 'Stocks' && i.nseSymbol;
   });
-  var stocksNeverTried = stocksWithSymbols.some(function(i) {
+  var hasAnnualDivData = stocksWithSymbols.some(function(i){ return i.annualDividendRate > 0; });
+  var stocksNeverTried = !hasAnnualDivData && stocksWithSymbols.some(function(i) {
     return !i.divCacheDate && (i.divCache||[]).length === 0;
   });
-  var stocksFailedProxy = !stocksNeverTried && stocksWithSymbols.some(function(i) {
+  var stocksFailedProxy = !hasAnnualDivData && !stocksNeverTried && stocksWithSymbols.some(function(i) {
     return i.divCacheDate === 1 && (i.divCache||[]).length === 0;
   });
 
   if (stocksWithSymbols.length > 0 && (stocksNeverTried || stocksFailedProxy)) {
     empty.style.display = 'none';
-    var statusHTML = '<div style="padding:12px;background:var(--bg);border-radius:8px;margin-bottom:8px;text-align:center">';
-    if (stocksNeverTried) {
-      statusHTML += '<div style="font-size:20px;margin-bottom:4px">⏳</div><div style="font-size:11px;font-weight:600">Loading dividends...</div><div style="font-size:9px;color:var(--txt2)">Fetching for ' + stocksWithSymbols.length + ' stock(s)</div>';
-    } else {
-      statusHTML += '<div style="font-size:20px;margin-bottom:4px">⚠️</div><div style="font-size:11px;font-weight:600;color:var(--w)">Fetch failed</div><button class="btn-sm" onclick="loadAllDividends()" style="margin-top:6px">🔄 Retry</button>';
-    }
+    var statusHTML = '<div style="padding:10px;background:var(--bg);border-radius:8px;text-align:center">';
+    statusHTML += '<div style="font-size:16px;margin-bottom:4px">💡</div><div style="font-size:10px;font-weight:600;color:var(--b)">Tap 🔄 Refresh Prices to load dividends</div>';
     statusHTML += '</div>';
     if (total > 0) { summary.innerHTML = '<div class="sg"><div class="st"><div class="lbl">TOTAL</div><div class="val" style="color:var(--g)">' + fmt(total) + '</div></div></div>'; }
     else { summary.innerHTML = ''; }
@@ -12091,10 +12088,15 @@ function renderNWChart(){
   var currentNW=inv.reduce(function(s,i){return s+(getInvValue(i)||0)},0);
   var liab=(typeof getTotalLiabilities==='function')?getTotalLiabilities():0;
   currentNW-=liab;
-  if(snaps.length<2&&currentNW<=0){card.style.display='none';return}
+  if(currentNW<=0&&snaps.length===0){card.style.display='none';return}
   card.style.display='block';
   var points=snaps.filter(function(s){return s.date||s.month!==undefined}).map(function(s){return{date:s.date?new Date(s.date):new Date(),nw:s.nw||0}});
   points.push({date:new Date(),nw:currentNW});
+  if(points.length<=1&&currentNW>0){
+    var earliest=inv.filter(function(i){return i.started}).map(function(i){return new Date(i.started).getTime()}).filter(function(t){return!isNaN(t)&&t>0});
+    var startDate=earliest.length?new Date(Math.min.apply(null,earliest)):new Date(Date.now()-90*86400000);
+    points.unshift({date:startDate,nw:inv.reduce(function(s,i){return s+(i.invested||0)},0)});
+  }
   points.sort(function(a,b){return a.date-b.date});
   if(_nwcPeriod>0){var cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-_nwcPeriod);points=points.filter(function(p){return p.date>=cutoff})}
   if(points.length<1){card.style.display='none';return}
@@ -12219,7 +12221,7 @@ function showAutoSyncModal(){
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5q';
+var APP_VERSION = 'v4.1.5r';
 
 function showUpdateBanner() {
   if(document.getElementById('sw-update-banner')) return;
