@@ -3,8 +3,8 @@
 // CACHE_NAME change forces old caches to be deleted
 // skipWaiting + clients.claim ensures instant activation
 
-var CACHE_NAME = 'valeurfin-v5p';
-var APP_VERSION = 'v4.1.5p';
+var CACHE_NAME = 'valeurfin-v5q';
+var APP_VERSION = 'v4.1.5q';
 
 // Files to cache for offline use
 var CACHE_FILES = [
