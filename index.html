@@ -793,6 +793,22 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- ===== DASHBOARD ===== -->
 <div class="pg active" id="pg-dash">
 <div id="dash-member-pills"></div>
+<div class="cd" id="dash-nw-chart-card" style="padding:16px;margin-bottom:12px;display:none">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+<div><div style="font-size:11px;color:var(--txt2)">Net Worth</div><div id="nwc-value" style="font-size:28px;font-weight:800;letter-spacing:-1px"></div></div>
+<div style="text-align:right"><div id="nwc-return" style="font-size:13px;font-weight:700"></div><div style="font-size:9px;color:var(--txt2)">All Time</div></div>
+</div>
+<div id="nwc-chart" style="width:100%;height:180px;position:relative;cursor:crosshair"></div>
+<div style="display:flex;gap:4px;margin-top:10px;justify-content:center" id="nwc-tabs">
+<button class="pill" onclick="setNWCPeriod(1)">1M</button>
+<button class="pill" onclick="setNWCPeriod(3)">3M</button>
+<button class="pill" onclick="setNWCPeriod(6)">6M</button>
+<button class="pill" onclick="setNWCPeriod(12)">1Y</button>
+<button class="pill" onclick="setNWCPeriod(36)">3Y</button>
+<button class="pill" onclick="setNWCPeriod(60)">5Y</button>
+<button class="pill on" onclick="setNWCPeriod(0)">MAX</button>
+</div>
+</div>
 <div id="dash-family-overview"></div>
 <div class="sg" id="dash-stats"></div>
 <div id="dash-tips"></div>
@@ -861,6 +877,10 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 </div>
 <div class="cd">
 <h3>📊 Investments <span class="cd-badge" id="inv-count">0</span> <span class="live-badge up" id="inv-live-badge" style="display:none"><span class="live-dot"></span> LIVE</span></h3>
+<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap">
+<input class="inp" id="inv-search" type="text" placeholder="🔍 Search investments..." oninput="searchInv()" style="flex:1;min-width:150px;max-width:300px">
+<select class="inp" id="inv-sort" onchange="sortInv()" style="max-width:160px"><option value="name">Sort: Name</option><option value="value-desc">Value ↓</option><option value="value-asc">Value ↑</option><option value="invested-desc">Invested ↓</option><option value="return-desc">Return % ↓</option><option value="return-asc">Return % ↑</option><option value="sector">Sector</option><option value="owner">Owner</option></select>
+</div>
 <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap" id="inv-filters"></div>
 <div id="inv-subtotal" style="font-size:11px;color:var(--txt2);margin-bottom:8px;display:none"></div>
 <div style="overflow-x:auto"><table class="tbl"><thead><tr><th></th><th>Name</th><th>Platform</th><th>Invested</th><th>Current</th><th>Live</th><th>Returns</th><th>XIRR</th><th>Sector</th><th>Tax</th><th>Signal</th><th>Owner</th><th></th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
@@ -997,7 +1017,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== EXIT SIGNALS (NEW) ===== -->
 <div class="pg" id="pg-exit">
-<div class="cd"><h3>🚪 Exit Signals & Cues</h3><p class="m-sub">When to hold, review, or exit positions</p>
+<div class="cd"><h3>🚪 Exit Signals & Cues <button class="btn-sm" onclick="document.getElementById('exit-info-modal').classList.add('open')" style="margin-left:8px;font-size:10px">ℹ️ How signals work</button></h3><p class="m-sub">When to hold, review, or exit positions</p>
 <div id="exit-signals-list"></div>
 <div id="exit-empty" class="empty-state" style="display:none"><div class="es-ic">🚪</div><h3>No Signals</h3><p>Add investments to see exit cues</p></div>
 </div>
@@ -5530,6 +5550,7 @@ function rDash(){
   }else tl.innerHTML='<div style="text-align:center;padding:20px;font-size:11px;color:var(--txt3)">Process months to see timeline</div>';
 
   rDonut(inv,nw,'dash-donut',BUCKET_COLORS);
+  try{renderNWChart()}catch(e){console.warn('[VF] NW chart error:',e)}
   rSectorDonut(inv,nw);
   rDashExpBars(exps);
   rDashHoldings(inv,nw);
@@ -5699,11 +5720,41 @@ function filterInv(btn,type){
   stEl.innerHTML='<b>'+invIcon(type)+' '+type+':</b> '+inv.length+' holding'+(inv.length!==1?'s':'')+' · Invested: <b>'+fmtFull(totalInv)+'</b> · Current: <b>'+fmtFull(totalVal)+'</b> · Return: <span style="color:'+(ret>=0?'var(--g)':'var(--d)')+'"><b>'+fS(ret)+' ('+pct(retPct)+')</b></span>';
 }
 
+function searchInv(){
+  var q=(document.getElementById('inv-search').value||'').toLowerCase().trim();
+  document.querySelectorAll('#inv-tbody tr').forEach(function(row){
+    if(!q){row.style.display='';return}
+    var text=(row.textContent||'').toLowerCase();
+    row.style.display=text.indexOf(q)!==-1?'':'none';
+  });
+}
+
+function sortInv(){
+  var sortBy=document.getElementById('inv-sort').value;
+  var tbody=document.getElementById('inv-tbody');
+  var rows=Array.from(tbody.querySelectorAll('tr'));
+  rows.sort(function(a,b){
+    var ai=S.investments.find(function(i){return i.id===a.getAttribute('data-id')});
+    var bi=S.investments.find(function(i){return i.id===b.getAttribute('data-id')});
+    if(!ai||!bi)return 0;
+    if(sortBy==='name')return(ai.label||'').localeCompare(bi.label||'');
+    if(sortBy==='value-desc')return getInvValue(bi)-getInvValue(ai);
+    if(sortBy==='value-asc')return getInvValue(ai)-getInvValue(bi);
+    if(sortBy==='invested-desc')return getInvInvested(bi)-getInvInvested(ai);
+    if(sortBy==='return-desc'){var ra=ai.invested>0?((getInvValue(ai)-ai.invested)/ai.invested*100):0;var rb=bi.invested>0?((getInvValue(bi)-bi.invested)/bi.invested*100):0;return rb-ra;}
+    if(sortBy==='return-asc'){var ra2=ai.invested>0?((getInvValue(ai)-ai.invested)/ai.invested*100):0;var rb2=bi.invested>0?((getInvValue(bi)-bi.invested)/bi.invested*100):0;return ra2-rb2;}
+    if(sortBy==='sector')return(ai.sector||'zzz').localeCompare(bi.sector||'zzz');
+    if(sortBy==='owner')return(getOwnerName(ai.owner)||'').localeCompare(getOwnerName(bi.owner)||'');
+    return 0;
+  });
+  rows.forEach(function(r){tbody.appendChild(r)});
+}
+
 // ===== EDIT INVESTMENT =====
 function openEditInv(id){
   var inv=S.investments.find(function(i){return i.id===id});if(!inv)return;editingId=id;editingType='investment';
   document.getElementById('em-title').textContent='✏️ '+inv.label;document.getElementById('em-sub').textContent=inv.type;
-  var h='<div class="fr"><div class="fg"><label>Name</label><input class="inp" id="edit-name" value="'+inv.label+'"></div><div class="fg"><label>Platform</label><input class="inp" id="edit-platform" value="'+(inv.platform||'')+'" placeholder="e.g. Groww, Zerodha"></div></div>';
+  var h='<div class="fr"><div class="fg"><label>Name</label><input class="inp" id="edit-name" value="'+inv.label+'"></div><div class="fg"><label>Platform</label><select class="inp" id="edit-platform"><option value="">Select</option>'+((inv.type==='Crypto'?CRYPTO_EXCHANGES:inv.type==='FD'||inv.type==='RD'||inv.type==='PPF'?BANKS:PLATFORMS).map(function(p){return '<option'+(inv.platform===p?' selected':'')+'>'+p+'</option>'}).join(''))+'</select></div></div>';
   h+='<div class="fr"><div class="fg"><label>Invested</label><input class="inp" id="edit-invested" type="number" value="'+Math.round(inv.invested)+'"></div><div class="fg"><label>Current</label><input class="inp" id="edit-value" type="number" value="'+Math.round(inv.liveValue||inv.value)+'"></div></div>';
   h+='<div class="fg"><label>Started Date</label><input class="inp" id="edit-started" type="date" value="'+(inv.started||'')+'"></div>';
   if(inv.monthly>0){h+='<div class="fr"><div class="fg"><label>Monthly</label><input class="inp" id="edit-monthly" type="number" value="'+inv.monthly+'"></div><div class="fg"><label>Due</label><select class="inp" id="edit-due">';for(var d=1;d<=31;d++)h+='<option value="'+d+'" '+(d==inv.dueDate?'selected':'')+'>'+ordinal(d)+'</option>';h+='</select></div></div>'}
@@ -12012,15 +12063,21 @@ async function loadAllDividends() {
 }
 
 function calcStockDividends() {
-  // Sum all auto-fetched dividends across all stock holdings using lot-aware qty
   var total = 0;
   S.investments.filter(function(i) {
-    return i.type === 'Stocks' && (i.divCache || []).length > 0;
+    return i.type === 'Stocks';
   }).forEach(function(inv) {
-    (inv.divCache || []).forEach(function(dh) {
-      var qty = getQtyOnDate(inv, dh.exDate);
-      total += qty * dh.dps;
-    });
+    // Primary: use annualDividendRate from Yahoo price API (reliable, fetched with prices)
+    if(inv.annualDividendRate>0&&inv.qty>0){
+      total+=inv.qty*inv.annualDividendRate;return;
+    }
+    // Fallback: use cached dividend history if available
+    if((inv.divCache||[]).length>0){
+      (inv.divCache).forEach(function(dh){
+        var qty=getQtyOnDate(inv,dh.exDate);
+        total+=qty*dh.dps;
+      });
+    }
   });
   return total;
 }
@@ -12387,7 +12444,8 @@ async function fetchStockPrice(sym){
             fiftyTwoLow:meta.fiftyTwoWeekLow||0,
             change:(meta.regularMarketPrice||0)-(meta.chartPreviousClose||0),
             changePct:meta.chartPreviousClose?((meta.regularMarketPrice-meta.chartPreviousClose)/meta.chartPreviousClose*100):0,
-            exchange:suffixes[si]==='.NS'?'NSE':'BSE'
+            exchange:suffixes[si]==='.NS'?'NSE':'BSE',
+            dividendRate:meta.trailingAnnualDividendRate||0
           };
         }
       }catch(e){continue}
@@ -12428,6 +12486,7 @@ async function fetchLivePrices(){
       // else: liveValue stays as inv.value (manually entered)
       inv.dayChange=data.change;inv.dayChangePct=data.changePct;
       inv.fiftyTwoHigh=data.fiftyTwoHigh;inv.fiftyTwoLow=data.fiftyTwoLow;
+      if(data.dividendRate>0){inv.annualDividendRate=data.dividendRate;inv.divCacheDate=Date.now();}
       fetched++;
     }
     await new Promise(function(r){setTimeout(r,300)});
@@ -13035,17 +13094,41 @@ function openAIModal(){document.getElementById('ai-mode-select').value=S.aiMode|
 function closeAIModal(){releaseFocus(document.getElementById('ai-modal'));document.getElementById('ai-modal').classList.remove('open')}
 function saveAISettings(){S.aiMode=document.getElementById('ai-mode-select').value;S.geminiKey=document.getElementById('ai-key-input').value.trim();saveS().then(function(){closeAIModal();rBotPageChips();toast('✅ AI settings saved')})}
 
-function buildPortfolioContext(){
-  var inv=filterByMember(S.investments);var nw=inv.reduce(function(s,i){return s+(i.liveValue||i.value)},0);var invested=inv.reduce(function(s,i){return s+i.invested},0);
-  var ctx='User: '+S.user.name+'\nNet Worth: ₹'+Math.round(nw)+'\nInvested: ₹'+Math.round(invested)+'\nReturns: ₹'+Math.round(nw-invested)+'\n';
-  ctx+='Investments ('+inv.length+'):\n';
-  inv.forEach(function(i){ctx+='- '+i.type+': '+i.label+' ₹'+Math.round(i.invested)+' → ₹'+Math.round(i.liveValue||i.value)+(i.sector?' ['+i.sector+']':'')+'\n'});
+function buildFinancialContext(){
+  var inv=filterByMember(S.investments)||[];var exps=filterByMember(S.expenses)||[];var incomes=filterByMember(S.income)||[];
+  var nw=inv.reduce(function(s,i){return s+(getInvValue(i)||0)},0);
+  var invested=inv.reduce(function(s,i){return s+(i.invested||0)},0);
+  var liab=(typeof getTotalLiabilities==='function')?getTotalLiabilities():0;
+  function sumType(t){return inv.filter(function(i){return i.type===t}).reduce(function(s,i){return s+(getInvValue(i)||0)},0)}
+  var mInc=incomes.reduce(function(s,i){return s+(i.frequency==='monthly'?(i.amount||0):(i.amount||0)/12)},0);
+  var mExp=exps.filter(function(e){return e.frequency==='monthly'}).reduce(function(s,e){return s+(e.amount||0)},0);
+  var mEMI=(S.loans||[]).reduce(function(s,l){return s+(l.emi||0)},0);
+  var mSIP=inv.filter(function(i){return(i.monthly||0)>0}).reduce(function(s,i){return s+(i.monthly||0)},0);
+  var surplus=mInc-mExp-mEMI-mSIP;
+  var sr=mInc>0?((mInc-mExp)/mInc*100):0;
+  // Top/worst
+  var sorted=inv.filter(function(i){return(i.invested||0)>0}).map(function(i){return{label:i.label,type:i.type,val:getInvValue(i)||0,rp:(i.invested>0?((getInvValue(i)-i.invested)/i.invested*100):0)}}).sort(function(a,b){return b.rp-a.rp});
+  var best=sorted[0]||null;var worst=sorted[sorted.length-1]||null;
+  // Goals
+  var goalSummary=(S.goals||[]).map(function(g){var gap=Math.max(0,(g.target||0)-(g.current||0));var mRem=g.targetDate?Math.max(0,Math.floor((new Date(g.targetDate)-Date.now())/(30.44*86400000))):0;return(g.name||'Goal')+': Target ₹'+Math.round(g.target||0)+' by '+(g.targetDate||'?')+', Current ₹'+Math.round(g.current||0)+', Gap ₹'+Math.round(gap)+(mRem>0?', Need ₹'+Math.round(gap/mRem)+'/mo':'')}).join('\n  ');
+  // Loans
+  var loanSummary=(S.loans||[]).map(function(l){return(l.loanType||'Loan')+': ₹'+Math.round(l.outstanding||0)+' EMI ₹'+Math.round(l.emi||0)}).join('\n  ');
+  var ctx='User: '+(S.user.name||'User')+(S.user.employment?' ('+S.user.employment+')':'')+'\n';
+  ctx+='NET WORTH: ₹'+Math.round(nw-liab)+' (Assets ₹'+Math.round(nw)+' - Liabilities ₹'+Math.round(liab)+')\n';
+  ctx+='ASSETS: MF/SIP ₹'+Math.round(sumType('SIP')+sumType('ELSS'))+' | Stocks ₹'+Math.round(sumType('Stocks'))+' | EPF ₹'+Math.round(sumType('EPF'))+' | Real Estate ₹'+Math.round(sumType('Land'))+' | Gold ₹'+Math.round(sumType('Gold'))+' | LIC ₹'+Math.round(sumType('LIC'))+' | FD ₹'+Math.round(sumType('FD'))+' | PPF ₹'+Math.round(sumType('PPF'))+' | NPS ₹'+Math.round(sumType('NPS'))+' | Crypto ₹'+Math.round(sumType('Crypto'))+'\n';
+  if(liab>0)ctx+='LIABILITIES: ₹'+Math.round(liab)+'\n  '+loanSummary+'\n';
+  ctx+='CASHFLOW: Income ₹'+Math.round(mInc)+'/mo | Expenses ₹'+Math.round(mExp)+'/mo | EMIs ₹'+Math.round(mEMI)+'/mo | SIPs ₹'+Math.round(mSIP)+'/mo | Surplus ₹'+Math.round(surplus)+'/mo | Savings '+sr.toFixed(0)+'%\n';
+  if(best)ctx+='BEST: '+best.label+' at '+best.rp.toFixed(1)+'%\n';
+  if(worst&&sorted.length>1)ctx+='WORST: '+worst.label+' at '+worst.rp.toFixed(1)+'%\n';
+  if(goalSummary)ctx+='GOALS:\n  '+goalSummary+'\n';
+  ctx+='Holdings: '+inv.length+' investments\n';
   return ctx;
 }
+function buildPortfolioContext(){return buildFinancialContext()}
 
 async function sendToGemini(query,containerId,msgArray){
-  var ctx=buildPortfolioContext();
-  var prompt='You are ValeurBot, an Indian financial advisor AI. Be concise, use ₹, Indian tax rules. Disclaimer: not financial advice.\n\nData:\n'+ctx+'\nQuestion: '+query;
+  var ctx=buildFinancialContext();
+  var prompt='You are ValeurBot, a personal financial assistant for '+(S.user.name||'the user')+'.\nYou have access to their REAL financial data below. Use ONLY this data.\nBe specific with numbers. Use ₹ symbol. Round to nearest thousand.\nKeep answers concise (3-6 lines). If data is missing, say so.\nNever recommend specific stocks or funds. Never say buy or sell.\nEnd every response with: "⚠️ Data summary only — not financial advice."\n\nFINANCIAL DATA:\n'+ctx+'\nQuestion: '+query;
   msgArray.push({role:'bot',text:'🔄 Thinking...',data:null});renderChatMsg(containerId,msgArray[msgArray.length-1]);
   try{
     var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+S.geminiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:500,temperature:0.7}})});
@@ -13053,7 +13136,7 @@ async function sendToGemini(query,containerId,msgArray){
     if(data.candidates&&data.candidates[0]&&data.candidates[0].content){var text=data.candidates[0].content.parts[0].text||'No response.';msgArray.push({role:'bot',text:'🌟 '+text,data:null})}
     else{msgArray.push({role:'bot',text:'⚠️ Gemini error: '+(data.error?data.error.message:'Unknown'),data:null})}
     renderChatMsg(containerId,msgArray[msgArray.length-1]);
-  }catch(e){msgArray.pop();var le=document.getElementById(containerId).lastChild;if(le)le.remove();var fb=botAnswer(query);fb.text='⚠️ Gemini unavailable — local:\n\n'+fb.text;msgArray.push({role:'bot',text:fb.text,data:fb.data});renderChatMsg(containerId,msgArray[msgArray.length-1])}
+  }catch(e){msgArray.pop();var le=document.getElementById(containerId).lastChild;if(le)le.remove();try{var fb=botAnswer(query);fb.text='⚠️ Gemini unavailable — local:\n\n'+fb.text;msgArray.push({role:'bot',text:fb.text,data:fb.data})}catch(e2){msgArray.push({role:'bot',text:'⚠️ Error. Try again.',data:null})}renderChatMsg(containerId,msgArray[msgArray.length-1])}
 }
 
 // ===== VOICE INPUT =====
@@ -13351,7 +13434,31 @@ function calcProjectedValue(inv, years, goldRate, overrideRate) {
     return { current: val, projected: val * Math.pow(1 + gr/100, years), rate: gr, newContrib: 0 };
   }
 
-  // Crypto/Land/Others: no reliable projection, keep flat
+  // EPF: compound at stored rate (default 8.25%) + monthly contributions
+  if (type === 'EPF') {
+    var epfRate = rate > 0 ? rate : 8.25;
+    var epfMr = epfRate / 12 / 100;
+    var epfCorpus = val;
+    var epfMonthly = (inv.epfEmpMonthly || 0) + (inv.epfErMonthly || 0);
+    for (var em = 1; em <= years * 12; em++) epfCorpus = epfCorpus * (1 + epfMr) + epfMonthly;
+    return { current: val, projected: epfCorpus, rate: epfRate, newContrib: epfMonthly * years * 12 };
+  }
+
+  // LIC: project to maturity value if available, else keep flat
+  if (type === 'LIC') {
+    if (inv.maturityValue && inv.maturityValue > val) {
+      return { current: val, projected: inv.maturityValue, rate: 0, newContrib: (inv.annualPremium || 0) * years };
+    }
+    return { current: val, projected: val, rate: 0, newContrib: 0 };
+  }
+
+  // Land/Real Estate: grow at gold rate (proxy for real estate appreciation)
+  if (type === 'Land') {
+    var reRate = goldRate || 8;
+    return { current: val, projected: val * Math.pow(1 + reRate/100, years), rate: reRate, newContrib: 0 };
+  }
+
+  // Crypto/Others: no reliable projection, keep flat
   return { current: val, projected: val, rate: 0, newContrib: 0 };
 }
 
@@ -14032,11 +14139,20 @@ function generateReport() {
     + '<p style="font-size:10px;color:#636E72">Generated: '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})+'</p></div></div>';
 
   // §1 Net Worth Summary
+  var rLiab=(typeof getTotalLiabilities==='function')?getTotalLiabilities():0;
+  var rTrueNW=nw-rLiab;
   html += '<h2>§1 Net Worth Summary</h2><div class="sg">'
-    + '<div class="st"><div class="lbl">Net Worth</div><div class="val">'+fmtFull(nw)+'</div></div>'
+    + '<div class="st"><div class="lbl">Net Worth</div><div class="val">'+fmtFull(rTrueNW)+'</div></div>'
+    + '<div class="st"><div class="lbl">Total Assets</div><div class="val">'+fmtFull(nw)+'</div></div>'
+    + (rLiab>0?'<div class="st"><div class="lbl">Liabilities</div><div class="val" style="color:#D63031">−'+fmtFull(rLiab)+'</div></div>':'')
     + '<div class="st"><div class="lbl">Invested</div><div class="val">'+fmtFull(invested)+'</div></div>'
     + '<div class="st"><div class="lbl">Returns</div><div class="val" style="color:'+(returns>=0?'#00B894':'#D63031')+'">'+fmtFull(returns)+' ('+retPct.toFixed(1)+'%)</div></div>'
     + '<div class="st"><div class="lbl">Holdings</div><div class="val">'+inv.length+'</div></div></div>';
+  if(rLiab>0){
+    html+='<h3 style="font-size:13px;margin-top:10px">Loan Breakdown</h3><table class="report-tbl"><thead><tr><th>Loan</th><th>Type</th><th style="text-align:right">Outstanding</th><th style="text-align:right">EMI</th></tr></thead><tbody>';
+    (S.loans||[]).forEach(function(l){html+='<tr><td>'+l.label+'</td><td>'+l.loanType+'</td><td style="text-align:right">'+fmtFull(l.outstanding)+'</td><td style="text-align:right">'+fmtFull(l.emi)+'</td></tr>'});
+    html+='</tbody></table>';
+  }
 
   // §2 & §3 Asset + Sector Allocation
   html += '<h2>§2 Asset Allocation &nbsp;&nbsp;&nbsp; §3 Sector Allocation</h2><div class="charts">'
@@ -14123,6 +14239,90 @@ function showBrokerRef(platform) {
   }
 }
 
+// ===== INTERACTIVE NET WORTH CHART =====
+var _nwcPeriod=0; // 0=MAX
+function setNWCPeriod(months){
+  _nwcPeriod=months;
+  document.querySelectorAll('#nwc-tabs .pill').forEach(function(p){p.classList.remove('on')});
+  event.target.classList.add('on');
+  renderNWChart();
+}
+function renderNWChart(){
+  var card=document.getElementById('dash-nw-chart-card');
+  var snaps=(S.snapshots||[]).slice();
+  // Add current state as latest point
+  var inv=filterByMember(S.investments);
+  var currentNW=inv.reduce(function(s,i){return s+(getInvValue(i)||0)},0);
+  var liab=(typeof getTotalLiabilities==='function')?getTotalLiabilities():0;
+  currentNW-=liab;
+  if(snaps.length<2&&currentNW<=0){card.style.display='none';return}
+  card.style.display='block';
+  // Ensure snapshots have dates
+  var points=snaps.filter(function(s){return s.date||s.month!==undefined}).map(function(s){
+    var d=s.date?new Date(s.date):new Date();
+    return{date:d,nw:s.nw||0};
+  });
+  // Add today
+  points.push({date:new Date(),nw:currentNW});
+  // Sort by date
+  points.sort(function(a,b){return a.date-b.date});
+  // Filter by period
+  if(_nwcPeriod>0){
+    var cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-_nwcPeriod);
+    points=points.filter(function(p){return p.date>=cutoff});
+  }
+  if(points.length<1){card.style.display='none';return}
+  // NW value display
+  document.getElementById('nwc-value').textContent=fmtFull(currentNW);
+  var firstNW=points[0].nw;var allTimeRet=firstNW>0?((currentNW-firstNW)/firstNW*100):0;
+  var retEl=document.getElementById('nwc-return');
+  retEl.textContent=(allTimeRet>=0?'+':'')+allTimeRet.toFixed(2)+'%';
+  retEl.style.color=allTimeRet>=0?'var(--g)':'var(--d)';
+  // Draw SVG chart
+  var el=document.getElementById('nwc-chart');
+  var W=el.offsetWidth||600;var H=180;
+  var minNW=Math.min.apply(null,points.map(function(p){return p.nw}));
+  var maxNW=Math.max.apply(null,points.map(function(p){return p.nw}));
+  var range=maxNW-minNW||1;
+  var padT=10,padB=25,padL=0,padR=0;
+  var chartH=H-padT-padB;var chartW=W-padL-padR;
+  var pts=points.map(function(p,i){
+    var x=padL+(points.length>1?(i/(points.length-1))*chartW:chartW/2);
+    var y=padT+chartH-(((p.nw-minNW)/range)*chartH);
+    return{x:x,y:y,nw:p.nw,date:p.date};
+  });
+  var linePath=pts.map(function(p,i){return(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' ');
+  var isUp=currentNW>=firstNW;
+  var color=isUp?'#00B894':'#D63031';
+  var gradId='nwcGrad'+Date.now();
+  var areaPath=linePath+' L'+pts[pts.length-1].x.toFixed(1)+','+(padT+chartH)+' L'+pts[0].x.toFixed(1)+','+(padT+chartH)+' Z';
+  // Y-axis labels
+  var yLabels='';
+  for(var yi=0;yi<=3;yi++){
+    var yv=minNW+(range*yi/3);
+    var yy=padT+chartH-(yi/3*chartH);
+    yLabels+='<text x="'+padL+'" y="'+(yy-3)+'" font-size="8" fill="var(--txt3)" text-anchor="start">'+fmt(yv)+'</text>';
+    yLabels+='<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="var(--bdr)" stroke-width="0.5" stroke-dasharray="3,3"/>';
+  }
+  // X-axis labels (first, mid, last)
+  var xLabels='';
+  [0,Math.floor(pts.length/2),pts.length-1].forEach(function(idx){
+    if(pts[idx]){
+      var d=pts[idx].date;var lbl=d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'});
+      xLabels+='<text x="'+pts[idx].x.toFixed(1)+'" y="'+(H-3)+'" font-size="8" fill="var(--txt3)" text-anchor="middle">'+lbl+'</text>';
+    }
+  });
+  var svg='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px">'
+    +'<defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.3"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0.02"/></linearGradient></defs>'
+    +yLabels+xLabels
+    +'<path d="'+areaPath+'" fill="url(#'+gradId+')"/>'
+    +'<path d="'+linePath+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round"/>';
+  // Latest point dot
+  if(pts.length>0){var last=pts[pts.length-1];svg+='<circle cx="'+last.x.toFixed(1)+'" cy="'+last.y.toFixed(1)+'" r="4" fill="'+color+'" stroke="var(--card)" stroke-width="2"/>';}
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+
 // ===== NET WORTH GROWTH CHART =====
 var _nwChartRange = 60; // default 5Y = 60 months
 
@@ -14206,7 +14406,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5p';
+var APP_VERSION = 'v4.1.5q';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
@@ -14255,5 +14455,17 @@ if('serviceWorker' in navigator){
 }
 
 </script>
+<div id="exit-info-modal" onclick="if(event.target===this)this.classList.remove('open')" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;align-items:center;justify-content:center">
+<div style="background:var(--card);border-radius:16px;max-width:560px;width:90%;max-height:85vh;overflow-y:auto;padding:24px;position:relative">
+<button onclick="document.getElementById('exit-info-modal').classList.remove('open')" style="position:absolute;top:12px;right:16px;background:none;border:none;color:var(--txt);font-size:18px;cursor:pointer">✕</button>
+<h3 style="margin-bottom:12px">How Exit Signals Work</h3>
+<p style="font-size:11px;color:var(--txt2);line-height:1.6;margin-bottom:12px">ValeurFin analyses each investment against objective rules. These are informational alerts — <b>NOT buy or sell recommendations</b>. Always consult a SEBI-registered advisor.</p>
+<div style="font-size:11px;line-height:1.7">
+<div style="padding:10px;background:rgba(0,184,148,.08);border-radius:8px;margin-bottom:8px"><b style="color:#00B894">🟢 HOLD — No action needed</b><br>• XIRR/returns positive<br>• Performance ≥ 8% or your target<br>• No goal deadline within 6 months</div>
+<div style="padding:10px;background:rgba(240,165,0,.08);border-radius:8px;margin-bottom:8px"><b style="color:#F0A500">🟡 REVIEW — Worth a closer look</b><br>• XIRR below 11% benchmark for 12+ months<br>• Value stagnant (&lt;2% in 6+ months)<br>• Goal deadline within 6 months in risky asset<br>• LIC surrender value below premiums paid</div>
+<div style="padding:10px;background:rgba(214,48,49,.08);border-radius:8px;margin-bottom:8px"><b style="color:#D63031">🔴 EXIT CUE — Consider reassessing</b><br>• XIRR negative over 24+ months<br>• Down 25%+ from avg buy price, no recovery in 12 months</div>
+<div style="padding:10px;background:var(--bg);border-radius:8px"><b>Does NOT consider:</b> daily price swings, news, short-term losses<br>⚠️ Not financial advice.</div>
+</div></div></div>
+<style>#exit-info-modal.open{display:flex!important}</style>
 </body>
 </html>
