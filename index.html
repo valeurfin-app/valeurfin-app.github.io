@@ -6188,6 +6188,14 @@ function buildAddFields(){
       h+='<div class="fr"><div class="fg"><label>Annual Step-Up</label><select class="inp" id="add-stepup" onchange="toggleStepUpCustom(this.value)"><option value="0">No Step-Up</option><option value="5">5% per year</option><option value="10">10% per year</option><option value="15">15% per year</option><option value="20">20% per year</option><option value="custom">Custom %</option></select></div><div class="fg" id="stepup-custom-wrap" style="display:none"><label>Custom %</label><input class="inp" id="add-stepup-custom" type="number" step="1" min="1" placeholder="e.g. 12"></div></div>';
       h+='<div class="fr"><div class="fg"><label>Step-Up From</label><select class="inp" id="add-stepup-from"><option value="0">From Start (Month 1)</option><option value="12">After Year 1</option><option value="24">After Year 2</option><option value="36">After Year 3</option></select></div><div class="fg"></div></div>';
     }
+    // RD-specific: Interest Rate + Maturity Date
+    if(t.id==='RD'){
+      h+='<div class="fr"><div class="fg"><label>Interest Rate % <span style="font-size:9px;color:var(--txt2);font-weight:400">annual</span></label>'
+       +'<input class="inp" id="add-return" type="number" value="7.0" step="0.1" placeholder="e.g. 7.0"></div>'
+       +'<div class="fg"><label>Maturity Date</label><input class="inp" id="add-maturity" type="date"></div></div>'
+       +'<div style="background:var(--gbg);border-radius:8px;padding:8px;margin-top:4px;font-size:10px;color:var(--g)">'
+       +'🏦 RD: Each monthly deposit earns compound interest. Rate used for future value projection.</div>';
+    }
   }
   // --- PPF: Current Balance + Rate of Interest ---
   if(t.id==='PPF'){
@@ -11902,14 +11910,17 @@ function rExp(){
   var tM=exps.filter(function(e){return e.frequency==='monthly'}).reduce(function(s,e){return s+e.amount},0);
   document.getElementById('exp-summary').innerHTML='<div class="sg"><div class="st"><div class="lbl">MONTHLY</div><div class="val" style="color:var(--d)">'+fmt(tM)+'</div></div></div>';
   document.getElementById('exp-budget-bars').innerHTML='';
-  el.innerHTML=exps.map(function(e){return '<div class="exp-item"><div class="exp-ic" style="background:'+catColor(e.category)+'20">'+catIcon(e.category)+'</div><div class="exp-body"><h4>'+e.label+'</h4><p>'+catLabel(e.category)+' · '+e.frequency+'</p></div><div class="exp-r"><div class="rv">'+fmtFull(e.amount)+'</div></div><div class="exp-actions"><button onclick="deleteExp(\''+e.id+'\')">🗑️</button></div></div>'}).join('');
+  el.innerHTML=exps.map(function(e){return '<div class="exp-item"><div class="exp-ic" style="background:'+catColor(e.category)+'20">'+catIcon(e.category)+'</div><div class="exp-body"><h4>'+e.label+'</h4><p>'+catLabel(e.category)+' · '+e.frequency+'</p></div><div class="exp-r"><div class="rv">'+fmtFull(e.amount)+'</div></div><div class="exp-actions"><button onclick="openExpModal(\'edit\',\''+e.id+'\')">✏️</button><button onclick="deleteExp(\''+e.id+'\')">🗑️</button></div></div>'}).join('');
 }
-function openExpModal(mode){
-  var h='<div class="fg"><label>Description</label><input class="inp" id="exp-label" placeholder="e.g. Rent"></div><div class="fr"><div class="fg"><label>Category</label><select class="inp" id="exp-cat">'+EXPENSE_CATS.map(function(c){return '<option value="'+c.id+'">'+c.icon+' '+c.label+'</option>'}).join('')+'</select></div><div class="fg"><label>Amount</label><input class="inp" id="exp-amount" type="number" placeholder="₹"></div></div><div class="fg"><label>Frequency</label><select class="inp" id="exp-freq"><option value="monthly">Monthly</option><option value="yearly">Yearly</option><option value="one-time">One-time</option></select></div>';
+var _editExpId=null;
+function openExpModal(mode,editId){
+  _editExpId=mode==='edit'?editId:null;
+  var exp=_editExpId?S.expenses.find(function(e){return e.id===_editExpId}):null;
+  var h='<div class="fg"><label>Description</label><input class="inp" id="exp-label" value="'+(exp?exp.label:'')+'" placeholder="e.g. Rent"></div><div class="fr"><div class="fg"><label>Category</label><select class="inp" id="exp-cat">'+EXPENSE_CATS.map(function(c){return '<option value="'+c.id+'" '+(exp&&exp.category===c.id?'selected':'')+'>'+c.icon+' '+c.label+'</option>'}).join('')+'</select></div><div class="fg"><label>Amount</label><input class="inp" id="exp-amount" type="number" value="'+(exp?exp.amount:'')+'" placeholder="₹"></div></div><div class="fg"><label>Frequency</label><select class="inp" id="exp-freq"><option value="monthly" '+(exp&&exp.frequency==='monthly'?'selected':'')+'>Monthly</option><option value="yearly" '+(exp&&exp.frequency==='yearly'?'selected':'')+'>Yearly</option><option value="one-time" '+(exp&&exp.frequency==='one-time'?'selected':'')+'>One-time</option></select></div>';
   document.getElementById('exm-form').innerHTML=h;document.getElementById('exp-modal').classList.add('open');
   trapFocus(document.getElementById('exp-modal'));
 }
-function saveExpense(){var l=document.getElementById('exp-label').value.trim(),c=document.getElementById('exp-cat').value,a=parseFloat(document.getElementById('exp-amount').value)||0,f=document.getElementById('exp-freq').value;if(!l||!a){toast('Fill fields','err');return}S.expenses.push({id:uid(),label:l,category:c,amount:a,frequency:f,owner:'self',createdAt:Date.now()});saveS().then(function(){renderAll();closeExpModal();toast('✅ Saved')})}
+function saveExpense(){var l=document.getElementById('exp-label').value.trim(),c=document.getElementById('exp-cat').value,a=parseFloat(document.getElementById('exp-amount').value)||0,f=document.getElementById('exp-freq').value;if(!l||!a){toast('Fill fields','err');return}if(_editExpId){var exp=S.expenses.find(function(e){return e.id===_editExpId});if(exp){exp.label=l;exp.category=c;exp.amount=a;exp.frequency=f}}else{S.expenses.push({id:uid(),label:l,category:c,amount:a,frequency:f,owner:'self',createdAt:Date.now()})}saveS().then(function(){renderAll();closeExpModal();toast('✅ Saved')})}
 function deleteExp(id){if(confirm('Delete?')){S.expenses=S.expenses.filter(function(e){return e.id!==id});saveS().then(function(){renderAll()})}}
 function closeExpModal(){releaseFocus(document.getElementById('exp-modal'));document.getElementById('exp-modal').classList.remove('open')}
 
@@ -14442,7 +14453,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.1.5v';
+var APP_VERSION = 'v4.2.0a';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
