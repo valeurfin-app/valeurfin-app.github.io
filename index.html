@@ -1410,6 +1410,7 @@ var PLATFORMS=['Zerodha','Groww','Upstox','Angel One','ICICI Direct','HDFC Secur
 var BANKS=['SBI','HDFC Bank','ICICI Bank','Axis Bank','Kotak Mahindra','PNB','Bank of Baroda','Canara Bank','Union Bank','IndusInd Bank','Yes Bank','IDFC First Bank','Federal Bank','AU Small Finance','India Post','Other'];
 var CC_PROVIDERS=['HDFC Bank','SBI Card','ICICI Bank','Axis Bank','Kotak Mahindra','RBL Bank','IndusInd Bank','OneCard','Fi','Jupiter','Slice','Amex','Other'];
 var CRYPTO_EXCHANGES=['WazirX','CoinDCX','CoinSwitch','Binance','Coinbase','ZebPay','KuCoin','Bybit','Other'];
+var LENDERS=['SBI','HDFC Bank','ICICI Bank','Axis Bank','Kotak Mahindra','PNB','Bank of Baroda','Canara Bank','Union Bank','IndusInd Bank','Yes Bank','IDFC First Bank','Federal Bank','Bank of India','Indian Bank','Bajaj Finserv','Tata Capital','L&T Finance','Muthoot Finance','Manappuram Finance','IIFL Finance','Piramal Finance','Aditya Birla Finance','Mahindra Finance','Sundaram Finance','HDFC Ltd','LIC Housing','PNB Housing','Can Fin Homes','Aavas Financiers','Other'];
 var FY_LIST=['FY23','FY24','FY25','FY26'];
 
 var STOCK_DB=[
@@ -13807,7 +13808,7 @@ function openLoanModal(editId){
   var loan=editId?(S.loans||[]).find(function(l){return l.id===editId}):null;
   var h='<div class="fg"><label>Loan Name</label><input class="inp" id="loan-label" value="'+(loan?loan.label:'')+'" placeholder="e.g. HDFC Home Loan"></div>';
   h+='<div class="fr"><div class="fg"><label>Loan Type</label><select class="inp" id="loan-type">'+LOAN_TYPES.map(function(t){return '<option'+(loan&&loan.loanType===t?' selected':'')+'>'+t+'</option>'}).join('')+'</select></div>';
-  h+='<div class="fg"><label>Lender</label><input class="inp" id="loan-lender" value="'+(loan?loan.lender:'')+'" placeholder="e.g. HDFC Bank"></div></div>';
+  h+='<div class="fg"><label>Lender</label><select class="inp" id="loan-lender"><option value="">Select</option>'+LENDERS.map(function(l){return '<option'+(loan&&loan.lender===l?' selected':'')+'>'+l+'</option>'}).join('')+'</select></div></div>';
   h+='<div class="fr"><div class="fg"><label>Original Loan Amount (₹)</label><input class="inp" id="loan-original" type="number" value="'+(loan?loan.originalAmount:'')+'"></div>';
   h+='<div class="fg"><label>Outstanding Balance (₹)</label><input class="inp" id="loan-outstanding" type="number" value="'+(loan?loan.outstanding:'')+'"></div></div>';
   h+='<div class="fr"><div class="fg"><label>EMI (₹/month)</label><input class="inp" id="loan-emi" type="number" value="'+(loan?loan.emi:'')+'"></div>';
@@ -14453,7 +14454,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.2.0a';
+var APP_VERSION = 'v4.2.0b';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
