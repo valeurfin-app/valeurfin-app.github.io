@@ -4975,7 +4975,7 @@ function renderAll(){
 function calcWealthScore(nw,invested,returns,mExp,mInc,inv){
   if(!inv.length&&!S.expenses.length&&!S.income.length)return{score:0,grade:'Start Adding Data',color:'#636E72',details:[]};
   var details=[];var score=0;
-  var liq=inv.filter(function(i){return i.isEmergencyFund||['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+(i.value||0)},0);
+  var liq=inv.filter(function(i){return i.isEmergencyFund||['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+(getInvValue(i)||i.value||i.invested||0)},0);
   var em=mExp>0?liq/mExp:0;var emPts=Math.min(15,Math.round(em/6*15));score+=emPts;
   details.push({label:'Emergency',pts:emPts,max:15,note:em>=6?em.toFixed(1)+'mo ✅':em>0?em.toFixed(1)+'mo':'❌ None'});
   var sr=mInc>0?(mInc-mExp)/mInc*100:0;var srPts=Math.min(15,Math.round(sr/30*15));score+=srPts;
@@ -5051,9 +5051,12 @@ function rHome(){
     h+='<div class="st"><div class="lbl">ASSETS</div><div class="val" style="color:var(--g)">'+fmt(nw)+'</div></div>';
     h+='<div class="st"><div class="lbl">LIABILITIES</div><div class="val" style="color:var(--d)">−'+fmt(_liab)+'</div></div>';
   }
-  var _emLiq=inv.filter(function(i){return i.isEmergencyFund||['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+(i.value||getInvValue(i)||0)},0);
+  var _emLiq=inv.filter(function(i){return i.isEmergencyFund||['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+(getInvValue(i)||i.value||i.invested||0)},0);
   var _emMo=mExp>0?_emLiq/mExp:0;
-  if(_emLiq>0||inv.length>0){h+='<div class="st"><div class="lbl">EMERGENCY</div><div class="val" style="color:'+(_emMo>=6?'var(--g)':_emMo>=3?'var(--w)':'var(--d)')+'">'+_emMo.toFixed(1)+'mo</div></div>';}
+  if(_emLiq>0||inv.length>0){
+    if(mExp>0){h+='<div class="st"><div class="lbl">EMERGENCY</div><div class="val" style="color:'+(_emMo>=6?'var(--g)':_emMo>=3?'var(--w)':'var(--d)')+'">'+_emMo.toFixed(1)+'mo</div></div>';}
+    else if(_emLiq>0){h+='<div class="st"><div class="lbl">EMERGENCY</div><div class="val" style="color:var(--g)">'+fmt(_emLiq)+'</div></div>';}
+  }
   h+='<div class="st"><div class="lbl">SIP</div><div class="val">'+fmt(monthlySIP)+'</div></div>';
   h+='<div class="st"><div class="lbl">EXPENSES</div><div class="val">'+fmt(mExp)+'</div></div>';
   h+='<div class="st"><div class="lbl">INVESTED</div><div class="val">'+fmt(invested)+'</div></div>';
@@ -12308,7 +12311,7 @@ function showAutoSyncModal(){
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.2.0e';
+var APP_VERSION = 'v4.2.0f';
 
 function showUpdateBanner() {
   if(document.getElementById('sw-update-banner')) return;
