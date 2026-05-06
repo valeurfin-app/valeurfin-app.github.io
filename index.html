@@ -5439,7 +5439,7 @@ function calcWealthScore(nw,invested,returns,mExp,mInc,inv){
   if(!inv.length&&!S.expenses.length&&!S.income.length)return{score:0,grade:'Start Adding Data',color:'#636E72',details:[]};
   var details=[];var score=0;
   // Emergency fund (uses isEmergencyFund tag)
-  var liq=inv.filter(function(i){return i.isEmergencyFund||['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+(i.value||0)},0);
+  var liq=inv.filter(function(i){return i.isEmergencyFund||['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+(getInvValue(i)||i.value||i.invested||0)},0);
   var em=mExp>0?liq/mExp:0;var emPts=Math.min(15,Math.round(em/6*15));score+=emPts;
   details.push({label:'Emergency Fund',pts:emPts,max:15,note:em>=6?em.toFixed(1)+' months ✅':em>0?em.toFixed(1)+' months (need 6)':'❌ Not set up'});
   // Savings rate
@@ -5544,7 +5544,7 @@ function rDash(){
     h+='<div class="st"><div class="lbl">LIABILITIES</div><div class="val" style="color:var(--d)">−'+fmt(_liab)+'</div></div>';
   }
   // Emergency fund tile
-  var _emLiq=inv.filter(function(i){return i.isEmergencyFund||['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+(i.value||getInvValue(i)||0)},0);
+  var _emLiq=inv.filter(function(i){return i.isEmergencyFund||['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+(getInvValue(i)||i.value||i.invested||0)},0);
   var _emMo=totalSpend>0?_emLiq/totalSpend:0;
   if(_emLiq>0||inv.length>0){
     h+='<div class="st"><div class="lbl">EMERGENCY FUND</div><div class="val" style="color:'+(_emMo>=6?'var(--g)':_emMo>=3?'var(--w)':'var(--d)')+'">'+_emMo.toFixed(1)+' months</div><span class="sub info">'+fmt(_emLiq)+'</span></div>';
@@ -14569,7 +14569,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.2.0e';
+var APP_VERSION = 'v4.2.0f';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
