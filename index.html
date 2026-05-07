@@ -947,6 +947,9 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- ===== KPIs ===== -->
 <div class="pg" id="pg-kpi">
 <div class="cd"><h3>📐 KPIs <span class="cd-badge">Professional</span></h3><p class="m-sub">Institutional-grade metrics</p><div id="kpi-list"></div><div id="kpi-empty" class="empty-state" style="display:none"><div class="es-ic">📐</div><h3>KPIs</h3><p>Add investments and process months</p></div></div>
+<div class="cd" style="margin-top:12px"><h3>📊 Benchmark Comparison</h3><div id="benchmark-section"></div></div>
+<div class="cd" style="margin-top:12px"><h3>⚖️ Rebalancing Advisor</h3><div id="rebalance-section"></div></div>
+<div class="cd" style="margin-top:12px"><h3>🌿 Tax Harvesting Opportunities</h3><div id="tax-harvest"></div></div>
 </div>
 
 <!-- ===== DIVIDENDS ===== -->
@@ -5422,6 +5425,9 @@ function renderAll(){
   try{rGoals()}catch(e){console.warn('[VF] rGoals error:',e)}
   try{rInsurance()}catch(e){console.warn('[VF] rInsurance error:',e)}
   try{rKPI()}catch(e){console.warn('[VF] rKPI error:',e)}
+  try{renderBenchmark()}catch(e){}
+  try{renderRebalance()}catch(e){}
+  try{renderTaxHarvest()}catch(e){}
   try{rDividends()}catch(e){console.warn('[VF] rDividends error:',e)}
   try{rWhatIf()}catch(e){console.warn('[VF] rWhatIf error:',e)}
   try{rLog()}catch(e){console.warn('[VF] rLog error:',e)}
@@ -5599,6 +5605,7 @@ function rDash(){
   rDonut(inv,nw,'dash-donut',BUCKET_COLORS);
   try{renderNWCInteractive()}catch(e){console.warn('[VF] NW chart error:',e);}
   try{renderPlannerDash()}catch(e){}
+  try{checkNWMilestone(nw)}catch(e){}
   rSectorDonut(inv,nw);
   rDashExpBars(exps);
   rDashHoldings(inv,nw);
@@ -5723,7 +5730,7 @@ function rInv(){
   if(!inv.length){tbody.innerHTML='';empty.style.display='block';return}
   empty.style.display='none';
   tbody.innerHTML=inv.map(function(i){
-    var val=getInvValue(i);var invested=getInvInvested(i);var ret=val-invested;var retP=invested>0?(ret/invested*100):0;var xirr=getInvXIRR(i);
+    var val=getInvValue(i);var invested=getInvInvested(i);var ret=val-invested;var retP=invested>0?(ret/invested*100):0;var xirr=getInvXIRR(i)||retP;
     var liveUp=(i.dayChangePct||0)>=0;
     var taxInfo=getTaxInfo(i);var exitCue=getExitCue(i,val,ret,retP);
     var swpBadge=i.swpAmount>0?'<span style="font-size:7px;background:var(--bbg);color:var(--b);padding:1px 5px;border-radius:3px;font-weight:700;margin-left:3px">🔄SWP</span>':'';
@@ -5742,8 +5749,8 @@ function rInv(){
       +'<td><span class="exit-cue '+exitCue.cls+'">'+exitCue.icon+'</span></td>'
       +'<td><small>'+getOwnerName(i.owner)+'</small></td>'
       +(i.type==='Stocks'&&i.nseSymbol
-        ?'<td><div class="t-actions">'+swpBtn+'<button onclick="openEditInv(\''+i.id+'\')">✏️</button><button onclick="quickDeleteInv(\''+i.id+'\')">🗑️</button><a href="https://www.screener.in/company/'+i.nseSymbol+'/" target="_blank" class="btn-sm" style="text-decoration:none;padding:3px 6px;font-size:10px" title="Screener.in">📊</a></div></td>'
-        :'<td><div class="t-actions">'+swpBtn+'<button onclick="openEditInv(\''+i.id+'\')">✏️</button><button onclick="quickDeleteInv(\''+i.id+'\')">🗑️</button></div></td>')
+        ?'<td><div class="t-actions">'+swpBtn+'<button onclick="openEditInv(\''+i.id+'\')">✏️</button><button onclick="generateInvStatement(\''+i.id+'\')" title="Statement">📄</button><button onclick="quickDeleteInv(\''+i.id+'\')">🗑️</button><a href="https://www.screener.in/company/'+i.nseSymbol+'/" target="_blank" class="btn-sm" style="text-decoration:none;padding:3px 6px;font-size:10px" title="Screener.in">📊</a></div></td>'
+        :'<td><div class="t-actions">'+swpBtn+'<button onclick="openEditInv(\''+i.id+'\')">✏️</button><button onclick="generateInvStatement(\''+i.id+'\')" title="Statement">📄</button><button onclick="quickDeleteInv(\''+i.id+'\')">🗑️</button></div></td>')
       +'</tr>';
   }).join('');
   var types=[]; inv.forEach(function(i){if(types.indexOf(i.type)===-1)types.push(i.type)});
@@ -11922,7 +11929,14 @@ function rExp(){
   empty.style.display='none';
   var tM=exps.filter(function(e){return e.frequency==='monthly'}).reduce(function(s,e){return s+e.amount},0);
   document.getElementById('exp-summary').innerHTML='<div class="sg"><div class="st"><div class="lbl">MONTHLY</div><div class="val" style="color:var(--d)">'+fmt(tM)+'</div></div></div>';
-  document.getElementById('exp-budget-bars').innerHTML='';
+  // Expense Analytics
+  var catTotals={};exps.forEach(function(e){catTotals[e.category]=(catTotals[e.category]||0)+(e.frequency==='monthly'?e.amount:e.frequency==='yearly'?e.amount/12:e.amount)});
+  var budgetH='<div style="font-size:12px;font-weight:700;margin-bottom:6px">📊 Monthly by Category</div>';
+  Object.keys(catTotals).sort(function(a,b){return catTotals[b]-catTotals[a]}).forEach(function(cat){
+    var pct=tM>0?(catTotals[cat]/tM*100):0;
+    budgetH+='<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:10px"><span>'+catIcon(cat)+' '+catLabel(cat)+'</span><span>'+fmtFull(catTotals[cat])+' ('+pct.toFixed(0)+'%)</span></div><div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,pct)+'%;background:'+catColor(cat)+';border-radius:3px"></div></div></div>';
+  });
+  document.getElementById('exp-budget-bars').innerHTML=budgetH;
   el.innerHTML=exps.map(function(e){return '<div class="exp-item"><div class="exp-ic" style="background:'+catColor(e.category)+'20">'+catIcon(e.category)+'</div><div class="exp-body"><h4>'+e.label+'</h4><p>'+catLabel(e.category)+' · '+e.frequency+'</p></div><div class="exp-r"><div class="rv">'+fmtFull(e.amount)+'</div></div><div class="exp-actions"><button onclick="openExpModal(\'edit\',\''+e.id+'\')">✏️</button><button onclick="deleteExp(\''+e.id+'\')">🗑️</button></div></div>'}).join('');
 }
 var _editExpId=null;
@@ -11997,7 +12011,43 @@ function closeRemModal(){releaseFocus(document.getElementById('rem-modal'));docu
 
 // ===== GOALS =====
 var editingGoalId=null;
-function rGoals(){var goals=S.goals||[];var el=document.getElementById('goal-list');var empty=document.getElementById('goal-empty');if(!goals.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';el.innerHTML=goals.map(function(g){var p=Math.min(100,(g.current/g.target*100));var col=p>=100?'var(--g)':p>=50?'var(--b)':'var(--w)';return '<div class="gc"><div class="gc-top"><h4>'+(g.icon||'🎯')+' '+g.name+'</h4><button style="background:none;border:none;cursor:pointer" onclick="deleteGoal(\''+g.id+'\')">🗑️</button></div><div class="prog"><div class="fill" style="background:'+col+';--w:'+p+'%"></div></div><div class="gc-rw"><span>'+fmt(g.current)+' / '+fmt(g.target)+'</span><span>'+p.toFixed(0)+'%</span></div></div>'}).join('')}
+function rGoals(){var goals=S.goals||[];var el=document.getElementById('goal-list');var empty=document.getElementById('goal-empty');if(!goals.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';
+  // Auto-calculate current from linked investments
+  goals.forEach(function(g){
+    if(g.linkedInvestments&&g.linkedInvestments.length){
+      g.current=g.linkedInvestments.reduce(function(s,lid){var inv=S.investments.find(function(i){return i.id===lid});return s+(inv?getInvValue(inv):0)},0);
+    }
+  });
+  el.innerHTML=goals.map(function(g){var p=g.target>0?Math.min(100,(g.current/g.target*100)):0;var col=p>=100?'var(--g)':p>=50?'var(--b)':'var(--w)';
+    var mRem=g.targetDate?Math.max(0,Math.floor((new Date(g.targetDate)-Date.now())/(30.44*86400000))):0;
+    var gap=Math.max(0,g.target-g.current);var reqMonthly=mRem>0?Math.round(gap/mRem):0;
+    var linked=(g.linkedInvestments||[]).map(function(lid){var inv=S.investments.find(function(i){return i.id===lid});return inv?inv.label:null}).filter(Boolean);
+    return '<div class="gc"><div class="gc-top"><h4>'+(g.icon||'🎯')+' '+g.name+'</h4><div><button style="background:none;border:none;cursor:pointer;font-size:12px" onclick="linkInvToGoal(\''+g.id+'\')" title="Link investments">🔗</button><button style="background:none;border:none;cursor:pointer" onclick="deleteGoal(\''+g.id+'\')">🗑️</button></div></div><div class="prog"><div class="fill" style="background:'+col+';--w:'+p+'%"></div></div><div class="gc-rw"><span>'+fmt(g.current)+' / '+fmt(g.target)+'</span><span>'+p.toFixed(0)+'%</span></div>'
+    +(g.targetDate?'<div style="font-size:9px;color:var(--txt2);margin-top:3px">Due: '+g.targetDate+(mRem>0?' ('+mRem+' months) · Need '+fmtFull(reqMonthly)+'/mo':'')+'</div>':'')
+    +(linked.length?'<div style="font-size:9px;color:var(--p);margin-top:3px">🔗 '+linked.join(', ')+'</div>':'')
+    +'</div>'}).join('')}
+function linkInvToGoal(goalId){
+  var goal=S.goals.find(function(g){return g.id===goalId});if(!goal)return;
+  goal.linkedInvestments=goal.linkedInvestments||[];
+  var inv=filterByMember(S.investments);
+  var h='<div style="max-height:300px;overflow-y:auto">';
+  inv.forEach(function(i){
+    var checked=goal.linkedInvestments.indexOf(i.id)!==-1;
+    h+='<label style="display:flex;align-items:center;gap:8px;padding:6px;cursor:pointer;font-size:11px;border-bottom:1px solid var(--bdr)"><input type="checkbox" class="goal-link-cb" data-inv-id="'+i.id+'" '+(checked?'checked':'')+' style="width:16px;height:16px"><span>'+invIcon(i.type)+' '+i.label+' — '+fmt(getInvValue(i))+'</span></label>';
+  });
+  h+='</div><button onclick="saveGoalLinks(\''+goalId+'\')" class="btn-sm" style="margin-top:8px;width:100%;padding:8px;background:var(--p);color:#fff">Save Links</button>';
+  var modal=document.createElement('div');modal.id='goal-link-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML='<div style="background:var(--card);border-radius:14px;padding:20px;max-width:400px;width:90%"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:14px">🔗 Link Investments to "'+goal.name+'"</h3><button onclick="document.getElementById(\'goal-link-modal\').remove()" style="background:none;border:none;color:var(--txt);font-size:18px;cursor:pointer">✕</button></div>'+h+'</div>';
+  modal.onclick=function(e){if(e.target===modal)modal.remove()};
+  document.body.appendChild(modal);
+}
+function saveGoalLinks(goalId){
+  var goal=S.goals.find(function(g){return g.id===goalId});if(!goal)return;
+  goal.linkedInvestments=[];
+  document.querySelectorAll('.goal-link-cb:checked').forEach(function(cb){goal.linkedInvestments.push(cb.getAttribute('data-inv-id'))});
+  document.getElementById('goal-link-modal').remove();
+  saveS().then(function(){renderAll();toast('✅ Linked')});
+}
 function openGoalModalFn(id){editingGoalId=id||null;var goal=id?(S.goals||[]).find(function(g){return g.id===id}):null;document.getElementById('gm-form').innerHTML='<div class="fg"><label>Name</label><input class="inp" id="goal-name" value="'+(goal?goal.name:'')+'"></div><div class="fr"><div class="fg"><label>Target (₹)</label><input class="inp" id="goal-target" type="number" value="'+(goal?goal.target:'')+'"></div><div class="fg"><label>Current (₹)</label><input class="inp" id="goal-current" type="number" value="'+(goal?goal.current:'')+'"></div></div><div class="fg"><label>Deadline</label><input class="inp" id="goal-deadline" type="month" value="'+(goal?goal.deadline:'')+'"></div>';document.getElementById('goal-modal').classList.add('open');trapFocus(document.getElementById('goal-modal'))}
 function saveGoalModal(){var n=document.getElementById('goal-name').value.trim(),t=parseFloat(document.getElementById('goal-target').value)||0,c=parseFloat(document.getElementById('goal-current').value)||0,d=document.getElementById('goal-deadline').value;if(!n||!t){toast('Fill fields','err');return}if(editingGoalId){var g=(S.goals||[]).find(function(x){return x.id===editingGoalId});if(g){g.name=n;g.target=t;g.current=c;g.deadline=d}}else{S.goals=S.goals||[];S.goals.push({id:uid(),name:n,target:t,current:c,deadline:d,icon:'🎯',createdAt:Date.now()})}saveS().then(function(){renderAll();closeGoalModal();toast('✅ Saved')})}
 function deleteGoal(id){if(confirm('Delete?')){S.goals=(S.goals||[]).filter(function(g){return g.id!==id});saveS().then(function(){renderAll()})}}
@@ -12829,8 +12879,8 @@ function renderScreener(){
 function rKPI(){
   var inv=filterByMember(S.investments);var el=document.getElementById('kpi-list');var empty=document.getElementById('kpi-empty');
   if(!inv.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';
-  var nw=inv.reduce(function(s,i){return s+(i.liveValue||i.value)},0);
-  var invested=inv.reduce(function(s,i){return s+i.invested},0);var returns=nw-invested;
+  var nw=inv.reduce(function(s,i){return s+getInvValue(i)},0);
+  var invested=inv.reduce(function(s,i){return s+(i.invested||0)},0);var returns=nw-invested;
   var cagrDates=inv.filter(function(i){return i.started;}).map(function(i){return new Date(i.started).getTime();});
   var cagrStart=cagrDates.length?Math.min.apply(null,cagrDates):0;
   var cagrYrs=cagrStart>0?(Date.now()-cagrStart)/(365.25*24*3600*1000):0;
@@ -13857,6 +13907,166 @@ function deleteLoan(id){
   saveS().then(function(){rLoans();toast('Loan deleted')});
 }
 
+// ===== PER-INVESTMENT STATEMENT =====
+function generateInvStatement(id){
+  var inv=S.investments.find(function(i){return i.id===id});if(!inv)return;
+  var val=getInvValue(inv);var invested=getInvInvested(inv);var ret=val-invested;var retP=invested>0?(ret/invested*100):0;
+  var xirr=getInvXIRR(inv);var ec=getExitCue(inv,val,ret,retP);
+  var lots=(inv.lots||[]).sort(function(a,b){return a.date<b.date?-1:1});
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+inv.label+' — Statement</title><style>body{font-family:Arial,sans-serif;background:#1a1a2e;color:#fff;padding:24px;max-width:700px;margin:0 auto}h1{color:#6C5CE7;font-size:22px;border-bottom:2px solid #6C5CE7;padding-bottom:8px}table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}th{background:#2B2D42;color:#fff;padding:8px;text-align:left}td{padding:6px 8px;border-bottom:1px solid #333}.g{color:#00B894}.d{color:#D63031}.sub{color:#999;font-size:10px}.hero{font-size:28px;font-weight:800;margin:8px 0}.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0}.box{background:#2B2D42;padding:12px;border-radius:8px;text-align:center}.box .lbl{font-size:10px;color:#999}.box .val{font-size:16px;font-weight:700;margin-top:4px}@media print{body{background:#fff;color:#000}th{background:#eee;color:#000}td{border-color:#ddd}.box{background:#f5f5f5;border:1px solid #ddd}}</style></head><body>';
+  html+='<h1>'+invIcon(inv.type)+' '+inv.label+'</h1>';
+  html+='<div class="sub">'+inv.type+(inv.nseSymbol?' · '+inv.nseSymbol:'')+(inv.platform?' · '+inv.platform:'')+(inv.sector?' · '+inv.sector:'')+'</div>';
+  html+='<div class="grid"><div class="box"><div class="lbl">INVESTED</div><div class="val">₹'+Math.round(invested).toLocaleString('en-IN')+'</div></div>';
+  html+='<div class="box"><div class="lbl">CURRENT</div><div class="val">₹'+Math.round(val).toLocaleString('en-IN')+'</div></div>';
+  html+='<div class="box"><div class="lbl">RETURNS</div><div class="val '+(ret>=0?'g':'d')+'">'+(ret>=0?'+':'')+'₹'+Math.round(Math.abs(ret)).toLocaleString('en-IN')+' ('+retP.toFixed(1)+'%)</div></div></div>';
+  html+='<div class="grid"><div class="box"><div class="lbl">XIRR</div><div class="val '+(xirr>=0?'g':'d')+'">'+(xirr?xirr.toFixed(1)+'%':'—')+'</div></div>';
+  html+='<div class="box"><div class="lbl">SIGNAL</div><div class="val">'+ec.icon+' '+ec.label+'</div></div>';
+  html+='<div class="box"><div class="lbl">STARTED</div><div class="val">'+(inv.started||'—')+'</div></div></div>';
+  if(inv.annualDividendRate>0&&inv.qty>0){html+='<div class="box" style="margin:12px 0"><div class="lbl">ANNUAL DIVIDEND</div><div class="val g">₹'+Math.round(inv.qty*inv.annualDividendRate).toLocaleString('en-IN')+'</div><div class="sub">₹'+inv.annualDividendRate.toFixed(2)+'/share × '+inv.qty+' shares</div></div>';}
+  if(lots.length>0){
+    html+='<h2 style="font-size:14px;margin-top:16px">Purchase History ('+lots.length+' transactions)</h2><table><thead><tr><th>Date</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead><tbody>';
+    lots.forEach(function(l){html+='<tr><td>'+l.date+'</td><td>'+l.qty+'</td><td>₹'+(l.price||0).toFixed(2)+'</td><td>₹'+Math.round(l.qty*l.price).toLocaleString('en-IN')+'</td></tr>'});
+    html+='</tbody></table>';
+  }
+  html+='<div style="margin-top:20px;text-align:center;font-size:11px;color:#6C5CE7"><b>Generated by ValeurFin</b> · '+new Date().toLocaleDateString('en-IN')+'</div>';
+  html+='<div style="text-align:center;margin-top:8px"><button onclick="window.print()" style="background:#6C5CE7;color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:12px">🖨️ Print / Save PDF</button></div>';
+  html+='</body></html>';
+  var w=window.open('','_blank');w.document.write(html);w.document.close();
+}
+
+// ===== CAPITAL GAINS HARVESTING =====
+function renderTaxHarvest(){
+  var el=document.getElementById('tax-harvest');if(!el)return;
+  var inv=filterByMember(S.investments).filter(function(i){return i.type==='Stocks'&&i.invested>0});
+  var today=new Date();var oneYear=365.25*86400000;
+  var ltcgCandidates=[];var stcgCandidates=[];
+  inv.forEach(function(i){
+    var val=getInvValue(i);var gain=val-(i.invested||0);
+    var holdDays=i.started?Math.floor((today-new Date(i.started))/86400000):0;
+    if(holdDays>365&&gain>0&&gain<=125000){ltcgCandidates.push({label:i.label,gain:gain,val:val,days:holdDays})}
+    if(holdDays<=365&&gain<0){stcgCandidates.push({label:i.label,loss:Math.abs(gain),val:val,days:holdDays})}
+  });
+  var h='';
+  if(ltcgCandidates.length>0){
+    h+='<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:var(--g);margin-bottom:6px">🌿 LTCG Harvesting — Sell & rebuy to reset cost basis</div>';
+    h+='<div style="font-size:10px;color:var(--txt2);margin-bottom:8px">LTCG up to ₹1.25L/year is tax-free. These stocks have unrealized gains under that limit.</div>';
+    ltcgCandidates.forEach(function(c){h+='<div style="display:flex;justify-content:space-between;padding:6px 8px;background:var(--bg);border-radius:8px;margin-bottom:3px;font-size:11px;border-left:3px solid var(--g)"><div><b>'+c.label+'</b><br><span style="font-size:9px;color:var(--txt2)">Held '+c.days+' days</span></div><div style="text-align:right;color:var(--g)"><b>+'+fmtFull(c.gain)+'</b><br><span style="font-size:9px">Tax-free if sold</span></div></div>'});
+    h+='</div>';
+  }
+  if(stcgCandidates.length>0){
+    var totalLoss=stcgCandidates.reduce(function(s,c){return s+c.loss},0);
+    h+='<div><div style="font-size:12px;font-weight:700;color:var(--d);margin-bottom:6px">📉 Tax-Loss Harvesting — Book losses to offset gains</div>';
+    h+='<div style="font-size:10px;color:var(--txt2);margin-bottom:8px">Total harvestable loss: '+fmtFull(totalLoss)+' — can offset against short-term gains.</div>';
+    stcgCandidates.forEach(function(c){h+='<div style="display:flex;justify-content:space-between;padding:6px 8px;background:var(--bg);border-radius:8px;margin-bottom:3px;font-size:11px;border-left:3px solid var(--d)"><div><b>'+c.label+'</b><br><span style="font-size:9px;color:var(--txt2)">Held '+c.days+' days</span></div><div style="text-align:right;color:var(--d)"><b>−'+fmtFull(c.loss)+'</b></div></div>'});
+    h+='</div>';
+  }
+  if(!ltcgCandidates.length&&!stcgCandidates.length)h='<div style="text-align:center;padding:16px;color:var(--txt2);font-size:11px">No harvesting opportunities found. Check back before March 31st.</div>';
+  el.innerHTML=h;
+}
+
+// ===== BENCHMARK COMPARISON =====
+function renderBenchmark(){
+  var el=document.getElementById('benchmark-section');if(!el)return;
+  var inv=filterByMember(S.investments);
+  var invested=inv.reduce(function(s,i){return s+(i.invested||0)},0);
+  var nw=inv.reduce(function(s,i){return s+getInvValue(i)},0);
+  var returns=nw-invested;var retPct=invested>0?(returns/invested*100):0;
+  // Approximate Nifty returns based on period
+  var earliest=inv.filter(function(i){return i.started}).map(function(i){return new Date(i.started).getTime()}).filter(function(t){return!isNaN(t)&&t>0});
+  var years=earliest.length?Math.max(0.5,(Date.now()-Math.min.apply(null,earliest))/(365.25*86400000)):1;
+  var niftyCAGR=12.5; // Long-term Nifty 50 CAGR approximation
+  var niftyReturn=Math.round(invested*(Math.pow(1+niftyCAGR/100,years)-1));
+  var niftyPct=invested>0?(niftyReturn/invested*100):0;
+  var beat=retPct>niftyPct;
+  var h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">';
+  h+='<div style="padding:12px;background:'+(beat?'rgba(0,184,148,.08)':'rgba(214,48,49,.08)')+';border-radius:10px;text-align:center;border:1px solid '+(beat?'var(--g)':'var(--d)')+'"><div style="font-size:10px;color:var(--txt2)">YOUR PORTFOLIO</div><div style="font-size:20px;font-weight:800;color:'+(retPct>=0?'var(--g)':'var(--d)')+'">'+retPct.toFixed(1)+'%</div><div style="font-size:9px;color:var(--txt2)">'+fmtFull(returns)+'</div></div>';
+  h+='<div style="padding:12px;background:'+(!beat?'rgba(0,184,148,.08)':'rgba(214,48,49,.08)')+';border-radius:10px;text-align:center;border:1px solid '+(!beat?'var(--g)':'var(--d)')+'"><div style="font-size:10px;color:var(--txt2)">NIFTY 50 (est.)</div><div style="font-size:20px;font-weight:800;color:var(--g)">'+niftyPct.toFixed(1)+'%</div><div style="font-size:9px;color:var(--txt2)">~'+fmtFull(niftyReturn)+'</div></div></div>';
+  h+='<div style="text-align:center;font-size:11px;color:'+(beat?'var(--g)':'var(--d)')+';font-weight:700">'+(beat?'🏆 You beat the benchmark by '+(retPct-niftyPct).toFixed(1)+'%':'📉 Nifty outperformed by '+(niftyPct-retPct).toFixed(1)+'%')+'</div>';
+  h+='<div style="font-size:9px;color:var(--txt3);text-align:center;margin-top:4px">Based on Nifty 50 long-term CAGR of ~12.5% over '+years.toFixed(1)+' years</div>';
+  el.innerHTML=h;
+}
+
+// ===== REBALANCING ADVISOR =====
+function renderRebalance(){
+  var el=document.getElementById('rebalance-section');if(!el)return;
+  var inv=filterByMember(S.investments);
+  var nw=inv.reduce(function(s,i){return s+getInvValue(i)},0);if(nw<=0){el.innerHTML='';return}
+  // Current allocation
+  var buckets={};inv.forEach(function(i){var b=i.bucket||invBucket(i.type);buckets[b]=(buckets[b]||0)+getInvValue(i)});
+  // Target allocation (default)
+  var targets={'Equity':60,'Debt':20,'Alternatives':10,'Hybrid':5,'Retirement':5};
+  var h='<div style="font-size:10px;color:var(--txt2);margin-bottom:8px">Target: 60% Equity · 20% Debt · 10% Alternatives · 5% Hybrid · 5% Retirement</div>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1px solid var(--bdr)"><th style="text-align:left;padding:4px">Asset Class</th><th style="text-align:right">Current</th><th style="text-align:right">Target</th><th style="text-align:right">Gap</th><th style="text-align:right">Action</th></tr></thead><tbody>';
+  Object.keys(targets).forEach(function(b){
+    var cur=buckets[b]||0;var curPct=nw>0?(cur/nw*100):0;
+    var tarPct=targets[b];var gap=Math.round(nw*tarPct/100-cur);
+    var color=gap>=0?'var(--g)':'var(--d)';var action=gap>1000?'Invest '+fmtFull(gap):gap<-1000?'Reduce '+fmtFull(Math.abs(gap)):'✅ Balanced';
+    h+='<tr style="border-bottom:1px solid var(--bdr)"><td style="padding:4px"><span style="color:'+(BUCKET_COLORS[b]||'var(--txt)')+'">●</span> '+b+'</td><td style="text-align:right;padding:4px">'+curPct.toFixed(0)+'%</td><td style="text-align:right;padding:4px">'+tarPct+'%</td><td style="text-align:right;padding:4px;color:'+color+'">'+(gap>=0?'+':'')+fmtFull(gap)+'</td><td style="text-align:right;padding:4px;font-size:9px;color:'+color+'">'+action+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+
+// ===== TRUE XIRR CALCULATOR =====
+function calcXIRR(cashflows){
+  // cashflows = [{date:Date, amount:Number}] — negative=outflow, positive=inflow
+  if(!cashflows||cashflows.length<2)return null;
+  function xnpv(rate,cfs){var t0=cfs[0].date.getTime();return cfs.reduce(function(s,cf){var years=(cf.date.getTime()-t0)/(365.25*86400000);return s+cf.amount/Math.pow(1+rate,years)},0)}
+  function dxnpv(rate,cfs){var t0=cfs[0].date.getTime();return cfs.reduce(function(s,cf){var years=(cf.date.getTime()-t0)/(365.25*86400000);return s-years*cf.amount/Math.pow(1+rate,years+1)},0)}
+  var guess=0.1;
+  for(var i=0;i<100;i++){
+    var npv=xnpv(guess,cashflows);var dnpv=dxnpv(guess,cashflows);
+    if(Math.abs(dnpv)<1e-10)break;
+    var newGuess=guess-npv/dnpv;
+    if(Math.abs(newGuess-guess)<1e-7)return Math.round(newGuess*10000)/100;
+    guess=newGuess;
+    if(guess<-0.99)guess=-0.99;if(guess>10)guess=10;
+  }
+  return Math.round(guess*10000)/100;
+}
+function getInvXIRR(inv){
+  var cfs=[];
+  if((inv.lots||[]).length>0){
+    inv.lots.forEach(function(l){if(l.date&&l.qty&&l.price)cfs.push({date:new Date(l.date),amount:-(l.qty*l.price)})});
+  } else if(inv.started&&inv.invested>0){
+    // For SIPs with monthly: generate monthly cashflows for accurate XIRR
+    if((inv.type==='SIP'||inv.type==='ELSS'||inv.type==='RD')&&inv.monthly>0){
+      var sd=new Date(inv.started);var now=new Date();
+      var d=new Date(sd.getFullYear(),sd.getMonth(),1);
+      while(d<=now){cfs.push({date:new Date(d),amount:-inv.monthly});d=new Date(d.getFullYear(),d.getMonth()+1,1)}
+    } else {
+      cfs.push({date:new Date(inv.started),amount:-inv.invested});
+    }
+  }
+  if(!cfs.length)return null;
+  var val=getInvValue(inv)||0;if(val<=0)return null;
+  cfs.push({date:new Date(),amount:val});
+  cfs.sort(function(a,b){return a.date-b.date});
+  return calcXIRR(cfs);
+}
+
+// ===== NW MILESTONES =====
+var NW_MILESTONES=[1e5,5e5,1e6,2.5e6,5e6,1e7,2.5e7,5e7,1e8];var _lastMilestone=0;
+function checkNWMilestone(nw){
+  if(nw<=0)return;
+  var hit=0;NW_MILESTONES.forEach(function(m){if(nw>=m)hit=m});
+  if(hit>0&&hit!==_lastMilestone){
+    var prev=parseInt(localStorage.getItem('vf_milestone')||'0');
+    if(hit>prev){
+      _lastMilestone=hit;localStorage.setItem('vf_milestone',hit);
+      var label=hit>=1e7?'₹'+Math.round(hit/1e7)+'Cr':hit>=1e5?'₹'+Math.round(hit/1e5)+'L':'₹'+Math.round(hit/1e3)+'K';
+      showConfetti('🎉 Net Worth crossed '+label+'!');
+    } else {_lastMilestone=hit}
+  }
+}
+function showConfetti(msg){
+  var el=document.createElement('div');
+  el.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);animation:fadeIn .3s';
+  el.innerHTML='<div style="background:var(--card);border-radius:20px;padding:30px 40px;text-align:center;animation:popIn .5s ease;max-width:340px"><div style="font-size:48px;margin-bottom:12px">🎉🎊🥳</div><div style="font-size:18px;font-weight:800;color:var(--g);margin-bottom:8px">'+msg+'</div><div style="font-size:12px;color:var(--txt2);margin-bottom:16px">Keep going! Your wealth journey is on track.</div><button onclick="this.parentElement.parentElement.remove()" style="background:var(--p);color:#fff;border:none;padding:10px 24px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">🙌 Awesome!</button></div>';
+  el.onclick=function(e){if(e.target===el)el.remove()};
+  document.body.appendChild(el);
+}
+
 // ===== MONTHLY PLANNER =====
 function buildMonthlyPlanner(){
   var today=new Date();var dayOfMonth=today.getDate();var monthName=today.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
@@ -14569,7 +14779,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.2.0f';
+var APP_VERSION = 'v4.2.0g';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
