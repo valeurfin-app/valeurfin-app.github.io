@@ -4710,49 +4710,28 @@ function getInvQty(inv){if(invHasLots(inv))return inv.lots.reduce(function(s,l){
 function getInvInvested(inv){if(invHasLots(inv))return inv.lots.reduce(function(s,l){return s+(l.qty||0)*(l.price||0)},0);return inv.invested||0;}
 function getInvAvgPrice(inv){if(!invHasLots(inv))return inv.avgPrice||0;var q=getInvQty(inv);return q?getInvInvested(inv)/q:0;}
 function getInvValue(inv){
+  if(!inv)return 0;
   // Path 1: MF/ELSS — units × NAV
   if((inv.type==='SIP'||inv.type==='ELSS')&&inv.totalUnits&&inv.currentNAV)
     return inv.totalUnits*inv.currentNAV;
   // Path 2: Stocks/ETF — lots × live price
   if(invHasLots(inv)&&inv.livePrice)return getInvQty(inv)*inv.livePrice;
-  // Path 3: FD/PPF/EPF — compound annual (computed live, never saved)
-  if((inv.type==='FD'||inv.type==='PPF'||inv.type==='EPF')&&inv.returnRate>0&&inv.started&&inv.invested>0){
-    var s3=new Date(inv.started).getTime();
-    if(!isNaN(s3)){
-      var e3=inv.maturityDate
-        ?Math.min(Date.now(),new Date(inv.maturityDate).getTime())
-        :Date.now();
-      var y3=(e3-s3)/(1000*60*60*24*365.25);
-      if(y3>0)return Math.round(inv.invested*Math.pow(1+inv.returnRate/100,y3));
-    }
+  // Path 3: FD/PPF/EPF/RD — Option C: no compound, return manual value
+  if(inv.type==='FD'||inv.type==='PPF'||inv.type==='EPF'||inv.type==='RD'){
+    return Math.max(inv.value||0, inv.invested||0);
   }
-  // Path 4: RD — each monthly deposit earns compound interest individually
-  if(inv.type==='RD'&&inv.returnRate>0&&inv.started&&inv.monthly>0){
-    var s4=new Date(inv.started).getTime();
-    if(!isNaN(s4)){
-      var e4=inv.maturityDate
-        ?Math.min(Date.now(),new Date(inv.maturityDate).getTime())
-        :Date.now();
-      var mn4=Math.floor((e4-s4)/(1000*60*60*24*30.44));
-      if(mn4>0){
-        var r4=inv.returnRate/100/12;var tot4=0;
-        for(var n4=1;n4<=mn4;n4++)tot4+=inv.monthly*Math.pow(1+r4,mn4-n4+1);
-        return Math.round(tot4);
-      }
-    }
-  }
-  // Path 5: Gold — grams × live gold price (when goldPriceData available)
+  // Path 4: Gold — grams × live gold price (when goldPriceData available)
   if(inv.type==='Gold'&&(inv.grams||0)>0&&goldPriceData){
     var gp5=(inv.goldPurity||24)>=24?goldPriceData.price24k
       :(inv.goldPurity||24)>=22?goldPriceData.price22k
       :goldPriceData.price18k;
     return Math.round(inv.grams*gp5);
   }
-  // Fallback: live value → manual value
-  return inv.liveValue||inv.value||0;
+  // Fallback: live value → manual value → invested
+  return inv.liveValue||inv.value||inv.invested||0;
 }
 function getInvReturns(inv){return getInvValue(inv)-getInvInvested(inv);}
-function getInvXIRR(inv){var val=getInvValue(inv);var invested=getInvInvested(inv);if(!invested||invested<=0)return 0;if(invHasLots(inv)&&inv.lots.length>0){var r=calcLotsXIRR(inv.lots,val);return Math.max(-999,Math.min(999,r));}if(inv.started&&inv.started.length>=8){var sd=new Date(inv.started);if(isNaN(sd.getTime()))return 0;var months=(Date.now()-sd.getTime())/(1000*60*60*24*30.44);if(months<0.5)return 0;var r2=(Math.pow(val/invested,12/months)-1)*100;return Math.max(-999,Math.min(999,r2));}return 0;}
+// getInvXIRR — defined below in XIRR section (uses Newton-Raphson calcXIRR)
 function calcLotsXIRR(lots,currentValue){if(!lots||!lots.length)return 0;var validLots=lots.filter(function(l){var d=new Date(l.date);return l.date&&!isNaN(d.getTime())&&l.qty>0&&l.price>0;});if(!validLots.length)return 0;var today=new Date();var daysDiff=(today-new Date(validLots[0].date))/(1000*60*60*24);if(daysDiff<1)return 0;var cfs=validLots.map(function(l){return{date:new Date(l.date),amount:-(l.qty*l.price)};});cfs.push({date:today,amount:currentValue});cfs.sort(function(a,b){return a.date-b.date});var first=cfs[0].date;function npv(r){return cfs.reduce(function(s,cf){var y=(cf.date-first)/(365.25*24*3600*1000);return s+cf.amount/Math.pow(1+r,y)},0);}var rate=0.1;for(var i=0;i<100;i++){var f=npv(rate);var df=npv(rate+0.0001);var delta=(df-f)/0.0001;if(Math.abs(delta)<1e-10)break;rate=rate-f/delta;if(rate<-0.999)rate=-0.999;if(rate>100)rate=100;}if(isNaN(rate)||!isFinite(rate))return 0;return Math.max(-999,Math.min(999,rate*100));}
 function getQtyOnDate(inv,dateStr){
   var t=new Date(dateStr);
@@ -5621,7 +5600,7 @@ function rDash(){
 
 function rDashTips(nw,invested,returns,mSpend,mIncome,inv){
   var tips=[];
-  var bk={};inv.forEach(function(i){var b=i.bucket||invBucket(i.type);bk[b]=(bk[b]||0)+(i.liveValue||i.value)});
+  var bk={};inv.forEach(function(i){var b=i.bucket||invBucket(i.type);bk[b]=(bk[b]||0)+getInvValue(i)});
   var eq=nw>0?((bk['Equity']||0)/nw*100):0;
   if(eq>80)tips.push({ic:'⚖️',t:'Equity is '+eq.toFixed(0)+'% — add debt for stability.'});
   if(eq<30&&nw>0)tips.push({ic:'📈',t:'Low equity ('+eq.toFixed(0)+'%). Equities grow faster long-term.'});
@@ -5658,7 +5637,7 @@ function rDashExitCues(inv,nw){
 function rDonut(inv,nw,elId,colorMap){
   var el=document.getElementById(elId);
   if(!inv.length||nw<=0){el.innerHTML='<div style="text-align:center;font-size:11px;color:var(--txt3);padding:20px">Add investments</div>';return}
-  var groups={};inv.forEach(function(i){var b=i.bucket||invBucket(i.type);groups[b]=(groups[b]||0)+(i.liveValue||i.value)});
+  var groups={};inv.forEach(function(i){var b=i.bucket||invBucket(i.type);groups[b]=(groups[b]||0)+getInvValue(i)});
   var entries=Object.entries(groups).filter(function(e){return e[1]>0}).sort(function(a,b){return b[1]-a[1]});
   var cum=0;var slices=entries.map(function(e){var p=e[1]/nw;var start=cum;cum+=p;return{name:e[0],val:e[1],pct:p,start:start}});
   var svg='<svg viewBox="0 0 140 140">';
@@ -5681,9 +5660,9 @@ function rSectorDonut(inv,nw){
   var el=document.getElementById('dash-sector');
   var stocks=inv.filter(function(i){return i.type==='Stocks'&&i.sector});
   if(!stocks.length){el.innerHTML='<div style="text-align:center;font-size:11px;color:var(--txt3);padding:20px">Add stocks with sectors</div>';return}
-  var total=stocks.reduce(function(s,i){return s+(i.liveValue||i.value)},0);
+  var total=stocks.reduce(function(s,i){return s+getInvValue(i)},0);
   if(total<=0){el.innerHTML='';return}
-  var groups={};stocks.forEach(function(i){groups[i.sector]=(groups[i.sector]||0)+(i.liveValue||i.value)});
+  var groups={};stocks.forEach(function(i){groups[i.sector]=(groups[i.sector]||0)+getInvValue(i)});
   var entries=Object.entries(groups).filter(function(e){return e[1]>0}).sort(function(a,b){return b[1]-a[1]});
   var cum=0;var slices=entries.map(function(e){var p=e[1]/total;var start=cum;cum+=p;return{name:e[0],val:e[1],pct:p,start:start}});
   var svg='<svg viewBox="0 0 140 140">';
@@ -5710,9 +5689,9 @@ function rDashExpBars(exps){
 function rDashHoldings(inv,nw){
   var el=document.getElementById('dash-holdings');
   if(!inv.length||nw<=0){el.innerHTML='<div style="text-align:center;font-size:11px;color:var(--txt3);padding:20px">Add investments</div>';return}
-  var sorted=inv.slice().sort(function(a,b){return(b.liveValue||b.value)-(a.liveValue||a.value)}).slice(0,8);
+  var sorted=inv.slice().sort(function(a,b){returngetInvValue(b)-getInvValue(a)}).slice(0,8);
   var max=sorted[0]?(sorted[0].liveValue||sorted[0].value):1;
-  el.innerHTML=sorted.map(function(i){var val=i.liveValue||i.value;var up=(val-i.invested)>=0;return '<div class="bar-row"><div class="bar-lbl">'+invIcon(i.type)+' '+i.label.substring(0,15)+'</div><div class="bar-track"><div class="bar-fill" style="background:'+(up?'var(--g)':'var(--d)')+';--w:'+(val/max*100).toFixed(0)+'%"></div></div><div class="bar-val" style="color:'+(up?'var(--g)':'var(--d)')+'">'+fmt(val)+'</div></div>'}).join('');
+  el.innerHTML=sorted.map(function(i){var val=getInvValue(i);var up=(val-i.invested)>=0;return '<div class="bar-row"><div class="bar-lbl">'+invIcon(i.type)+' '+i.label.substring(0,15)+'</div><div class="bar-track"><div class="bar-fill" style="background:'+(up?'var(--g)':'var(--d)')+';--w:'+(val/max*100).toFixed(0)+'%"></div></div><div class="bar-val" style="color:'+(up?'var(--g)':'var(--d)')+'">'+fmt(val)+'</div></div>'}).join('');
 }
 
 function rDashAlerts(){
@@ -12773,7 +12752,7 @@ function renderTax(){
   if(!inv.length){tbody.innerHTML='';empty.style.display='block';document.getElementById('tax-summary').innerHTML='';return}
   empty.style.display='none';var tST=0,tLT=0,tTax=0;
   tbody.innerHTML=inv.map(function(i){
-    var val=i.liveValue||i.value;var gain=val-i.invested;
+    var val=getInvValue(i);var gain=val-i.invested;
     var hd=i.started?Math.floor((Date.now()-new Date(i.started))/(1e3*60*60*24)):0;
     var holdStr=hd>365?Math.floor(hd/365)+'y':hd>30?Math.floor(hd/30)+'m':hd+'d';
     var rules=getTaxRules(i.type,hd);var tax=0;
@@ -12806,7 +12785,7 @@ function getExitCue(inv,val,ret,retPct){
   if(inv.stopLoss&&retPct<=-Math.abs(inv.stopLoss))return{level:'sell',icon:'🛑',label:'Stop Loss',cls:'exit-sell',reason:'Down '+retPct.toFixed(1)+'% — breached stop loss of -'+inv.stopLoss+'%'};
   if(inv.fiftyTwoLow&&inv.livePrice&&inv.livePrice<=inv.fiftyTwoLow*1.05)return{level:'review',icon:'📉',label:'52W Low',cls:'exit-review',reason:'Price ₹'+inv.livePrice.toFixed(0)+' near 52-week low ₹'+inv.fiftyTwoLow.toFixed(0)};
   if(inv.maturityDate){var days=Math.floor((new Date(inv.maturityDate)-Date.now())/(1e3*60*60*24));if(days<=0)return{level:'sell',icon:'⏰',label:'Matured',cls:'exit-mature',reason:'Maturity date passed — consider reinvesting'};if(days<=30)return{level:'review',icon:'⏰',label:'Maturing',cls:'exit-review',reason:days+' days to maturity — plan reinvestment'}}
-  var nw=S.investments.reduce(function(s,i){return s+(i.liveValue||i.value)},0);
+  var nw=S.investments.reduce(function(s,i){return s+getInvValue(i)},0);
   if(nw>0&&val/nw>0.3)return{level:'review',icon:'⚖️',label:'Heavy',cls:'exit-review',reason:((val/nw)*100).toFixed(0)+'% of portfolio in one holding — consider diversifying'};
   if(retPct<-20)return{level:'review',icon:'📉',label:'Loss',cls:'exit-review',reason:'Down '+retPct.toFixed(0)+'% from invested amount'};
   return{level:'hold',icon:'🟢',label:'Hold',cls:'exit-hold',reason:'XIRR '+(getInvXIRR?getInvXIRR(inv).toFixed(1):'0')+'% — no action needed'};
@@ -12814,7 +12793,7 @@ function getExitCue(inv,val,ret,retPct){
 
 function getExitSignals(investments){
   var signals=[];
-  investments.forEach(function(i){var val=i.liveValue||i.value;var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);if(cue.level!=='hold')signals.push({inv:i,level:cue.level,icon:cue.icon,label:cue.label,cls:cue.cls,reason:cue.reason})});
+  investments.forEach(function(i){var val=getInvValue(i);var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);if(cue.level!=='hold')signals.push({inv:i,level:cue.level,icon:cue.icon,label:cue.label,cls:cue.cls,reason:cue.reason})});
   signals.sort(function(a,b){return(a.level==='sell'?0:1)-(b.level==='sell'?0:1)});
   return signals;
 }
@@ -12831,8 +12810,8 @@ function renderExitSignals(){
   if(sells.length){h+='<div class="cd" style="border-left:3px solid var(--d)"><h3 style="color:var(--d)">🔴 Exit ('+sells.length+')</h3>';sells.forEach(function(s){var val=s.inv.liveValue||s.inv.value;h+='<div style="padding:6px 0;border-bottom:1px solid var(--bdr);font-size:11px"><span class="exit-cue exit-sell">'+s.icon+' '+s.label+'</span> <b>'+s.inv.label+'</b> — '+s.reason+' — '+fmt(val)+'</div>'});h+='</div>'}
   if(reviews.length){h+='<div class="cd" style="border-left:3px solid var(--w)"><h3 style="color:var(--w)">🟡 Review ('+reviews.length+')</h3>';reviews.forEach(function(s){h+='<div style="padding:6px 0;border-bottom:1px solid var(--bdr);font-size:11px"><span class="exit-cue exit-review">'+s.icon+' '+s.label+'</span> <b>'+s.inv.label+'</b> — '+s.reason+'</div>'});h+='</div>'}
   // HOLD section — show all investments that are healthy with reasons
-  var holds=inv.filter(function(i){var val=i.liveValue||i.value;var ret=val-(i.invested||0);var retP=(i.invested||0)>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);return cue.level==='hold'});
-  if(holds.length){h+='<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--g)">🟢 Hold ('+holds.length+') — click to see reasons</summary><div class="cd" style="border-left:3px solid var(--g);margin-top:6px">';holds.forEach(function(i){var val=i.liveValue||i.value;var ret=val-(i.invested||0);var retP=(i.invested||0)>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);h+='<div style="padding:4px 0;border-bottom:1px solid var(--bdr);font-size:10px"><span style="color:var(--g)">🟢</span> <b>'+i.label+'</b> — <span style="color:var(--txt2)">'+cue.reason+'</span></div>'});h+='</div></details>'}
+  var holds=inv.filter(function(i){var val=getInvValue(i);var ret=val-(i.invested||0);var retP=(i.invested||0)>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);return cue.level==='hold'});
+  if(holds.length){h+='<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--g)">🟢 Hold ('+holds.length+') — click to see reasons</summary><div class="cd" style="border-left:3px solid var(--g);margin-top:6px">';holds.forEach(function(i){var val=getInvValue(i);var ret=val-(i.invested||0);var retP=(i.invested||0)>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);h+='<div style="padding:4px 0;border-bottom:1px solid var(--bdr);font-size:10px"><span style="color:var(--g)">🟢</span> <b>'+i.label+'</b> — <span style="color:var(--txt2)">'+cue.reason+'</span></div>'});h+='</div></details>'}
   el.innerHTML=h;
 }
 
@@ -12850,7 +12829,7 @@ function renderScreener(){
   var filtered=inv.filter(function(i){
     if(typeF!=='all'&&i.type!==typeF)return false;
     if(sectorF!=='all'&&i.sector!==sectorF)return false;
-    if(cueF!=='all'){var val=i.liveValue||i.value;var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);if(cueF!==cue.level)return false}
+    if(cueF!=='all'){var val=getInvValue(i);var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);if(cueF!==cue.level)return false}
     return true;
   });
   filtered.sort(function(a,b){
@@ -12864,7 +12843,7 @@ function renderScreener(){
   if(!filtered.length){tbody.innerHTML='';empty.style.display='block';document.getElementById('scr-summary').innerHTML='';return}
   empty.style.display='none';var tI=0,tV=0;
   tbody.innerHTML=filtered.map(function(i){
-    var val=i.liveValue||i.value;var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;
+    var val=getInvValue(i);var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;
     var ti=getTaxInfo(i);var ec=getExitCue(i,val,ret,retP);
     var hd=i.started?Math.floor((Date.now()-new Date(i.started))/(1e3*60*60*24)):0;
     var hs=hd>365?Math.floor(hd/365)+'y':hd>30?Math.floor(hd/30)+'m':hd+'d';
@@ -12886,7 +12865,7 @@ function rKPI(){
   var cagrYrs=cagrStart>0?(Date.now()-cagrStart)/(365.25*24*3600*1000):0;
   var cagr=invested>0&&cagrYrs>0.08?(Math.pow(nw/invested,1/cagrYrs)-1)*100:0;
   var retPct=invested>0?(returns/invested*100):0;
-  var bk={};inv.forEach(function(i){bk[i.bucket||invBucket(i.type)]=(bk[i.bucket||invBucket(i.type)]||0)+(i.liveValue||i.value)});
+  var bk={};inv.forEach(function(i){bk[i.bucket||invBucket(i.type)]=(bk[i.bucket||invBucket(i.type)]||0)+getInvValue(i)});
   var eqPct=nw>0?((bk['Equity']||0)/nw*100):0;
   var exps=filterByMember(S.expenses);var mExp=exps.filter(function(e){return e.frequency==='monthly'}).reduce(function(s,e){return s+e.amount},0);
   var liquid=inv.filter(function(i){return['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+i.value},0);
@@ -13110,7 +13089,7 @@ function botAnswer(query){
   var mExp=exps.filter(function(e){return e.frequency==='monthly'}).reduce(function(s,e){return s+(e.amount||0)},0)+exps.filter(function(e){return e.frequency==='yearly'}).reduce(function(s,e){return s+(e.amount||0)/12},0);
   var mInc=incomes.reduce(function(s,i){return s+(i.frequency==='monthly'?(i.amount||0):(i.amount||0)/12)},0);
   // Safe investment value getter
-  function gv(i){return(i.liveValue||i.value||getInvValue(i)||0)}
+  function gv(i){return(getInvValue(i)||0)}
   function gi(i){return(i.invested||0)}
   function grp(i){var inv2=gi(i);return inv2>0?((gv(i)-inv2)/inv2*100):0}
   // Liabilities
@@ -14038,11 +14017,12 @@ function getInvXIRR(inv){
       cfs.push({date:new Date(inv.started),amount:-inv.invested});
     }
   }
-  if(!cfs.length)return null;
-  var val=getInvValue(inv)||0;if(val<=0)return null;
+  if(!cfs.length)return 0;
+  var val=getInvValue(inv)||0;if(val<=0)return 0;
   cfs.push({date:new Date(),amount:val});
   cfs.sort(function(a,b){return a.date-b.date});
-  return calcXIRR(cfs);
+  var result=calcXIRR(cfs);
+  return(result!==null&&!isNaN(result))?result:0;
 }
 
 // ===== NW MILESTONES =====
@@ -14779,7 +14759,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.2.0g';
+var APP_VERSION = 'v4.2.0h';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
