@@ -873,6 +873,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== INVESTMENTS ===== -->
 <div class="pg" id="pg-inv">
+<div id="inv-member-pills"></div>
 <div class="cd" id="swp-summary-card" style="display:none;border-left:3px solid var(--b);margin-bottom:8px">
 <h3 style="color:var(--b)">🔄 Active SWPs <span id="swp-count-badge" class="cd-badge"></span></h3>
 <div id="swp-summary-list" style="font-size:11px;color:var(--txt2)"></div>
@@ -901,6 +902,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== EXPENSES ===== -->
 <div class="pg" id="pg-exp">
+<div id="exp-member-pills"></div>
 <div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn-s" onclick="openExpModal('add')">➕ Add Expense</button><button class="btn-sm" onclick="openExpModal('budget')">📊 Set Budget</button></div>
 <div class="cd"><h3>💸 Monthly Summary</h3><div id="exp-summary"></div></div>
 <div class="cd"><h3>📊 Budget vs Actual</h3><div id="exp-budget-bars"></div></div>
@@ -909,6 +911,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== INCOME ===== -->
 <div class="pg" id="pg-income">
+<div id="inc-member-pills"></div>
 <button class="btn-s" onclick="openIncModal('add')" style="margin-bottom:12px">➕ Add Income</button>
 <div class="cd"><h3>💰 Income Sources</h3><div id="inc-list"></div><div id="inc-empty" class="empty-state" style="display:none"><div class="es-ic">💰</div><h3>No Income</h3><p>Add income sources</p><button class="es-btn" onclick="openIncModal('add')">➕ Add</button></div></div>
 <div class="cd"><h3>📊 Summary</h3><div id="inc-summary"></div></div>
@@ -916,18 +919,21 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== REMINDERS ===== -->
 <div class="pg" id="pg-remind">
+<div id="rem-member-pills"></div>
 <button class="btn-s" onclick="openRemModal('add')" style="margin-bottom:12px">➕ Add Reminder</button>
 <div class="cd"><h3>⏰ Payment Reminders</h3><div id="rem-list"></div><div id="rem-empty" class="empty-state" style="display:none"><div class="es-ic">⏰</div><h3>No Reminders</h3><p>Add CC bills, EMIs</p><button class="es-btn" onclick="openRemModal('add')">➕ Add</button></div></div>
 </div>
 
 <!-- ===== GOALS ===== -->
 <div class="pg" id="pg-goals">
+<div id="goal-member-pills"></div>
 <button class="btn-s" onclick="openGoalModalFn()" style="margin-bottom:12px">➕ Add Goal</button>
 <div class="cd"><h3>🎯 Financial Goals</h3><div id="goal-list"></div><div id="goal-empty" class="empty-state" style="display:none"><div class="es-ic">🎯</div><h3>No Goals</h3><p>Set financial goals</p><button class="es-btn" onclick="openGoalModalFn()">➕ Add</button></div></div>
 </div>
 
 <!-- ===== INSURANCE ===== -->
 <div class="pg" id="pg-ins">
+<div id="ins-member-pills"></div>
 <button class="btn-s" onclick="openInsModal('add')" style="margin-bottom:12px">➕ Add Policy</button>
 <div class="cd"><h3>🛡️ Insurance Score</h3><div id="ins-score"></div></div>
 <div class="cd"><h3>📋 Policies</h3><div id="ins-list"></div><div id="ins-empty" class="empty-state" style="display:none"><div class="es-ic">🛡️</div><h3>No Policies</h3><p>Track insurance</p><button class="es-btn" onclick="openInsModal('add')">➕ Add</button></div></div>
@@ -946,6 +952,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== KPIs ===== -->
 <div class="pg" id="pg-kpi">
+<div id="kpi-member-pills"></div>
 <div class="cd"><h3>📐 KPIs <span class="cd-badge">Professional</span></h3><p class="m-sub">Institutional-grade metrics</p><div id="kpi-list"></div><div id="kpi-empty" class="empty-state" style="display:none"><div class="es-ic">📐</div><h3>KPIs</h3><p>Add investments and process months</p></div></div>
 <div class="cd" style="margin-top:12px"><h3>📊 Benchmark Comparison</h3><div id="benchmark-section"></div></div>
 <div class="cd" style="margin-top:12px"><h3>⚖️ Rebalancing Advisor</h3><div id="rebalance-section"></div></div>
@@ -1013,6 +1020,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== TAX CALCULATOR (NEW) ===== -->
 <div class="pg" id="pg-tax">
+<div id="tax-member-pills"></div>
 <div class="cd"><h3>🧮 Tax Calculator <span class="cd-badge">FY 2025-26</span></h3><p class="m-sub">FY 2025-26 (AY 2026-27) · Rates per Budget 2024, w.e.f. 23 Jul 2024</p>
 <div class="tax-summary" id="tax-summary"></div>
 <div style="overflow-x:auto"><table class="tax-tbl"><thead><tr><th>Name</th><th>Type</th><th>Invested</th><th>Current</th><th>Gain</th><th>Held</th><th>Category</th><th>Rate</th><th>Tax</th><th>Tip</th></tr></thead><tbody id="tax-tbody"></tbody></table></div>
@@ -1022,6 +1030,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- ===== EXIT SIGNALS (NEW) ===== -->
 <div class="pg" id="pg-exit">
+<div id="exit-member-pills"></div>
 <div class="cd"><h3>🚪 Exit Signals & Cues <button class="btn-sm" onclick="document.getElementById('exit-info-modal').classList.add('open')" style="margin-left:8px;font-size:10px">ℹ️ How signals work</button></h3><p class="m-sub">When to hold, review, or exit positions</p>
 <div id="exit-signals-list"></div>
 <div id="exit-empty" class="empty-state" style="display:none"><div class="es-ic">🚪</div><h3>No Signals</h3><p>Add investments to see exit cues</p></div>
@@ -1113,6 +1122,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 </div>
 
 <div class="pg" id="pg-loans">
+<div id="loan-member-pills"></div>
 <div class="cd">
 <h3>🏦 Loans & Liabilities</h3>
 <p class="m-sub">Track home loans, car loans, personal loans — see true net worth after liabilities.</p>
@@ -4541,7 +4551,7 @@ function obFinish(withPin){
 // ===== FAMILY =====
 function renderFamilyDD(){
   var dd=document.getElementById('sb-family-dd'),sw=document.getElementById('sb-family-switch');
-  if(S.user.mode==='family'){
+  if(S.user.mode==='family'||(S.family&&S.family.length>0)){
     sw.style.display='block';
     // Rebuild dropdown — always show self + any family members
     dd.innerHTML='<option value="all">👨‍👩‍👧‍👦 All Members</option>'
@@ -4556,7 +4566,7 @@ function renderFamilyDD(){
   }
 }
 function showMemberSwitcher(){
-  if(!S||S.user.mode!=='family')return;
+  if(!S||(S.user.mode!=='family'&&!(S.family&&S.family.length>0)))return;
   var ALL_FAM="👨‍👩‍👧‍👦";
   var PERSON="👤";
   var members=[
@@ -4810,7 +4820,7 @@ function releaseFocus(overlayEl){
 function renderMemberPills(containerId){
   var el=document.getElementById(containerId);
   if(!el)return;
-  if(S.user.mode!=="family"){el.innerHTML="";return;}
+  if(S.user.mode!=="family"&&!(S.family&&S.family.length>0)){el.innerHTML="";return;}
   var ALL_FAM="👨‍👩‍👧‍👦";
   var PERSON="👤";
   var members=[
@@ -5702,6 +5712,7 @@ function rDashAlerts(){
 
 // ===== INVESTMENTS PAGE =====
 function rInv(){
+  renderMemberPills('inv-member-pills');
   var inv=filterByMember(S.investments);var tbody=document.getElementById('inv-tbody');var empty=document.getElementById('inv-empty');
   document.getElementById('inv-count').textContent=inv.length;
   rSwpSummary(inv);
@@ -5869,6 +5880,7 @@ function saveEdit(){
     } else {
       // Add new member
       S.family.push({id:uid(),name:name,relation:rel,age:''});
+      if(S.user.mode!=='family')S.user.mode='family';
     }
     saveS().then(function(){renderAll();closeEditModal();toast(name+(editingId?' updated':' added'));});
     return;
@@ -6151,7 +6163,7 @@ function buildAddFields(){
      +'<input type="hidden" id="add-return" value="0"></div></div>';
   }
   // --- Owner (all types, family mode) ---
-  if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
+  if(S.user.mode==='family'||(S.family&&S.family.length>0))h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
   // --- Emergency Fund tag (all types) ---
   h+='<div class="fg" style="margin-top:4px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px"><input type="checkbox" id="add-emergency-fund" style="width:16px;height:16px"> Tag as Emergency Fund <span style="font-size:9px;color:var(--txt2);font-weight:400">(used for emergency fund calculations)</span></label></div>';
   // --- Gold: Sub-type + Grams + Purity ---
@@ -11903,6 +11915,7 @@ function addInvestment(){
 // ===== EXPENSES =====
 var editingExpId=null;
 function rExp(){
+  renderMemberPills('exp-member-pills');
   var exps=filterByMember(S.expenses);var el=document.getElementById('exp-list');var empty=document.getElementById('exp-empty');
   if(!exps.length){el.innerHTML='';empty.style.display='block';document.getElementById('exp-summary').innerHTML='';document.getElementById('exp-budget-bars').innerHTML='';return}
   empty.style.display='none';
@@ -11932,6 +11945,7 @@ function closeExpModal(){releaseFocus(document.getElementById('exp-modal'));docu
 
 // ===== INCOME =====
 function rIncome(){
+  renderMemberPills('inc-member-pills');
   var inc=filterByMember(S.income);var el=document.getElementById('inc-list');var empty=document.getElementById('inc-empty');
   if(!inc.length){el.innerHTML='';empty.style.display='block';document.getElementById('inc-summary').innerHTML='';return}empty.style.display='none';
   var tM=inc.reduce(function(s,i){return s+(i.frequency==='monthly'?i.amount:i.amount/12)},0);
@@ -11947,7 +11961,7 @@ function deleteInc(id){S.income=S.income.filter(function(i){return i.id!==id});s
 function closeIncModal(){releaseFocus(document.getElementById('inc-modal'));document.getElementById('inc-modal').classList.remove('open')}
 
 // ===== REMINDERS =====
-function rReminders(){var rems=filterByMember(S.reminders);var el=document.getElementById('rem-list');var empty=document.getElementById('rem-empty');if(!rems.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';el.innerHTML=rems.map(function(r){
+function rReminders(){renderMemberPills('rem-member-pills');var rems=filterByMember(S.reminders);var el=document.getElementById('rem-list');var empty=document.getElementById('rem-empty');if(!rems.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';el.innerHTML=rems.map(function(r){
     var freqLabel=r.frequency==='monthly'?'Monthly':r.frequency==='quarterly'?'Quarterly':'Yearly';
     return '<div class="rem-item"><div class="rem-ic" style="background:var(--wbg)">'+remIcon(r.remType)+'</div>'
       +'<div class="rem-body"><h4>'+r.label+'</h4><p>'+remLabel(r.remType)+' · Due '+ordinal(parseInt(r.dueDate))+' · '+freqLabel+'</p></div>'
@@ -11990,7 +12004,7 @@ function closeRemModal(){releaseFocus(document.getElementById('rem-modal'));docu
 
 // ===== GOALS =====
 var editingGoalId=null;
-function rGoals(){var goals=S.goals||[];var el=document.getElementById('goal-list');var empty=document.getElementById('goal-empty');if(!goals.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';
+function rGoals(){renderMemberPills('goal-member-pills');var goals=S.goals||[];var el=document.getElementById('goal-list');var empty=document.getElementById('goal-empty');if(!goals.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';
   // Auto-calculate current from linked investments
   goals.forEach(function(g){
     if(g.linkedInvestments&&g.linkedInvestments.length){
@@ -12034,6 +12048,7 @@ function closeGoalModal(){document.getElementById('goal-modal').classList.remove
 
 // ===== INSURANCE =====
 function rInsurance(){
+  renderMemberPills('ins-member-pills');
   var policies=filterByMember(S.insurance);var el=document.getElementById('ins-list');var empty=document.getElementById('ins-empty');
   var iScore=calcInsuranceScore();
   // HARDCODED SVG — radius=40, center=48
@@ -12799,6 +12814,7 @@ function getExitSignals(investments){
 }
 
 function renderExitSignals(){
+  renderMemberPills('exit-member-pills');
   var inv=filterByMember(S.investments);var signals=getExitSignals(inv);
   var el=document.getElementById('exit-signals-list');var empty=document.getElementById('exit-empty');
   if(!inv.length){el.innerHTML='';empty.style.display='block';return}
@@ -12856,6 +12872,7 @@ function renderScreener(){
 
 // ===== KPIs =====
 function rKPI(){
+  renderMemberPills('kpi-member-pills');
   var inv=filterByMember(S.investments);var el=document.getElementById('kpi-list');var empty=document.getElementById('kpi-empty');
   if(!inv.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';
   var nw=inv.reduce(function(s,i){return s+getInvValue(i)},0);
@@ -13820,6 +13837,7 @@ function getTotalLiabilities(){
 }
 
 function rLoans(){
+  renderMemberPills('loan-member-pills');
   var loans=S.loans||[];var el=document.getElementById('loan-list');var empty=document.getElementById('loan-empty');var summary=document.getElementById('loan-summary');
   if(!loans.length){el.innerHTML='';empty.style.display='block';summary.innerHTML='';return}
   empty.style.display='none';
@@ -14759,7 +14777,7 @@ function ensureMonthlySnapshot() {
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.2.0h';
+var APP_VERSION = 'v4.2.0i';
 
 function showUpdateBanner() {
   // Don't show if banner already exists
