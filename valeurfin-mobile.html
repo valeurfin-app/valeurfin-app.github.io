@@ -651,6 +651,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- INVESTMENTS -->
 <div class="pg" id="pg-inv">
+<div id="inv-member-pills"></div>
 <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">
 <input class="inp" id="inv-search" type="text" placeholder="🔍 Search..." oninput="searchInvM()" style="flex:1;min-width:120px">
 <select class="inp" id="inv-sort" onchange="sortInvM()" style="max-width:130px;font-size:10px"><option value="name">Name</option><option value="value-desc">Value ↓</option><option value="return-desc">Return ↓</option><option value="sector">Sector</option></select>
@@ -663,6 +664,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <!-- EXPENSES -->
 <div class="pg" id="pg-exp">
+<div id="exp-member-pills"></div>
 <div style="display:flex;gap:6px;margin-bottom:8px"><button class="btn-s" onclick="openExpModal('add')">➕ Add</button><button class="btn-sm" onclick="openExpModal('budget')">📊 Budget</button></div>
 <div id="exp-summary"></div>
 <div class="cd"><h3>📊 Budget vs Actual</h3><div id="exp-budget-bars"></div></div>
@@ -739,6 +741,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- INCOME -->
 <div class="pg" id="pg-income">
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
+<div id="inc-member-pills"></div>
 <button class="btn-s" onclick="openIncModal()" style="margin-bottom:8px">➕ Add Income</button>
 <div id="inc-summary"></div>
 <div id="inc-list"></div>
@@ -748,6 +751,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- REMINDERS -->
 <div class="pg" id="pg-remind">
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
+<div id="rem-member-pills"></div>
 <button class="btn-s" onclick="openRemModal()" style="margin-bottom:8px">➕ Add Reminder</button>
 <div id="rem-list"></div>
 <div id="rem-empty" class="empty-state" style="display:none"><div class="es-ic">⏰</div><h3>No Reminders</h3><p>Add CC bills, EMIs</p></div>
@@ -756,6 +760,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- GOALS -->
 <div class="pg" id="pg-goals">
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
+<div id="goal-member-pills"></div>
 <button class="btn-s" onclick="openGoalModalFn()" style="margin-bottom:8px">➕ Add Goal</button>
 <div id="goal-list"></div>
 <div id="goal-empty" class="empty-state" style="display:none"><div class="es-ic">🎯</div><h3>No Goals</h3><p>Set financial goals</p></div>
@@ -764,6 +769,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- INSURANCE -->
 <div class="pg" id="pg-ins">
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
+<div id="ins-member-pills"></div>
 <button class="btn-s" onclick="openInsModal()" style="margin-bottom:8px">➕ Add Policy</button>
 <div class="cd"><h3>🛡️ Score</h3><div id="ins-score"></div></div>
 <div id="ins-list"></div>
@@ -785,6 +791,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- KPIs -->
 <div class="pg" id="pg-kpi">
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
+<div id="kpi-member-pills"></div>
 <div id="kpi-list"></div>
 <div id="kpi-empty" class="empty-state" style="display:none"><div class="es-ic">📐</div><h3>KPIs</h3><p>Process months first</p></div>
 <div class="cd" style="margin-top:8px"><h3 style="font-size:12px">📊 Benchmark</h3><div id="benchmark-section"></div></div>
@@ -827,6 +834,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 <!-- EXIT SIGNALS -->
 <div class="pg" id="pg-exit">
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
+<div id="exit-member-pills"></div>
 <div class="cd"><h3>🚪 Exit Signals <button class="btn-sm" onclick="document.getElementById('exit-info-modal').classList.add('open')" style="font-size:9px;margin-left:4px">ℹ️ How?</button></h3>
 <div id="exit-list-m"></div>
 <div id="exit-empty-m" class="empty-state" style="display:none"><div class="es-ic">🚪</div><h3>No Signals</h3></div>
@@ -947,6 +955,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator,input[type="month"].in
 
 <div class="pg" id="pg-loans">
 <button class="btn-sm" onclick="goNav('more')" style="margin-bottom:8px">← Back</button>
+<div id="loan-member-pills"></div>
 <div class="cd">
 <h3>🏦 Loans</h3>
 <p class="m-sub">Track liabilities — see true net worth.</p>
@@ -3855,7 +3864,7 @@ function renderFamilyDD(){
   var dd=document.getElementById('family-dd');
   var bar=document.getElementById('family-bar');
   var ct=document.getElementById('content');
-  if(S.user.mode==='family'){
+  if(S.user.mode==='family'||(S.family&&S.family.length>0)){
     if(bar)bar.classList.add('show');
     if(ct)ct.classList.add('with-family');
     dd.innerHTML='<option value="all">👨‍👩‍👧‍👦 All Members</option>'
@@ -4184,7 +4193,7 @@ function releaseFocus(overlayEl){
 function renderMemberPills(containerId){
   var el=document.getElementById(containerId);
   if(!el)return;
-  if(S.user.mode!=="family"){el.innerHTML="";return;}
+  if(S.user.mode!=="family"&&!(S.family&&S.family.length>0)){el.innerHTML="";return;}
   var AF="👨‍👩‍👧‍👦";var P="👤";
   var members=[{id:"all",name:"All Family",icon:AF},{id:"self",name:S.user.name,icon:P}]
     .concat((S.family||[]).map(function(f){return{id:f.id,name:f.name,icon:P};}));
@@ -5096,7 +5105,7 @@ function rHomeExitCues(inv){var el=document.getElementById('home-exit-cues');if(
 function rHomeAlerts(){var el=document.getElementById('home-alerts');if(!alertList.length){el.innerHTML='<div style="text-align:center;padding:8px;font-size:9px;color:var(--txt3)">✅ All clear</div>';return}el.innerHTML=alertList.slice(0,4).map(function(a){return '<div class="alert-item"><span class="a-ic">'+a.icon+'</span><div class="a-body"><b>'+a.title+'</b><small>'+a.desc+'</small></div></div>'}).join('')}
 
 // ===== INVESTMENTS =====
-function rInv(){var inv=filterByMember(S.investments);var el=document.getElementById('inv-list');var empty=document.getElementById('inv-empty');if(!inv.length){el.innerHTML='';empty.style.display='block';document.getElementById('inv-pills').innerHTML='';return}empty.style.display='none';
+function rInv(){renderMemberPills('inv-member-pills');var inv=filterByMember(S.investments);var el=document.getElementById('inv-list');var empty=document.getElementById('inv-empty');if(!inv.length){el.innerHTML='';empty.style.display='block';document.getElementById('inv-pills').innerHTML='';return}empty.style.display='none';
   var types=[];inv.forEach(function(i){if(types.indexOf(i.type)===-1)types.push(i.type)});
   document.getElementById('inv-pills').innerHTML='<button class="pill on" onclick="filterInvM(this,\'all\')">All</button>'+types.map(function(t){return '<button class="pill" onclick="filterInvM(this,\''+t+'\')">'+invIcon(t)+' '+t+'</button>'}).join('');
   el.innerHTML=inv.map(function(i){var val=getInvValue(i);var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;var liveUp=(i.dayChangePct||0)>=0;var ti=getTaxInfo(i);var ec=getExitCue(i,val,ret,retP);
@@ -5168,6 +5177,7 @@ function saveEdit(){
       if(mb){mb.name=name;mb.relation=rel;}
     } else {
       S.family.push({id:uid(),name:name,relation:rel,age:''});
+      if(S.user.mode!=='family')S.user.mode='family';
     }
     saveS().then(function(){renderAll();closeEditModal();fireNotif('✅',name+(editingId?' updated':' added'),'');});
     return;
@@ -5274,7 +5284,7 @@ function buildAddFields(){var t=INV_TYPES.find(function(x){return x.id===selecte
      +'<input type="hidden" id="add-return" value="0"></div></div>';
   }
   // --- Owner (all types, family mode) ---
-  if(S.user.mode==='family')h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
+  if(S.user.mode==='family'||(S.family&&S.family.length>0))h+='<div class="fg"><label>Owner</label><select class="inp" id="add-owner"><option value="self">'+S.user.name+'</option>'+(S.family||[]).map(function(f){return '<option value="'+f.id+'">'+f.name+'</option>'}).join('')+'</select></div>';
   // --- Emergency Fund tag ---
   h+='<div class="fg" style="margin-top:4px"><label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px"><input type="checkbox" id="add-emergency-fund" style="width:15px;height:15px"> Emergency Fund <span style="font-size:8px;color:var(--txt2)">(for calculations)</span></label></div>';
   // --- Gold: Sub-type + Grams + Purity ---
@@ -10969,7 +10979,7 @@ function addInvestment(){var t=INV_TYPES.find(function(x){return x.id===selected
   S.investments.push(inv);saveS().then(function(){renderAll();showSuccess('🎉','Added',name,{'Type':t.label,'Value':fmtFull(inv.value)})})}
 
 // ===== EXPENSES =====
-function rExp(){var exps=filterByMember(S.expenses);var el=document.getElementById('exp-list');var empty=document.getElementById('exp-empty');if(!exps.length){el.innerHTML='';empty.style.display='block';document.getElementById('exp-summary').innerHTML='';var catTotals={};exps.forEach(function(e){catTotals[e.category]=(catTotals[e.category]||0)+(e.frequency==='monthly'?e.amount:e.frequency==='yearly'?e.amount/12:e.amount)});var bH='<div style="font-size:11px;font-weight:700;margin-bottom:4px">📊 By Category</div>';Object.keys(catTotals).sort(function(a,b){return catTotals[b]-catTotals[a]}).forEach(function(cat){var pct=tM>0?(catTotals[cat]/tM*100):0;bH+='<div style="margin-bottom:4px"><div style="display:flex;justify-content:space-between;font-size:9px"><span>'+catIcon(cat)+' '+catLabel(cat)+'</span><span>'+fmt(catTotals[cat])+' ('+pct.toFixed(0)+'%)</span></div><div style="height:4px;background:var(--bdr);border-radius:2px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,pct)+'%;background:'+catColor(cat)+';border-radius:2px"></div></div></div>'});document.getElementById('exp-budget-bars').innerHTML=bH;return}empty.style.display='none';var tM=exps.filter(function(e){return e.frequency==='monthly'}).reduce(function(s,e){return s+e.amount},0);document.getElementById('exp-summary').innerHTML='<div class="sg"><div class="st"><div class="lbl">MONTHLY</div><div class="val" style="color:var(--d)">'+fmt(tM)+'</div></div></div>';document.getElementById('exp-budget-bars').innerHTML='';el.innerHTML=exps.map(function(e){return '<div class="exp-item"><div class="exp-ic" style="background:'+catColor(e.category)+'20">'+catIcon(e.category)+'</div><div class="exp-body"><h4>'+e.label+'</h4><p>'+catLabel(e.category)+' · '+e.frequency+'</p></div><div class="exp-r"><div class="rv">'+fmtFull(e.amount)+'</div></div><div class="exp-actions"><button onclick="openExpModal(\'edit\',\''+e.id+'\')">✏️</button><button onclick="deleteExp(\''+e.id+'\')">🗑️</button></div></div>'}).join('')}
+function rExp(){renderMemberPills('exp-member-pills');var exps=filterByMember(S.expenses);var el=document.getElementById('exp-list');var empty=document.getElementById('exp-empty');if(!exps.length){el.innerHTML='';empty.style.display='block';document.getElementById('exp-summary').innerHTML='';var catTotals={};exps.forEach(function(e){catTotals[e.category]=(catTotals[e.category]||0)+(e.frequency==='monthly'?e.amount:e.frequency==='yearly'?e.amount/12:e.amount)});var bH='<div style="font-size:11px;font-weight:700;margin-bottom:4px">📊 By Category</div>';Object.keys(catTotals).sort(function(a,b){return catTotals[b]-catTotals[a]}).forEach(function(cat){var pct=tM>0?(catTotals[cat]/tM*100):0;bH+='<div style="margin-bottom:4px"><div style="display:flex;justify-content:space-between;font-size:9px"><span>'+catIcon(cat)+' '+catLabel(cat)+'</span><span>'+fmt(catTotals[cat])+' ('+pct.toFixed(0)+'%)</span></div><div style="height:4px;background:var(--bdr);border-radius:2px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,pct)+'%;background:'+catColor(cat)+';border-radius:2px"></div></div></div>'});document.getElementById('exp-budget-bars').innerHTML=bH;return}empty.style.display='none';var tM=exps.filter(function(e){return e.frequency==='monthly'}).reduce(function(s,e){return s+e.amount},0);document.getElementById('exp-summary').innerHTML='<div class="sg"><div class="st"><div class="lbl">MONTHLY</div><div class="val" style="color:var(--d)">'+fmt(tM)+'</div></div></div>';document.getElementById('exp-budget-bars').innerHTML='';el.innerHTML=exps.map(function(e){return '<div class="exp-item"><div class="exp-ic" style="background:'+catColor(e.category)+'20">'+catIcon(e.category)+'</div><div class="exp-body"><h4>'+e.label+'</h4><p>'+catLabel(e.category)+' · '+e.frequency+'</p></div><div class="exp-r"><div class="rv">'+fmtFull(e.amount)+'</div></div><div class="exp-actions"><button onclick="openExpModal(\'edit\',\''+e.id+'\')">✏️</button><button onclick="deleteExp(\''+e.id+'\')">🗑️</button></div></div>'}).join('')}
 var _editExpId=null;
 function openExpModal(mode,editId){_editExpId=mode==='edit'?editId:null;var exp=_editExpId?S.expenses.find(function(e){return e.id===_editExpId}):null;document.getElementById('exm-form').innerHTML='<div class="fg"><label>Description</label><input class="inp" id="exp-label" value="'+(exp?exp.label:'')+'"></div><div class="fr"><div class="fg"><label>Category</label><select class="inp" id="exp-cat">'+EXPENSE_CATS.map(function(c){return '<option value="'+c.id+'" '+(exp&&exp.category===c.id?'selected':'')+'>'+c.icon+' '+c.label+'</option>'}).join('')+'</select></div><div class="fg"><label>Amount</label><input class="inp" id="exp-amount" type="number" value="'+(exp?exp.amount:'')+'"></div></div><div class="fg"><label>Frequency</label><select class="inp" id="exp-freq"><option value="monthly" '+(exp&&exp.frequency==='monthly'?'selected':'')+'>Monthly</option><option value="yearly" '+(exp&&exp.frequency==='yearly'?'selected':'')+'>Yearly</option><option value="one-time" '+(exp&&exp.frequency==='one-time'?'selected':'')+'>One-time</option></select></div>';document.getElementById('exp-modal').classList.add('open');trapFocus(document.getElementById('exp-modal'))}
 function saveExpense(){var l=document.getElementById('exp-label').value.trim(),c=document.getElementById('exp-cat').value,a=parseFloat(document.getElementById('exp-amount').value)||0,f=document.getElementById('exp-freq').value;if(!l||!a){fireNotif('⚠️','Fill fields','');return}if(_editExpId){var exp=S.expenses.find(function(e){return e.id===_editExpId});if(exp){exp.label=l;exp.category=c;exp.amount=a;exp.frequency=f}}else{S.expenses.push({id:uid(),label:l,category:c,amount:a,frequency:f,owner:'self',createdAt:Date.now()})}saveS().then(function(){renderAll();closeExpModal();fireNotif('✅','Saved','')})}
@@ -10977,14 +10987,14 @@ function deleteExp(id){if(confirm('Delete?')){S.expenses=S.expenses.filter(funct
 function closeExpModal(){releaseFocus(document.getElementById('exp-modal'));document.getElementById('exp-modal').classList.remove('open')}
 
 // ===== INCOME =====
-function rIncome(){var inc=filterByMember(S.income);var el=document.getElementById('inc-list');var empty=document.getElementById('inc-empty');if(!inc.length){el.innerHTML='';empty.style.display='block';document.getElementById('inc-summary').innerHTML='';return}empty.style.display='none';var tM=inc.reduce(function(s,i){return s+(i.frequency==='monthly'?i.amount:i.amount/12)},0);document.getElementById('inc-summary').innerHTML='<div class="sg"><div class="st"><div class="lbl">MONTHLY</div><div class="val" style="color:var(--g)">'+fmt(tM)+'</div></div></div>';el.innerHTML=inc.map(function(i){return '<div class="inc-item"><div class="inc-ic">'+incIcon(i.category)+'</div><div class="inc-body"><h4>'+i.label+'</h4><p>'+i.frequency+'</p></div><div class="exp-r"><div class="rv">'+fmtFull(i.amount)+'</div></div><div class="exp-actions"><button onclick="deleteInc(\''+i.id+'\')">🗑️</button></div></div>'}).join('')}
+function rIncome(){renderMemberPills('inc-member-pills');var inc=filterByMember(S.income);var el=document.getElementById('inc-list');var empty=document.getElementById('inc-empty');if(!inc.length){el.innerHTML='';empty.style.display='block';document.getElementById('inc-summary').innerHTML='';return}empty.style.display='none';var tM=inc.reduce(function(s,i){return s+(i.frequency==='monthly'?i.amount:i.amount/12)},0);document.getElementById('inc-summary').innerHTML='<div class="sg"><div class="st"><div class="lbl">MONTHLY</div><div class="val" style="color:var(--g)">'+fmt(tM)+'</div></div></div>';el.innerHTML=inc.map(function(i){return '<div class="inc-item"><div class="inc-ic">'+incIcon(i.category)+'</div><div class="inc-body"><h4>'+i.label+'</h4><p>'+i.frequency+'</p></div><div class="exp-r"><div class="rv">'+fmtFull(i.amount)+'</div></div><div class="exp-actions"><button onclick="deleteInc(\''+i.id+'\')">🗑️</button></div></div>'}).join('')}
 function openIncModal(){document.getElementById('inm-form').innerHTML='<div class="fg"><label>Source</label><input class="inp" id="inc-label"></div><div class="fr"><div class="fg"><label>Category</label><select class="inp" id="inc-cat">'+INCOME_CATS.map(function(c){return '<option value="'+c.id+'">'+c.icon+' '+c.label+'</option>'}).join('')+'</select></div><div class="fg"><label>Amount</label><input class="inp" id="inc-amount" type="number"></div></div><div class="fg"><label>Frequency</label><select class="inp" id="inc-freq"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></div>';document.getElementById('inc-modal').classList.add('open');trapFocus(document.getElementById('inc-modal'))}
 function saveIncome(){var l=document.getElementById('inc-label').value.trim(),c=document.getElementById('inc-cat').value,a=parseFloat(document.getElementById('inc-amount').value)||0,f=document.getElementById('inc-freq').value;if(!l||!a){fireNotif('⚠️','Fill','');return}S.income.push({id:uid(),label:l,category:c,amount:a,frequency:f,owner:'self',createdAt:Date.now()});saveS().then(function(){renderAll();closeIncModal();fireNotif('✅','Saved','')})}
 function deleteInc(id){S.income=S.income.filter(function(i){return i.id!==id});saveS().then(function(){renderAll()})}
 function closeIncModal(){releaseFocus(document.getElementById('inc-modal'));document.getElementById('inc-modal').classList.remove('open')}
 
 // ===== REMINDERS =====
-function rReminders(){var rems=filterByMember(S.reminders);var el=document.getElementById('rem-list');var empty=document.getElementById('rem-empty');if(!rems.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';el.innerHTML=rems.map(function(r){return '<div class="rem-item"><div class="rem-ic" style="background:var(--wbg)">'+remIcon(r.remType)+'</div><div class="rem-body"><h4>'+r.label+'</h4><p>'+ordinal(parseInt(r.dueDate))+' · '+(r.frequency||'monthly')+'</p></div><div class="exp-r"><div class="rv" style="color:var(--d)">'+fmtFull(r.amount)+'</div></div><div class="rem-actions"><button onclick="openRemModal(\''+r.id+'\')">✏️</button><button onclick="deleteRem(\''+r.id+'\')">🗑️</button></div></div>'}).join('')}
+function rReminders(){renderMemberPills('rem-member-pills');var rems=filterByMember(S.reminders);var el=document.getElementById('rem-list');var empty=document.getElementById('rem-empty');if(!rems.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';el.innerHTML=rems.map(function(r){return '<div class="rem-item"><div class="rem-ic" style="background:var(--wbg)">'+remIcon(r.remType)+'</div><div class="rem-body"><h4>'+r.label+'</h4><p>'+ordinal(parseInt(r.dueDate))+' · '+(r.frequency||'monthly')+'</p></div><div class="exp-r"><div class="rv" style="color:var(--d)">'+fmtFull(r.amount)+'</div></div><div class="rem-actions"><button onclick="openRemModal(\''+r.id+'\')">✏️</button><button onclick="deleteRem(\''+r.id+'\')">🗑️</button></div></div>'}).join('')}
 function openRemModal(editId){
   var existing=editId?(S.reminders||[]).find(function(r){return r.id===editId}):null;
   var dateOpts='';for(var d=1;d<=31;d++)dateOpts+='<option value="'+d+'" '+(existing&&existing.dueDate==d?'selected':d===5?'selected':'')+'> '+ordinal(d)+'</option>';
@@ -11002,7 +11012,7 @@ function closeRemModal(){releaseFocus(document.getElementById('rem-modal'));docu
 
 // ===== GOALS =====
 var editingGoalId=null;
-function rGoals(){var goals=S.goals||[];var el=document.getElementById('goal-list');var empty=document.getElementById('goal-empty');if(!goals.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';goals.forEach(function(g){if(g.linkedInvestments&&g.linkedInvestments.length){g.current=g.linkedInvestments.reduce(function(s,lid){var inv=S.investments.find(function(i){return i.id===lid});return s+(inv?getInvValue(inv):0)},0)}});el.innerHTML=goals.map(function(g){var p=g.target>0?Math.min(100,(g.current/g.target*100)):0;var col=p>=100?'var(--g)':p>=50?'var(--b)':'var(--w)';var linked=(g.linkedInvestments||[]).map(function(lid){var inv=S.investments.find(function(i){return i.id===lid});return inv?inv.label:null}).filter(Boolean);return '<div class="gc"><div class="gc-top"><h4>'+(g.icon||'🎯')+' '+g.name+'</h4><div><button style="background:none;border:none;font-size:11px" onclick="linkInvToGoal(\''+g.id+'\')" title="Link">🔗</button><button style="background:none;border:none;font-size:11px" onclick="deleteGoal(\''+g.id+'\')">🗑️</button></div></div><div class="prog"><div class="fill" style="background:'+col+';--w:'+p+'%"></div></div><div class="gc-rw"><span>'+fmt(g.current)+'/'+fmt(g.target)+'</span><span>'+p.toFixed(0)+'%</span></div>'+(linked.length?'<div style="font-size:8px;color:var(--p);margin-top:2px">🔗 '+linked.join(', ')+'</div>':'')+'</div>'}).join('')}
+function rGoals(){renderMemberPills('goal-member-pills');var goals=S.goals||[];var el=document.getElementById('goal-list');var empty=document.getElementById('goal-empty');if(!goals.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';goals.forEach(function(g){if(g.linkedInvestments&&g.linkedInvestments.length){g.current=g.linkedInvestments.reduce(function(s,lid){var inv=S.investments.find(function(i){return i.id===lid});return s+(inv?getInvValue(inv):0)},0)}});el.innerHTML=goals.map(function(g){var p=g.target>0?Math.min(100,(g.current/g.target*100)):0;var col=p>=100?'var(--g)':p>=50?'var(--b)':'var(--w)';var linked=(g.linkedInvestments||[]).map(function(lid){var inv=S.investments.find(function(i){return i.id===lid});return inv?inv.label:null}).filter(Boolean);return '<div class="gc"><div class="gc-top"><h4>'+(g.icon||'🎯')+' '+g.name+'</h4><div><button style="background:none;border:none;font-size:11px" onclick="linkInvToGoal(\''+g.id+'\')" title="Link">🔗</button><button style="background:none;border:none;font-size:11px" onclick="deleteGoal(\''+g.id+'\')">🗑️</button></div></div><div class="prog"><div class="fill" style="background:'+col+';--w:'+p+'%"></div></div><div class="gc-rw"><span>'+fmt(g.current)+'/'+fmt(g.target)+'</span><span>'+p.toFixed(0)+'%</span></div>'+(linked.length?'<div style="font-size:8px;color:var(--p);margin-top:2px">🔗 '+linked.join(', ')+'</div>':'')+'</div>'}).join('')}
 function linkInvToGoal(goalId){var goal=S.goals.find(function(g){return g.id===goalId});if(!goal)return;goal.linkedInvestments=goal.linkedInvestments||[];var inv=filterByMember(S.investments);var h='<div style="max-height:250px;overflow-y:auto">';inv.forEach(function(i){var checked=goal.linkedInvestments.indexOf(i.id)!==-1;h+='<label style="display:flex;align-items:center;gap:6px;padding:5px;cursor:pointer;font-size:10px;border-bottom:1px solid var(--bdr)"><input type="checkbox" class="goal-link-cb" data-inv-id="'+i.id+'" '+(checked?'checked':'')+' style="width:14px;height:14px"><span>'+invIcon(i.type)+' '+i.label+'</span></label>'});h+='</div><button onclick="saveGoalLinks(\''+goalId+'\')" class="btn-sm" style="margin-top:6px;width:100%;padding:6px;background:var(--p);color:#fff">Save</button>';var modal=document.createElement('div');modal.id='goal-link-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;display:flex;align-items:center;justify-content:center';modal.innerHTML='<div style="background:var(--card);border-radius:12px;padding:16px;width:88%"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><h3 style="font-size:13px">🔗 Link to "'+goal.name+'"</h3><button onclick="document.getElementById(\'goal-link-modal\').remove()" style="background:none;border:none;color:var(--txt);font-size:16px">✕</button></div>'+h+'</div>';modal.onclick=function(e){if(e.target===modal)modal.remove()};document.body.appendChild(modal)}
 function saveGoalLinks(goalId){var goal=S.goals.find(function(g){return g.id===goalId});if(!goal)return;goal.linkedInvestments=[];document.querySelectorAll('.goal-link-cb:checked').forEach(function(cb){goal.linkedInvestments.push(cb.getAttribute('data-inv-id'))});document.getElementById('goal-link-modal').remove();saveS().then(function(){renderAll();fireNotif('✅','Linked','')})}
 function openGoalModalFn(id){editingGoalId=id||null;var goal=id?(S.goals||[]).find(function(g){return g.id===id}):null;document.getElementById('gm-form').innerHTML='<div class="fg"><label>Name</label><input class="inp" id="goal-name" value="'+(goal?goal.name:'')+'"></div><div class="fr"><div class="fg"><label>Target</label><input class="inp" id="goal-target" type="number" value="'+(goal?goal.target:'')+'"></div><div class="fg"><label>Current</label><input class="inp" id="goal-current" type="number" value="'+(goal?goal.current:'')+'"></div></div><div class="fg"><label>Deadline</label><input class="inp" id="goal-deadline" type="month" value="'+(goal?goal.deadline:'')+'"></div>';document.getElementById('goal-modal').classList.add('open');trapFocus(document.getElementById('goal-modal'))}
@@ -11011,7 +11021,7 @@ function deleteGoal(id){if(confirm('Delete?')){S.goals=(S.goals||[]).filter(func
 function closeGoalModal(){document.getElementById('goal-modal').classList.remove('open');editingGoalId=null}
 
 // ===== INSURANCE =====
-function rInsurance(){var policies=filterByMember(S.insurance);var el=document.getElementById('ins-list');var empty=document.getElementById('ins-empty');
+function rInsurance(){renderMemberPills('ins-member-pills');var policies=filterByMember(S.insurance);var el=document.getElementById('ins-list');var empty=document.getElementById('ins-empty');
   var iScore=calcInsuranceScore();var iDash=(2*Math.PI*28).toFixed(2);var iOff=(2*Math.PI*28-(iScore.score||0)/100*2*Math.PI*28).toFixed(2);
   document.getElementById('ins-score').innerHTML='<div style="display:flex;align-items:center;gap:12px;padding:6px 0"><div class="score-ring"><svg width="68" height="68"><circle cx="34" cy="34" r="28" fill="none" stroke="var(--bdr)" stroke-width="5"/><circle cx="34" cy="34" r="28" fill="none" stroke="'+iScore.color+'" stroke-width="5" stroke-dasharray="'+iDash+'" stroke-dashoffset="'+iOff+'" stroke-linecap="round"/></svg><span class="sr-val" style="color:'+iScore.color+'">'+iScore.score+'</span></div><div><div style="font-size:14px;font-weight:800;color:'+iScore.color+'">'+iScore.grade+'</div></div></div>';
   if(!policies.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';
@@ -11084,7 +11094,7 @@ function runWhatIf(){var sip=parseFloat(document.getElementById('wi-sip').value)
 function rLog(){var txns=S.transactions||[];var el=document.getElementById('log-list');var empty=document.getElementById('log-empty');if(!txns.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';el.innerHTML=txns.slice(-50).reverse().map(function(t){return '<div class="exp-item"><div class="exp-ic">'+t.icon+'</div><div class="exp-body"><h4>'+t.label+'</h4><p>'+t.date+' · '+t.type+'</p></div><div class="exp-r"><div class="rv">'+fmtFull(Math.abs(t.amount))+'</div></div></div>'}).join('')}
 
 // ===== KPIs =====
-function rKPI(){var inv=filterByMember(S.investments);var el=document.getElementById('kpi-list');var empty=document.getElementById('kpi-empty');if(!inv.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';var nw=inv.reduce(function(s,i){return s+getInvValue(i)},0);var invested=inv.reduce(function(s,i){return s+(i.invested||0)},0);var returns=nw-invested;var cagr=invested>0&&S.currentMonth>0?(Math.pow(nw/invested,12/S.currentMonth)-1)*100:0;var retPct=invested>0?(returns/invested*100):0;var bk={};inv.forEach(function(i){bk[i.bucket||invBucket(i.type)]=(bk[i.bucket||invBucket(i.type)]||0)+getInvValue(i)});var eqPct=nw>0?((bk['Equity']||0)/nw*100):0;var exps=filterByMember(S.expenses);var mExp=exps.filter(function(e){return e.frequency==='monthly'}).reduce(function(s,e){return s+(e.amount||0)},0);var liquid=inv.filter(function(i){return i.isEmergencyFund||['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+getInvValue(i)},0);
+function rKPI(){renderMemberPills('kpi-member-pills');var inv=filterByMember(S.investments);var el=document.getElementById('kpi-list');var empty=document.getElementById('kpi-empty');if(!inv.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';var nw=inv.reduce(function(s,i){return s+getInvValue(i)},0);var invested=inv.reduce(function(s,i){return s+(i.invested||0)},0);var returns=nw-invested;var cagr=invested>0&&S.currentMonth>0?(Math.pow(nw/invested,12/S.currentMonth)-1)*100:0;var retPct=invested>0?(returns/invested*100):0;var bk={};inv.forEach(function(i){bk[i.bucket||invBucket(i.type)]=(bk[i.bucket||invBucket(i.type)]||0)+getInvValue(i)});var eqPct=nw>0?((bk['Equity']||0)/nw*100):0;var exps=filterByMember(S.expenses);var mExp=exps.filter(function(e){return e.frequency==='monthly'}).reduce(function(s,e){return s+(e.amount||0)},0);var liquid=inv.filter(function(i){return i.isEmergencyFund||['FD','RD'].includes(i.type)}).reduce(function(s,i){return s+getInvValue(i)},0);
   var groups=[{name:'📊 Portfolio',items:[{n:'NW',v:fmt(nw),s:nw>0?'🟢':'⚪'},{n:'Returns',v:fS(returns),s:returns>=0?'🟢':'🔴'},{n:'CAGR',v:cagr.toFixed(1)+'%',s:cagr>=8?'🟢':'🟡'}]},{name:'⚖️ Allocation',items:[{n:'Equity',v:eqPct.toFixed(0)+'%',s:eqPct>=40&&eqPct<=75?'🟢':'🟡'}]},{name:'🛡️ Safety',items:[{n:'Emergency',v:(mExp>0?liquid/mExp:0).toFixed(1)+'mo',s:mExp>0&&liquid/mExp>=6?'🟢':'🔴'}]}];
   el.innerHTML=groups.filter(function(g){return g.items.length}).map(function(g){return '<div class="kp" onclick="this.querySelector(\'.kpb\').classList.toggle(\'open\');this.querySelector(\'.arr\').classList.toggle(\'open\')"><div class="kph"><h4>'+g.name+'</h4><span class="arr">▼</span></div><div class="kpb open">'+g.items.map(function(k){return '<div class="kr"><span class="ks">'+k.s+'</span><span class="kn">'+k.n+'</span><span class="kv">'+k.v+'</span></div>'}).join('')+'</div></div>'}).join('')}
 
@@ -11356,7 +11366,7 @@ function renderTaxM(){var inv=filterByMember(S.investments);var el=document.getE
 // ===== EXIT SIGNALS =====
 function getExitCue(inv,val,ret,retPct){if(inv.type==='EPF')return{level:'hold',icon:'🟢',label:'Hold',cls:'exit-hold',reason:'EPF — long-term retirement'};if(inv.type==='Land')return{level:'hold',icon:'🟢',label:'Hold',cls:'exit-hold',reason:'Real estate — illiquid asset'};if(inv.type==='Gold'&&!inv.nseSymbol)return{level:'hold',icon:'🟢',label:'Hold',cls:'exit-hold',reason:'Gold — portfolio hedge'};if(inv.type==='LIC'){var la=inv.started?Math.floor((Date.now()-new Date(inv.started).getTime())/(365.25*86400000)):99;if(val<inv.invested*0.5&&la<5)return{level:'review',icon:'🟡',label:'Review',cls:'exit-review',reason:'Surrender < 50% premiums'};return{level:'hold',icon:'🟢',label:'Hold',cls:'exit-hold',reason:'LIC on track'};}if(inv.targetReturn&&retPct>=inv.targetReturn)return{level:'sell',icon:'🎯',label:'Target',cls:'exit-sell',reason:'Return '+retPct.toFixed(1)+'% hit '+inv.targetReturn+'%'};if(inv.stopLoss&&retPct<=-Math.abs(inv.stopLoss))return{level:'sell',icon:'🛑',label:'Stop',cls:'exit-sell',reason:'Down '+retPct.toFixed(1)+'% past -'+inv.stopLoss+'%'};if(inv.fiftyTwoLow&&inv.livePrice&&inv.livePrice<=inv.fiftyTwoLow*1.05)return{level:'review',icon:'📉',label:'52WL',cls:'exit-review',reason:'₹'+inv.livePrice.toFixed(0)+' near 52W low'};if(inv.maturityDate){var days=Math.floor((new Date(inv.maturityDate)-Date.now())/(1e3*60*60*24));if(days<=0)return{level:'sell',icon:'⏰',label:'Matured',cls:'exit-mature',reason:'Maturity passed — reinvest'};if(days<=30)return{level:'review',icon:'⏰',label:'Maturing',cls:'exit-review',reason:days+'d to maturity'}}var nw=S.investments.reduce(function(s,i){return s+getInvValue(i)},0);if(nw>0&&val/nw>0.3)return{level:'review',icon:'⚖️',label:'Heavy',cls:'exit-review',reason:((val/nw)*100).toFixed(0)+'% concentration'};if(retPct<-20)return{level:'review',icon:'📉',label:'Loss',cls:'exit-review',reason:'Down '+retPct.toFixed(0)+'%'};return{level:'hold',icon:'🟢',label:'Hold',cls:'exit-hold',reason:'No issues'}}
 function getExitSignals(investments){var signals=[];investments.forEach(function(i){var val=getInvValue(i);var ret=val-i.invested;var retP=i.invested>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);if(cue.level!=='hold')signals.push({inv:i,level:cue.level,icon:cue.icon,label:cue.label,cls:cue.cls,reason:cue.reason})});signals.sort(function(a,b){return(a.level==='sell'?0:1)-(b.level==='sell'?0:1)});return signals}
-function renderExitM(){var inv=filterByMember(S.investments);var signals=getExitSignals(inv);var el=document.getElementById('exit-list-m');var empty=document.getElementById('exit-empty-m');if(!inv.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';var h='';if(!signals.length){h+='<div style="text-align:center;padding:12px;font-size:10px;color:var(--g)">🟢 All clear</div>';}else{h+=signals.map(function(s){return '<div class="exp-item" style="border-left:3px solid '+(s.level==='sell'?'var(--d)':'var(--w)')+'"><div class="exp-ic"><span class="exit-cue '+s.cls+'">'+s.icon+'</span></div><div class="exp-body"><h4>'+s.inv.label+'</h4><p>'+s.reason+'</p></div></div>'}).join('')}var holds=inv.filter(function(i){var val=getInvValue(i);var ret=val-(i.invested||0);var retP=(i.invested||0)>0?(ret/i.invested*100):0;return getExitCue(i,val,ret,retP).level==='hold'});if(holds.length){h+='<details style="margin-top:6px"><summary style="cursor:pointer;font-size:10px;font-weight:600;color:var(--g)">🟢 Hold ('+holds.length+')</summary>';holds.forEach(function(i){var val=getInvValue(i);var ret=val-(i.invested||0);var retP=(i.invested||0)>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);h+='<div style="padding:3px 0;font-size:9px;border-bottom:1px solid var(--bdr)">🟢 <b>'+i.label+'</b> — '+cue.reason+'</div>'});h+='</details>'}el.innerHTML=h}
+function renderExitM(){renderMemberPills('exit-member-pills');var inv=filterByMember(S.investments);var signals=getExitSignals(inv);var el=document.getElementById('exit-list-m');var empty=document.getElementById('exit-empty-m');if(!inv.length){el.innerHTML='';empty.style.display='block';return}empty.style.display='none';var h='';if(!signals.length){h+='<div style="text-align:center;padding:12px;font-size:10px;color:var(--g)">🟢 All clear</div>';}else{h+=signals.map(function(s){return '<div class="exp-item" style="border-left:3px solid '+(s.level==='sell'?'var(--d)':'var(--w)')+'"><div class="exp-ic"><span class="exit-cue '+s.cls+'">'+s.icon+'</span></div><div class="exp-body"><h4>'+s.inv.label+'</h4><p>'+s.reason+'</p></div></div>'}).join('')}var holds=inv.filter(function(i){var val=getInvValue(i);var ret=val-(i.invested||0);var retP=(i.invested||0)>0?(ret/i.invested*100):0;return getExitCue(i,val,ret,retP).level==='hold'});if(holds.length){h+='<details style="margin-top:6px"><summary style="cursor:pointer;font-size:10px;font-weight:600;color:var(--g)">🟢 Hold ('+holds.length+')</summary>';holds.forEach(function(i){var val=getInvValue(i);var ret=val-(i.invested||0);var retP=(i.invested||0)>0?(ret/i.invested*100):0;var cue=getExitCue(i,val,ret,retP);h+='<div style="padding:3px 0;font-size:9px;border-bottom:1px solid var(--bdr)">🟢 <b>'+i.label+'</b> — '+cue.reason+'</div>'});h+='</details>'}el.innerHTML=h}
 
 // ===== ALERTS =====
 function generateAlerts(){
@@ -11824,7 +11834,7 @@ function initApp(){
 // ===== LOANS / LIABILITIES =====
 var LOAN_TYPES=['Home Loan','Car / Vehicle Loan','Personal Loan','Education Loan','Gold Loan','Business Loan','Loan Against Property','Other'];
 function getTotalLiabilities(){return(S.loans||[]).reduce(function(s,l){return s+(l.outstanding||0)},0)}
-function rLoans(){
+function rLoans(){renderMemberPills('loan-member-pills');
   var loans=S.loans||[];var el=document.getElementById('loan-list');var empty=document.getElementById('loan-empty');var summary=document.getElementById('loan-summary');
   if(!loans.length){el.innerHTML='';empty.style.display='block';summary.innerHTML='';return}
   empty.style.display='none';
@@ -12319,7 +12329,7 @@ function showAutoSyncModal(){
 // │ The ?v= parameter forces browsers to download fresh sw.js.     │
 // │ That's it — no other steps needed.                              │
 // └─────────────────────────────────────────────────────────────────┘
-var APP_VERSION = 'v4.2.0h';
+var APP_VERSION = 'v4.2.0i';
 
 function showUpdateBanner() {
   if(document.getElementById('sw-update-banner')) return;
